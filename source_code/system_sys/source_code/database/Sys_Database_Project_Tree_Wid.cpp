@@ -208,7 +208,7 @@ void Sys_Database_Project_Tree_Wid::create_folder_modules(QTreeWidgetItem *root_
 				modules->setIcon(0,icon5);
 
 		}
-		else if(Sys_Project::get_project_type()==_sys_project_type::proj_hyd || Sys_Project::get_project_type() == _sys_project_type::proj_hyd_temp){
+		else if(Sys_Project::get_project_type()==_sys_project_type::proj_hyd){
 				QTreeWidgetItem *modules = new QTreeWidgetItem(root_item);
 				modules->setText(0, sys_label::str_hyd.c_str());
 				QIcon icon1;
@@ -254,13 +254,7 @@ void Sys_Database_Project_Tree_Wid::create_folder_modules(QTreeWidgetItem *root_
 				icon2.addFile(":dam_icon");
 				modules->setIcon(0,icon2);
 		}
-		else if(Sys_Project::get_project_type()==_sys_project_type::proj_fpl){
-				QTreeWidgetItem *modules = new QTreeWidgetItem(root_item);
-				modules->setText(0, sys_label::str_fpl.c_str());
-				QIcon icon1;
-				icon1.addFile(":fpl_icon");
-				modules->setIcon(0,icon1);
-		}
+
 }
 //Create tables in folders
 void Sys_Database_Project_Tree_Wid::create_tables_folder(QStringList *table_list){

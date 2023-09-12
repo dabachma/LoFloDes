@@ -91,7 +91,7 @@ void Sys_Data_Tree_Wid::set_up_tree_data(void){
 			this->set_up_current_data_madm();
 			this->set_up_current_data_alt();
 		}
-		else if(Sys_Project::get_project_type()==_sys_project_type::proj_hyd || Sys_Project::get_project_type() == _sys_project_type::proj_hyd_temp){
+		else if(Sys_Project::get_project_type()==_sys_project_type::proj_hyd ){
 			this->set_up_current_data_hyd();
 		}
 		else if(Sys_Project::get_project_type()==_sys_project_type::proj_dam){
@@ -342,7 +342,7 @@ void Sys_Data_Tree_Wid::set_up_tree_predefinied(void){
 		this->set_up_predefined_madm(root);
 		this->set_up_predefined_alt(root);
 	}
-	else if(Sys_Project::get_project_type()==_sys_project_type::proj_hyd || Sys_Project::get_project_type() == _sys_project_type::proj_hyd_temp){
+	else if(Sys_Project::get_project_type()==_sys_project_type::proj_hyd ){
 		this->set_up_predefined_hyd(root);
 	}
 	else if(Sys_Project::get_project_type()==_sys_project_type::proj_dam){

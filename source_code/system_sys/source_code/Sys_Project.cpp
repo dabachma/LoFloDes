@@ -64,7 +64,7 @@ bool Sys_Project::ask_existing_project(QWidget *parent){
 
 	QString file;
 
-	file=QFileDialog::getOpenFileName(parent, "Open existing project",QDir::currentPath(),tr("Project File (*.prm)")) ;
+	file=QFileDialog::getOpenFileName(parent, "Open existing project",QDir::currentPath(),tr("Project File (*.lof)")) ;
 	this->project_file_name=file.toStdString();
 
 
@@ -86,12 +86,12 @@ bool Sys_Project::ask_existing_project(QWidget *parent){
 bool Sys_Project::set_project_file(const string filename){
 	this->project_file_name=filename;
 	int pos=-1;
-	pos=this->project_file_name.find(".prm");
+	pos=this->project_file_name.find(".lof");
 	if(pos<0){
 		Sys_Diverse_Text_Dia dialog2(true);
 		ostringstream txt;
 		txt<<"This is no valid ProMaIDes project file."<< endl;
-		txt<<"It has to end with .prm"<< endl;
+		txt<<"It has to end with .lof"<< endl;
 		dialog2.set_dialog_question(txt.str());
 		dialog2.start_dialog();
 		return false;
@@ -145,10 +145,10 @@ string Sys_Project::get_project_file_name(void){
 string Sys_Project::get_complete_project_file_name(void){
 	ostringstream buffer;
 	if(this->create_new_dir==true){
-		buffer << this->get_complete_project_folder_name()<<"/"<<Sys_Project::project_name<<".prm";
+		buffer << this->get_complete_project_folder_name()<<"/"<<Sys_Project::project_name<<".lof";
 	}
 	else{
-		buffer << this->file_path <<"/"<<Sys_Project::project_name<<".prm";
+		buffer << this->file_path <<"/"<<Sys_Project::project_name<<".lof";
 	}
 	return buffer.str();
 }
@@ -171,7 +171,7 @@ _sys_database_params Sys_Project::get_database_connection_param(void){
 //Get complete project name used as schemata name on psql (static)
 string Sys_Project::get_complete_project_database_schemata_name(void){
 	ostringstream buffer;
-	buffer<<Sys_Project::project_name<<"_prm";
+	buffer<<Sys_Project::project_name<<"_lof";
 	return buffer.str();	
 }
 //Get complete project name used a prefix for the database table names (static)
@@ -221,24 +221,18 @@ _sys_project_type Sys_Project::convert_txt2project_type(const string txt){
 		else if(txt==sys_label::proj_typ_dam_hyd){
 			type=_sys_project_type::proj_dam_hyd;
 		}
-		else if(txt==sys_label::str_fpl){
-			type=_sys_project_type::proj_fpl;
-		}
+
 		else if(txt==sys_label::str_dam){
 			type=_sys_project_type::proj_dam;
 		}
 		else if(txt==sys_label::proj_typ_hyd_file){
 			type=_sys_project_type::proj_hyd_file;
 		}
-		else if(txt==sys_label::proj_typ_fpl_file){
-			type=_sys_project_type::proj_fpl_file;
-		}
+
 		else if (txt == sys_label::proj_typ_hydrol) {
 			type = _sys_project_type::proj_hydrol;
 		}
-		else if (txt == sys_label::proj_typ_hyd_temp) {
-			type = _sys_project_type::proj_hyd_temp;
-		}
+
 		else{
 			type=_sys_project_type::proj_not;
 		}
@@ -351,24 +345,18 @@ string Sys_Project::convert_project_type2txt(const _sys_project_type type){
 		case _sys_project_type::proj_dam_hyd:
 			buffer=sys_label::proj_typ_dam_hyd;
 			break;
-		case _sys_project_type::proj_fpl:
-			buffer=sys_label::str_fpl;
-			break;
+
 		case _sys_project_type::proj_dam:
 			buffer=sys_label::str_dam;
 			break;
 		case _sys_project_type::proj_hyd_file:
 			buffer=sys_label::proj_typ_hyd_file;
 			break;
-		case _sys_project_type::proj_fpl_file:
-			buffer=sys_label::proj_typ_fpl_file;
-			break;
+
 		case _sys_project_type::proj_hydrol:
 			buffer = sys_label::proj_typ_hydrol;
 			break;
-		case _sys_project_type::proj_hyd_temp:
-			buffer = sys_label::proj_typ_hyd_temp;
-			break;
+
 		default:
 			buffer=label::not_defined;
 	}
@@ -406,7 +394,6 @@ void Sys_Project::read_existing_project(void){
 	Sys_Project::set_main_path(functions::get_file_path(my_dir.absoluteFilePath(this->project_file_name.c_str()).toStdString()));
 	//change the logfile to the directory
 	Sys_Common_Output::output_system->switch_logfile_path(Sys_Project::main_path,true);
-	Sys_Common_Output::output_fpl->switch_logfile_path(Sys_Project::main_path,true);
 	Sys_Common_Output::output_excep->switch_logfile_path(Sys_Project::main_path,true);
 	Sys_Common_Output::output_hyd->switch_logfile_path(Sys_Project::main_path,true);
 	Sys_Common_Output::output_madm->switch_logfile_path(Sys_Project::main_path,true);
@@ -440,18 +427,18 @@ void Sys_Project::read_existing_project(void){
 	int must_found=0;
 
 	if(this->project_type==_sys_project_type::proj_all){
-		must_found=25;
+		must_found=24;
 	}
 	else if(this->project_type==_sys_project_type::proj_risk){
-		must_found=22;
+		must_found=21;
 	}
 	else if(this->project_type==_sys_project_type::proj_dam_hyd){
 		must_found=14;
 	}
-	else if(this->project_type==_sys_project_type::proj_hyd_file || this->project_type==_sys_project_type::proj_hyd || this->project_type == _sys_project_type::proj_hyd_temp){
+	else if(this->project_type==_sys_project_type::proj_hyd_file || this->project_type==_sys_project_type::proj_hyd){
 		must_found=13;
 	}
-	else if(this->project_type==_sys_project_type::proj_fpl || this->project_type==_sys_project_type::proj_dam){
+	else if(this->project_type==_sys_project_type::proj_dam){
 		must_found=11;
 	}
 
@@ -476,7 +463,6 @@ void Sys_Project::close_project(void){
 	if(Sys_Project::save_logfile==true){
 		//change the logfile to the directory
 		Sys_Common_Output::output_system->save_logfile2archiv();
-		Sys_Common_Output::output_fpl->save_logfile2archiv();
 		Sys_Common_Output::output_excep->save_logfile2archiv();
 		Sys_Common_Output::output_hyd->save_logfile2archiv();
 		Sys_Common_Output::output_madm->save_logfile2archiv();
@@ -821,7 +807,7 @@ void Sys_Project::copy_open_project(Data_Base *ptr_database, QWidget *parent){
 	string old_current_path=this->current_path;
 	string old_main_path=this->main_path;
 	ostringstream old_project_file_name;
-	old_project_file_name<< this->file_path <<"/"<<Sys_Project::project_name<<".prm";
+	old_project_file_name<< this->file_path <<"/"<<Sys_Project::project_name<<".lof";
 
 	try{
 		
@@ -1137,7 +1123,6 @@ void Sys_Project::write_project_file(const bool copy){
 	if(copy==false){
 		//change the logfile to the directory
 		Sys_Common_Output::output_system->switch_logfile_path(Sys_Project::current_path,true);
-		Sys_Common_Output::output_fpl->switch_logfile_path(Sys_Project::current_path,true);
 		Sys_Common_Output::output_excep->switch_logfile_path(Sys_Project::current_path,true);
 		Sys_Common_Output::output_hyd->switch_logfile_path(Sys_Project::current_path,true);
 		Sys_Common_Output::output_madm->switch_logfile_path(Sys_Project::current_path,true);
@@ -1479,25 +1464,6 @@ void Sys_Project::find_key_values_file(string myline , int *must_found_counter){
 			return;
 		}
 	}
-	pos=myline.find(sys_label::key_project_fpl_out_detailed);
-	if(pos>=0 && wrong_input==false){
-		buffer=myline.substr(sys_label::key_project_fpl_out_detailed.length());
-		functions::clean_string(&buffer);
-		buffer1 << buffer;
-		try{
-			bool buff;
-
-			buff=functions::convert_string2boolean(buffer1.str());
-			Sys_Common_Output::output_fpl->set_detailflag(buff);
-		}
-		catch(Error msg){
-			wrong_input=true;
-		}
-		if(wrong_input!=true){
-			(*must_found_counter)++;
-			return;
-		}
-	}
 	pos=myline.find(sys_label::key_project_hyd_out_detailed);
 	if(pos>=0 && wrong_input==false){
 		buffer=myline.substr(sys_label::key_project_hyd_out_detailed.length());
@@ -1779,7 +1745,7 @@ void Sys_Project::create_project_folder_data(void){
 		}
 		buffer2.str("");
 	}
-	else if(this->project_type==_sys_project_type::proj_hyd || this->project_type == _sys_project_type::proj_hyd_temp){
+	else if(this->project_type==_sys_project_type::proj_hyd){
 		//hyd
 		buffer2<<buffer.str()<< sys_label::str_hyd<<"/";
 		if(my_dir.exists(buffer2.str().c_str())==false){
@@ -1903,20 +1869,7 @@ void Sys_Project::create_project_folder_data(void){
 		buffer2.str("");
 
 	}
-	else if(this->project_type==_sys_project_type::proj_fpl){
-		//fpl
-		buffer2<<buffer.str()<< sys_label::str_fpl<<"/";
-		if(my_dir.exists(buffer2.str().c_str())==false){
-			if(my_dir.mkdir(buffer2.str().c_str())==false){
-				Error msg=this->set_error(2);
-				ostringstream info;
-				info <<"Directory name :" << buffer2.str() << endl;
-				msg.make_second_info(info.str());
-				throw msg;
-			}
-		}
-		buffer2.str("");
-	}
+
 }
 //Create project folder for the output
 void Sys_Project::create_project_folder_output(void){
@@ -2022,7 +1975,7 @@ void Sys_Project::create_project_folder_output(void){
 		}
 		buffer2.str("");
 	}
-	else if(this->project_type==_sys_project_type::proj_hyd || this->project_type == _sys_project_type::proj_hyd_temp){
+	else if(this->project_type==_sys_project_type::proj_hyd){
 		//hyd
 		buffer2<<buffer.str()<< sys_label::str_hyd<<"/";
 		if(my_dir.exists(buffer2.str().c_str())==false){
@@ -2146,20 +2099,7 @@ void Sys_Project::create_project_folder_output(void){
 		buffer2.str("");
 
 	}
-	else if(this->project_type==_sys_project_type::proj_fpl){
-		//fpl
-		buffer2<<buffer.str()<< sys_label::str_fpl<<"/";
-		if(my_dir.exists(buffer2.str().c_str())==false){
-			if(my_dir.mkdir(buffer2.str().c_str())==false){
-				Error msg=this->set_error(6);
-				ostringstream info;
-				info <<"Directory name :" << buffer2.str() << endl;
-				msg.make_second_info(info.str());
-				throw msg;
-			}
-		}
-		buffer2.str("");
-	}
+
 }
 //Generate project paramter text for the project file
 string Sys_Project::generate_project_txt2file(void){
@@ -2169,7 +2109,7 @@ string Sys_Project::generate_project_txt2file(void){
 	//write header
 	txt <<"##########################################################################"<< endl;
     txt <<"#This automatically generated project file of " << Sys_Project::version <<endl;
-    txt <<"#produced by IWW, RWTH Aachen University                                 "<<endl;
+    txt <<"#produced by AG FRM University fo applied sciences Magdeburg-Stendal     "<<endl;
     txt <<"#Do not change this file manually. The project can be corrupted after!   "<<endl;
     txt <<"#Comments are marked with '#'                                            "<<endl;
 	txt <<"##########################################################################"<< endl<<endl;
@@ -2189,11 +2129,8 @@ string Sys_Project::generate_project_txt2file(void){
 	txt<< sys_label::key_project_measure_state << " " << this->system_id.measure_nr <<endl;
 	txt<<"#Detailed output flags"<<endl;
 	txt<< sys_label::key_project_sys_out_detailed << " " << functions::convert_boolean2string(Sys_Common_Output::output_system->get_detailflag()) <<endl;
-	if(this->project_type==_sys_project_type::proj_hyd_file || this->project_type==_sys_project_type::proj_hyd || this->project_type == _sys_project_type::proj_hyd_temp){
+	if(this->project_type==_sys_project_type::proj_hyd_file || this->project_type==_sys_project_type::proj_hyd ){
 		txt<< sys_label::key_project_hyd_out_detailed << " " << functions::convert_boolean2string(Sys_Common_Output::output_hyd->get_detailflag()) <<endl;
-	}
-	else if(this->project_type==_sys_project_type::proj_fpl){
-		txt<< sys_label::key_project_fpl_out_detailed << " " << functions::convert_boolean2string(Sys_Common_Output::output_fpl->get_detailflag()) <<endl;
 	}
 	else if(this->project_type==_sys_project_type::proj_dam_hyd){
 		txt<< sys_label::key_project_hyd_out_detailed << " " << functions::convert_boolean2string(Sys_Common_Output::output_hyd->get_detailflag()) <<endl;
@@ -2203,13 +2140,13 @@ string Sys_Project::generate_project_txt2file(void){
 		txt<< sys_label::key_project_dam_out_detailed << " " << functions::convert_boolean2string(Sys_Common_Output::output_dam->get_detailflag()) <<endl;
 	}
 	else if(this->project_type==_sys_project_type::proj_risk){
-		txt<< sys_label::key_project_fpl_out_detailed << " " << functions::convert_boolean2string(Sys_Common_Output::output_fpl->get_detailflag()) <<endl;
+
 		txt<< sys_label::key_project_hyd_out_detailed << " " << functions::convert_boolean2string(Sys_Common_Output::output_hyd->get_detailflag()) <<endl;
 		txt<< sys_label::key_project_dam_out_detailed << " " << functions::convert_boolean2string(Sys_Common_Output::output_dam->get_detailflag()) <<endl;
 		txt<< sys_label::key_project_risk_out_detailed << " " << functions::convert_boolean2string(Sys_Common_Output::output_risk->get_detailflag()) <<endl;
 	}
 	else if(this->project_type==_sys_project_type::proj_all){
-		txt<< sys_label::key_project_fpl_out_detailed << " " << functions::convert_boolean2string(Sys_Common_Output::output_fpl->get_detailflag()) <<endl;
+
 		txt<< sys_label::key_project_hyd_out_detailed << " " << functions::convert_boolean2string(Sys_Common_Output::output_hyd->get_detailflag()) <<endl;
 		txt<< sys_label::key_project_dam_out_detailed << " " << functions::convert_boolean2string(Sys_Common_Output::output_dam->get_detailflag()) <<endl;
 		txt<< sys_label::key_project_risk_out_detailed << " " << functions::convert_boolean2string(Sys_Common_Output::output_risk->get_detailflag()) <<endl;
@@ -2221,7 +2158,7 @@ string Sys_Project::generate_project_txt2file(void){
 
 	if(this->project_type==_sys_project_type::proj_all || this->project_type==_sys_project_type::proj_risk ||
 		this->project_type==_sys_project_type::proj_dam_hyd || this->project_type==_sys_project_type::proj_hyd ||
-		this->project_type==_sys_project_type::proj_hyd_file || this->project_type == _sys_project_type::proj_hyd_temp){
+		this->project_type==_sys_project_type::proj_hyd_file ){
 		txt<<"#Hydraulic data"<<endl;
 		txt<< sys_label::key_project_hyd_file_out << " " << functions::convert_boolean2string(this->hyd_state.file_output_required) <<endl;
 		txt<< sys_label::key_project_hyd_thread << " " << this->hyd_state.number_threads <<endl;

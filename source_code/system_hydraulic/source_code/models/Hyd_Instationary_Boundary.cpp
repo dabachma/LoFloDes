@@ -924,13 +924,13 @@ _hyd_bound_type Hyd_Instationary_Boundary::transfrom_txt2_instatboundtype(string
 		info <<" " << hyd_label::Area_Boundary <<endl;
 		info <<" " << hyd_label::Length_Boundary<<endl;
 		info <<" " << hyd_label::Waterlevel_Boundary<<endl;
-		if (Sys_Project::get_project_type() == _sys_project_type::proj_hyd_temp) {
-			info << "Additonally for the temperature model: " << endl;
-			info << " " << hyd_label::Temp_Boundary << endl;
-			info << " " << hyd_label::Solar_rad_Boundary << endl;
-			info << " " << hyd_label::Perc_Boundary << endl;
-			info << " " << hyd_label::Speed_Boundary << endl;
-		}
+		
+		info << "Additonally for the temperature model: " << endl;
+		info << " " << hyd_label::Temp_Boundary << endl;
+		info << " " << hyd_label::Solar_rad_Boundary << endl;
+		info << " " << hyd_label::Perc_Boundary << endl;
+		info << " " << hyd_label::Speed_Boundary << endl;
+		
 
 
 		msg.set_msg(place, reason, help, 1, false);

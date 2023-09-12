@@ -131,9 +131,7 @@ void HydTemp_Model::input_members(const HydTemp_Param param_temp){
 }
 //Transfer the temperature river model data to a database; the general settings as well as the profile data
 void HydTemp_Model::transfer_input_members2database(QSqlDatabase *ptr_database){
-	if (Sys_Project::get_project_type() != _sys_project_type::proj_hyd_temp) {
-		return;
-	}
+
 
 	//set prefix for output
 	ostringstream prefix;
@@ -242,9 +240,7 @@ scenario has to be set before.
 }
 //Delete all data in the database table for the river model parameters as well as the river profile data (static) 
 void HydTemp_Model::delete_data_in_table(QSqlDatabase *ptr_database){
-	if (Sys_Project::get_project_type() != _sys_project_type::proj_hyd_temp) {
-		return;
-	}
+
 	//the table is set (the name and the column names) and allocated
 	try{
 		HydTemp_Model::set_table(ptr_database);
@@ -262,9 +258,7 @@ void HydTemp_Model::delete_data_in_table(QSqlDatabase *ptr_database){
 }
 //Input the river model with the index from a database selection of the relevant river models; the general settings as well as the profile data
 void HydTemp_Model::input_members(const int index, const QSqlTableModel *query_result,QSqlDatabase *ptr_database, const bool just_profiles, const bool relevant, const bool output_flag){
-	if (Sys_Project::get_project_type() != _sys_project_type::proj_hyd_temp) {
-		return;
-	}
+
 
 	if(output_flag==true){
 		ostringstream cout;
@@ -361,169 +355,169 @@ void HydTemp_Model::input_members(const int index, const QSqlTableModel *query_r
 }
 //Create the database table for the general parameters of the river model (static)
 void HydTemp_Model::create_table(QSqlDatabase *ptr_database){
-	if (Sys_Project::get_project_type() == _sys_project_type::proj_hyd_temp) {
-		if (HydTemp_Model::general_temp_param_table == NULL) {
-			ostringstream cout;
-			cout << "Create general temperature river model data database table..." << endl;
-			Sys_Common_Output::output_hyd->output_txt(&cout);
-			//make specific input for this class
-			const string tab_name = hyd_label::tab_temprv_gen;
+	
+	if (HydTemp_Model::general_temp_param_table == NULL) {
+		ostringstream cout;
+		cout << "Create general temperature river model data database table..." << endl;
+		Sys_Common_Output::output_hyd->output_txt(&cout);
+		//make specific input for this class
+		const string tab_name = hyd_label::tab_temprv_gen;
 			
-			const int num_col = 14;
-			_Sys_data_tab_column tab_col[num_col];
-			//init
-			for (int i = 0; i < num_col; i++) {
-				tab_col[i].key_flag = false;
-				tab_col[i].unsigned_flag = false;
-				tab_col[i].primary_key_flag = false;
-			}
-
-			tab_col[0].name = hyd_label::genmod_id;
-			tab_col[0].type = sys_label::tab_col_type_int;
-			tab_col[0].unsigned_flag = true;
-			tab_col[0].primary_key_flag = true;
-
-			tab_col[1].name = hyd_label::genmod_name;
-			tab_col[1].type = sys_label::tab_col_type_string;
-
-			tab_col[2].name = label::areastate_id;
-			tab_col[2].type = sys_label::tab_col_type_int;
-			tab_col[2].unsigned_flag = true;
-			tab_col[2].key_flag = true;
-
-			tab_col[3].name = label::measure_id;
-			tab_col[3].type = sys_label::tab_col_type_int;
-			tab_col[3].unsigned_flag = true;
-			tab_col[3].key_flag = true;
-
-			tab_col[4].name = label::applied_flag;
-			tab_col[4].type = sys_label::tab_col_type_bool;
-			tab_col[4].default_value = "true";
-			tab_col[4].key_flag = true;
-
-			tab_col[5].name = hyd_label::gw_temp;
-			tab_col[5].type = sys_label::tab_col_type_double;
-			tab_col[5].unsigned_flag = true;
-			tab_col[5].default_value = "283.0";
-
-			tab_col[6].name = hyd_label::brunt_coef;
-			tab_col[6].type = sys_label::tab_col_type_double;
-			tab_col[6].unsigned_flag = true;
-			tab_col[6].default_value = "0.5";
-
-			tab_col[7].name = hyd_label::view2sky;
-			tab_col[7].type = sys_label::tab_col_type_double;
-			tab_col[7].unsigned_flag = true;
-			tab_col[7].default_value = "0.5";
-
-			tab_col[8].name = hyd_label::cond_bed;
-			tab_col[8].type = sys_label::tab_col_type_double;
-			tab_col[8].unsigned_flag = true;
-			tab_col[8].default_value = "15";
-
-			tab_col[9].name = hyd_label::bed_temp;
-			tab_col[9].type = sys_label::tab_col_type_double;
-			tab_col[9].unsigned_flag = true;
-			tab_col[9].default_value = "283";
-
-			tab_col[10].name = hyd_label::bed_warm_coef;
-			tab_col[10].type = sys_label::tab_col_type_double;
-			tab_col[10].unsigned_flag = true;
-			tab_col[10].default_value = "0.5";
-
-			tab_col[11].name = hyd_label::diff_solar_rad;
-			tab_col[11].type = sys_label::tab_col_type_double;
-			tab_col[11].unsigned_flag = true;
-			tab_col[11].default_value = "0.5";
-
-			tab_col[12].name = hyd_label::temp_model_applied;
-			tab_col[12].type = sys_label::tab_col_type_bool;
-			tab_col[12].default_value = "false";
-
-
-
-			tab_col[13].name = label::description;
-			tab_col[13].type = sys_label::tab_col_type_string;
-
-
-
-			try {
-				HydTemp_Model::general_temp_param_table = new Tables();
-				if (HydTemp_Model::general_temp_param_table->create_non_existing_tables(tab_name, tab_col, num_col, ptr_database, _sys_table_type::hyd) == false) {
-					cout << " Table exists" << endl;
-					Sys_Common_Output::output_hyd->output_txt(&cout);
-				};
-			}
-			catch (bad_alloc& t) {
-				Error msg;
-				msg.set_msg("HydTemp_Model::create_table(QSqlDatabase *ptr_database)", "Can not allocate the memory", "Check the memory", 10, false);
-				ostringstream info;
-				info << "Info bad alloc: " << t.what() << endl;
-				msg.make_second_info(info.str());
-				throw msg;
-			}
-			catch (Error msg) {
-				HydTemp_Model::close_table();;
-				throw msg;
-			}
-
-			HydTemp_Model::close_table();
+		const int num_col = 14;
+		_Sys_data_tab_column tab_col[num_col];
+		//init
+		for (int i = 0; i < num_col; i++) {
+			tab_col[i].key_flag = false;
+			tab_col[i].unsigned_flag = false;
+			tab_col[i].primary_key_flag = false;
 		}
+
+		tab_col[0].name = hyd_label::genmod_id;
+		tab_col[0].type = sys_label::tab_col_type_int;
+		tab_col[0].unsigned_flag = true;
+		tab_col[0].primary_key_flag = true;
+
+		tab_col[1].name = hyd_label::genmod_name;
+		tab_col[1].type = sys_label::tab_col_type_string;
+
+		tab_col[2].name = label::areastate_id;
+		tab_col[2].type = sys_label::tab_col_type_int;
+		tab_col[2].unsigned_flag = true;
+		tab_col[2].key_flag = true;
+
+		tab_col[3].name = label::measure_id;
+		tab_col[3].type = sys_label::tab_col_type_int;
+		tab_col[3].unsigned_flag = true;
+		tab_col[3].key_flag = true;
+
+		tab_col[4].name = label::applied_flag;
+		tab_col[4].type = sys_label::tab_col_type_bool;
+		tab_col[4].default_value = "true";
+		tab_col[4].key_flag = true;
+
+		tab_col[5].name = hyd_label::gw_temp;
+		tab_col[5].type = sys_label::tab_col_type_double;
+		tab_col[5].unsigned_flag = true;
+		tab_col[5].default_value = "283.0";
+
+		tab_col[6].name = hyd_label::brunt_coef;
+		tab_col[6].type = sys_label::tab_col_type_double;
+		tab_col[6].unsigned_flag = true;
+		tab_col[6].default_value = "0.5";
+
+		tab_col[7].name = hyd_label::view2sky;
+		tab_col[7].type = sys_label::tab_col_type_double;
+		tab_col[7].unsigned_flag = true;
+		tab_col[7].default_value = "0.5";
+
+		tab_col[8].name = hyd_label::cond_bed;
+		tab_col[8].type = sys_label::tab_col_type_double;
+		tab_col[8].unsigned_flag = true;
+		tab_col[8].default_value = "15";
+
+		tab_col[9].name = hyd_label::bed_temp;
+		tab_col[9].type = sys_label::tab_col_type_double;
+		tab_col[9].unsigned_flag = true;
+		tab_col[9].default_value = "283";
+
+		tab_col[10].name = hyd_label::bed_warm_coef;
+		tab_col[10].type = sys_label::tab_col_type_double;
+		tab_col[10].unsigned_flag = true;
+		tab_col[10].default_value = "0.5";
+
+		tab_col[11].name = hyd_label::diff_solar_rad;
+		tab_col[11].type = sys_label::tab_col_type_double;
+		tab_col[11].unsigned_flag = true;
+		tab_col[11].default_value = "0.5";
+
+		tab_col[12].name = hyd_label::temp_model_applied;
+		tab_col[12].type = sys_label::tab_col_type_bool;
+		tab_col[12].default_value = "false";
+
+
+
+		tab_col[13].name = label::description;
+		tab_col[13].type = sys_label::tab_col_type_string;
+
+
+
+		try {
+			HydTemp_Model::general_temp_param_table = new Tables();
+			if (HydTemp_Model::general_temp_param_table->create_non_existing_tables(tab_name, tab_col, num_col, ptr_database, _sys_table_type::hyd) == false) {
+				cout << " Table exists" << endl;
+				Sys_Common_Output::output_hyd->output_txt(&cout);
+			};
+		}
+		catch (bad_alloc& t) {
+			Error msg;
+			msg.set_msg("HydTemp_Model::create_table(QSqlDatabase *ptr_database)", "Can not allocate the memory", "Check the memory", 10, false);
+			ostringstream info;
+			info << "Info bad alloc: " << t.what() << endl;
+			msg.make_second_info(info.str());
+			throw msg;
+		}
+		catch (Error msg) {
+			HydTemp_Model::close_table();;
+			throw msg;
+		}
+
+		HydTemp_Model::close_table();
 	}
+	
 
 }
 //Set the database table for the general parameters of the temerature river model: it sets the table name and the name of the columns and allocate them (static)
 void HydTemp_Model::set_table(QSqlDatabase *ptr_database){
-	if (Sys_Project::get_project_type() == _sys_project_type::proj_hyd_temp) {
-		if (HydTemp_Model::general_temp_param_table == NULL) {
-			//make specific input for this class
-			const string tab_id_name = hyd_label::tab_temprv_gen;
-			string tab_id_col[14];
+	
+	if (HydTemp_Model::general_temp_param_table == NULL) {
+		//make specific input for this class
+		const string tab_id_name = hyd_label::tab_temprv_gen;
+		string tab_id_col[14];
 
-			tab_id_col[0] = hyd_label::genmod_id;
-			tab_id_col[1] = label::areastate_id;
-			tab_id_col[2] = label::measure_id;
-			tab_id_col[3] = label::applied_flag;
-			tab_id_col[4] = label::description;
-			tab_id_col[5] = hyd_label::gw_temp;
-			tab_id_col[6] = hyd_label::brunt_coef;
-			tab_id_col[7] = hyd_label::view2sky;
-			tab_id_col[8] = hyd_label::cond_bed;
-			tab_id_col[9] = hyd_label::bed_temp;
-			tab_id_col[10] = hyd_label::bed_warm_coef;
-			tab_id_col[11] = hyd_label::diff_solar_rad;
-			tab_id_col[12] = hyd_label::genmod_name;
-			tab_id_col[13] = hyd_label::temp_model_applied;
+		tab_id_col[0] = hyd_label::genmod_id;
+		tab_id_col[1] = label::areastate_id;
+		tab_id_col[2] = label::measure_id;
+		tab_id_col[3] = label::applied_flag;
+		tab_id_col[4] = label::description;
+		tab_id_col[5] = hyd_label::gw_temp;
+		tab_id_col[6] = hyd_label::brunt_coef;
+		tab_id_col[7] = hyd_label::view2sky;
+		tab_id_col[8] = hyd_label::cond_bed;
+		tab_id_col[9] = hyd_label::bed_temp;
+		tab_id_col[10] = hyd_label::bed_warm_coef;
+		tab_id_col[11] = hyd_label::diff_solar_rad;
+		tab_id_col[12] = hyd_label::genmod_name;
+		tab_id_col[13] = hyd_label::temp_model_applied;
 
-			try {
-				HydTemp_Model::general_temp_param_table = new Tables(tab_id_name, tab_id_col, sizeof(tab_id_col) / sizeof(tab_id_col[0]));
-				HydTemp_Model::general_temp_param_table->set_name(ptr_database, _sys_table_type::hyd);
-			}
-			catch (bad_alloc& t) {
-				Error msg;
-				msg.set_msg("HydTemp_Model::set_table(QSqlDatabase *ptr_database)", "Can not allocate the memory", "Check the memory", 10, false);
-				ostringstream info;
-				info << "Info bad alloc: " << t.what() << endl;
-				msg.make_second_info(info.str());
-				throw msg;
-			}
-			catch (Error msg) {
-				HydTemp_Model::close_table();
-				throw msg;
-			}
+		try {
+			HydTemp_Model::general_temp_param_table = new Tables(tab_id_name, tab_id_col, sizeof(tab_id_col) / sizeof(tab_id_col[0]));
+			HydTemp_Model::general_temp_param_table->set_name(ptr_database, _sys_table_type::hyd);
+		}
+		catch (bad_alloc& t) {
+			Error msg;
+			msg.set_msg("HydTemp_Model::set_table(QSqlDatabase *ptr_database)", "Can not allocate the memory", "Check the memory", 10, false);
+			ostringstream info;
+			info << "Info bad alloc: " << t.what() << endl;
+			msg.make_second_info(info.str());
+			throw msg;
+		}
+		catch (Error msg) {
+			HydTemp_Model::close_table();
+			throw msg;
 		}
 	}
+	
 }
 //Close and delete the database table for the general parameters of the temerature river model (static)
 void HydTemp_Model::close_table(void){
-	if (Sys_Project::get_project_type() == _sys_project_type::proj_hyd_temp) {
-		if (HydTemp_Model::general_temp_param_table != NULL) {
-			delete HydTemp_Model::general_temp_param_table;
-			HydTemp_Model::general_temp_param_table = NULL;
-		}
-		//close append tables
-		HydTemp_Profile::close_table();
+	
+	if (HydTemp_Model::general_temp_param_table != NULL) {
+		delete HydTemp_Model::general_temp_param_table;
+		HydTemp_Model::general_temp_param_table = NULL;
 	}
+	//close append tables
+	HydTemp_Profile::close_table();
+	
 }
 //Select and count the number of relevant temerature river models in a database table (static)
 int HydTemp_Model::select_relevant_model_database(QSqlTableModel *results, const _sys_system_id id, const bool with_output){

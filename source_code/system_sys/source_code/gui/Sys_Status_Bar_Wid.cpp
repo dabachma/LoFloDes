@@ -5,8 +5,6 @@
 Sys_Status_Bar_Wid::Sys_Status_Bar_Wid(void){
 	this->setupUi(this);
 	string buff;
-	buff ="FPL-thread is not running";
-	this->label_status_fpl->setToolTip(buff.c_str());
 	buff ="HYD-thread is not running";
 	this->label_status_hyd->setToolTip(buff.c_str());
 	buff ="DAM-thread is not running";
@@ -62,23 +60,7 @@ void Sys_Status_Bar_Wid::set_system_state(const _sys_system_id id){
 	buffer<< id.area_state;
 	this->label_area_state->setText(buffer.str().c_str());
 }
-//set the fpl_thread to true "yes" or "no" (false)
-void Sys_Status_Bar_Wid::set_fplthread(const bool flag){
-	ostringstream buff;
-	if(flag==true){
-		if(this->label_status_fpl->text()=="no"){
-			buff << "FPL-thread starts at " << Sys_Output_Division::set_time();
-			this->label_status_fpl->setToolTip(buff.str().c_str());
-		}
-		this->label_status_fpl->setText("yes");
 
-	}
-	else if(flag==false){
-		this->label_status_fpl->setText("no");
-		buff << "FPL-thread finished at " << Sys_Output_Division::set_time();
-		this->label_status_fpl->setToolTip(buff.str().c_str());
-	}
-}
 //set the hyd_thread to true "yes" or "no" (false)
 void Sys_Status_Bar_Wid::set_hydthread(const bool flag, const string number){
 	ostringstream buff;

@@ -372,71 +372,71 @@ void HydTemp_Profile::input_members(QFile *profile_file, const int profile_numbe
 }
 //Transfer the river profile temperature  data to a database
 void HydTemp_Profile::transfer_profile_members2database(const int glob_prof_id, QSqlQuery *model, QSqlDatabase *ptr_database, const int rv_number) {
-	if (Sys_Project::get_project_type() == _sys_project_type::proj_hyd_temp) {
-		//the table is set (the name and the column names) and allocated
-		try {
-			HydTemp_Profile::set_profile_table(ptr_database);
-		}
-		catch (Error msg) {
-			throw msg;
-		}
-		this->glob_prof_id = glob_prof_id;
-		//set the query via a query string
-
-
-		ostringstream query_string;
-		query_string << "INSERT INTO  " << HydTemp_Profile::profile_table->get_table_name();
-		query_string << " ( ";
-		query_string << HydTemp_Profile::profile_table->get_column_name(hyd_label::profdata_rvno) << " , ";
-		query_string << HydTemp_Profile::profile_table->get_column_name(hyd_label::profdata_name) << " , ";
-		query_string << HydTemp_Profile::profile_table->get_column_name(hyd_label::profdata_init) << " , ";
-		query_string << HydTemp_Profile::profile_table->get_column_name(hyd_label::profdata_prof_id) << " , ";
-		query_string << HydTemp_Profile::profile_table->get_column_name(hyd_label::profdata_glob_id) << " , ";
-		query_string << HydTemp_Profile::profile_table->get_column_name(label::areastate_id) << " , ";
-		query_string << HydTemp_Profile::profile_table->get_column_name(label::measure_id) << " , ";
-		query_string << HydTemp_Profile::profile_table->get_column_name(label::applied_flag) << " ) ";
-
-		query_string << " VALUES ( ";
-		query_string << rv_number << " , ";
-		query_string << "'" << this->name << "' , ";
-		query_string << FORMAT_FIXED_REAL << P(15);
-		query_string << this->init_condition << " , ";
-		query_string << this->profile_number << " , ";
-		query_string << glob_prof_id << " , ";
-
-
-		query_string << this->system_id.area_state << " , ";
-		query_string << this->system_id.measure_nr << " , ";
-		query_string << "true" << " ) ";
-
-
-
-		Data_Base::database_request(model, query_string.str(), ptr_database);
-
-		if (model->lastError().isValid()) {
-			Warning msg = this->set_warning(2);
-			ostringstream info;
-			info << "Table Name                : " << HydTemp_Profile::profile_table->get_table_name() << endl;
-			info << "Table error info          : " << model->lastError().text().toStdString() << endl;
-			info << "Profile number            : " << this->profile_number << endl;
-			info << "Profile name              : " << this->name << endl;
-			msg.make_second_info(info.str());
-			msg.output_msg(2);
-		}
-
-		try {
-			//boundary condition
-			this->transfer_boundary_data2database(ptr_database, glob_prof_id);
-		}
-		catch (Error msg) {
-			ostringstream info;
-			info << "Profile number            : " << this->profile_number << endl;
-			info << "Profile name              : " << this->name << endl;
-			msg.make_second_info(info.str());
-			throw msg;
-		}
-
+	
+	//the table is set (the name and the column names) and allocated
+	try {
+		HydTemp_Profile::set_profile_table(ptr_database);
 	}
+	catch (Error msg) {
+		throw msg;
+	}
+	this->glob_prof_id = glob_prof_id;
+	//set the query via a query string
+
+
+	ostringstream query_string;
+	query_string << "INSERT INTO  " << HydTemp_Profile::profile_table->get_table_name();
+	query_string << " ( ";
+	query_string << HydTemp_Profile::profile_table->get_column_name(hyd_label::profdata_rvno) << " , ";
+	query_string << HydTemp_Profile::profile_table->get_column_name(hyd_label::profdata_name) << " , ";
+	query_string << HydTemp_Profile::profile_table->get_column_name(hyd_label::profdata_init) << " , ";
+	query_string << HydTemp_Profile::profile_table->get_column_name(hyd_label::profdata_prof_id) << " , ";
+	query_string << HydTemp_Profile::profile_table->get_column_name(hyd_label::profdata_glob_id) << " , ";
+	query_string << HydTemp_Profile::profile_table->get_column_name(label::areastate_id) << " , ";
+	query_string << HydTemp_Profile::profile_table->get_column_name(label::measure_id) << " , ";
+	query_string << HydTemp_Profile::profile_table->get_column_name(label::applied_flag) << " ) ";
+
+	query_string << " VALUES ( ";
+	query_string << rv_number << " , ";
+	query_string << "'" << this->name << "' , ";
+	query_string << FORMAT_FIXED_REAL << P(15);
+	query_string << this->init_condition << " , ";
+	query_string << this->profile_number << " , ";
+	query_string << glob_prof_id << " , ";
+
+
+	query_string << this->system_id.area_state << " , ";
+	query_string << this->system_id.measure_nr << " , ";
+	query_string << "true" << " ) ";
+
+
+
+	Data_Base::database_request(model, query_string.str(), ptr_database);
+
+	if (model->lastError().isValid()) {
+		Warning msg = this->set_warning(2);
+		ostringstream info;
+		info << "Table Name                : " << HydTemp_Profile::profile_table->get_table_name() << endl;
+		info << "Table error info          : " << model->lastError().text().toStdString() << endl;
+		info << "Profile number            : " << this->profile_number << endl;
+		info << "Profile name              : " << this->name << endl;
+		msg.make_second_info(info.str());
+		msg.output_msg(2);
+	}
+
+	try {
+		//boundary condition
+		this->transfer_boundary_data2database(ptr_database, glob_prof_id);
+	}
+	catch (Error msg) {
+		ostringstream info;
+		info << "Profile number            : " << this->profile_number << endl;
+		info << "Profile name              : " << this->name << endl;
+		msg.make_second_info(info.str());
+		throw msg;
+	}
+
+	
 }
 //Transfer the river profile boundary data of an hydraulc boundary scenario to a database
 void HydTemp_Profile::transfer_hydraulic_boundary_sz2database(QSqlDatabase *ptr_database, const int rv_number){
@@ -523,34 +523,34 @@ void HydTemp_Profile::transfer_hydraulic_boundary_sz2database(QSqlDatabase *ptr_
 }
 //Input the river profile temperature data with the index from database selection
 void HydTemp_Profile::input_members_per_database(const int index, const QSqlQueryModel *query_result, QSqlDatabase *ptr_database) {
-	if (Sys_Project::get_project_type() == _sys_project_type::proj_hyd_temp) {
-		try {
-			//set the river profile number
-			this->profile_number = query_result->record(index).value((HydTemp_Profile::profile_table->get_column_name(hyd_label::profdata_prof_id)).c_str()).toInt();
+	
+	try {
+		//set the river profile number
+		this->profile_number = query_result->record(index).value((HydTemp_Profile::profile_table->get_column_name(hyd_label::profdata_prof_id)).c_str()).toInt();
 
-			//read out the results of the request for this index
-			this->glob_prof_id = query_result->record(index).value((HydTemp_Profile::profile_table->get_column_name(hyd_label::profdata_glob_id)).c_str()).toInt();
-			//name
-			this->name = query_result->record(index).value((HydTemp_Profile::profile_table->get_column_name(hyd_label::profdata_name)).c_str()).toString().toStdString();
-			//init-condition
-			this->init_condition = query_result->record(index).value((HydTemp_Profile::profile_table->get_column_name(hyd_label::profdata_init)).c_str()).toDouble();
-
-
-			//read in the appending tables
-			//boundary data
-			this->input_boundary_data_per_database(index, ptr_database, this->glob_prof_id);
+		//read out the results of the request for this index
+		this->glob_prof_id = query_result->record(index).value((HydTemp_Profile::profile_table->get_column_name(hyd_label::profdata_glob_id)).c_str()).toInt();
+		//name
+		this->name = query_result->record(index).value((HydTemp_Profile::profile_table->get_column_name(hyd_label::profdata_name)).c_str()).toString().toStdString();
+		//init-condition
+		this->init_condition = query_result->record(index).value((HydTemp_Profile::profile_table->get_column_name(hyd_label::profdata_init)).c_str()).toDouble();
 
 
-		}
-		catch (Error msg) {
-			ostringstream info;
-			info << "Profile number            : " << this->profile_number << endl;
-			info << "Profile name              : " << this->name << endl;
-			msg.make_second_info(info.str());
-			throw msg;
-		}
+		//read in the appending tables
+		//boundary data
+		this->input_boundary_data_per_database(index, ptr_database, this->glob_prof_id);
+
 
 	}
+	catch (Error msg) {
+		ostringstream info;
+		info << "Profile number            : " << this->profile_number << endl;
+		info << "Profile name              : " << this->name << endl;
+		msg.make_second_info(info.str());
+		throw msg;
+	}
+
+	
 
 
 }
@@ -804,161 +804,161 @@ int HydTemp_Profile::select_relevant_profile_in_database(QSqlQueryModel *query_r
 }
 //Set the database table for the temperature  profile data of the river model: it sets the table name and the name of the columns and allocate them (static)
 void HydTemp_Profile::set_profile_table(QSqlDatabase *ptr_database){
-	if (Sys_Project::get_project_type() == _sys_project_type::proj_hyd_temp) {
-		if (HydTemp_Profile::profile_table == NULL) {
-			//make specific input for this class
-			const string tab_id_name = hyd_label::tab_tempprof;
+	
+	if (HydTemp_Profile::profile_table == NULL) {
+		//make specific input for this class
+		const string tab_id_name = hyd_label::tab_tempprof;
 
-			string tab_id_col[9];
-			tab_id_col[0] = hyd_label::profdata_rvno;
-			tab_id_col[1] = hyd_label::profdata_name;
-			tab_id_col[2] = hyd_label::profdata_init;
-			tab_id_col[3] = hyd_label::profdata_prof_id;
-			tab_id_col[4] = hyd_label::profdata_glob_id;
-			tab_id_col[5] = label::description;
-			tab_id_col[6] = label::areastate_id;
-			tab_id_col[7] = label::measure_id;
-			tab_id_col[8] = label::applied_flag;
+		string tab_id_col[9];
+		tab_id_col[0] = hyd_label::profdata_rvno;
+		tab_id_col[1] = hyd_label::profdata_name;
+		tab_id_col[2] = hyd_label::profdata_init;
+		tab_id_col[3] = hyd_label::profdata_prof_id;
+		tab_id_col[4] = hyd_label::profdata_glob_id;
+		tab_id_col[5] = label::description;
+		tab_id_col[6] = label::areastate_id;
+		tab_id_col[7] = label::measure_id;
+		tab_id_col[8] = label::applied_flag;
 
-			try {
-				HydTemp_Profile::profile_table = new Tables(tab_id_name, tab_id_col, sizeof(tab_id_col) / sizeof(tab_id_col[0]));
-				HydTemp_Profile::profile_table->set_name(ptr_database, _sys_table_type::hyd);
-			}
-			catch (bad_alloc& t) {
-				Error msg;
-				msg.set_msg("HydTemp_Profile::set_profile_table(QSqlDatabase *ptr_database)", "Can not allocate the memory", "Check the memory", 10, false);
-				ostringstream info;
-				info << "Info bad alloc: " << t.what() << endl;
-				msg.make_second_info(info.str());
-				throw msg;
-			}
-			catch (Error msg) {
-				HydTemp_Profile::close_profile_table();
-				throw msg;
-			}
+		try {
+			HydTemp_Profile::profile_table = new Tables(tab_id_name, tab_id_col, sizeof(tab_id_col) / sizeof(tab_id_col[0]));
+			HydTemp_Profile::profile_table->set_name(ptr_database, _sys_table_type::hyd);
+		}
+		catch (bad_alloc& t) {
+			Error msg;
+			msg.set_msg("HydTemp_Profile::set_profile_table(QSqlDatabase *ptr_database)", "Can not allocate the memory", "Check the memory", 10, false);
+			ostringstream info;
+			info << "Info bad alloc: " << t.what() << endl;
+			msg.make_second_info(info.str());
+			throw msg;
+		}
+		catch (Error msg) {
+			HydTemp_Profile::close_profile_table();
+			throw msg;
 		}
 	}
+	
 }
 //Set the database table for the boundary profile data: it sets the table name and the name of the columns and allocate them (static)
 void HydTemp_Profile::set_profile_boundary_table(QSqlDatabase *ptr_database){
-	if (Sys_Project::get_project_type() == _sys_project_type::proj_hyd_temp) {
-		if (HydTemp_Profile::boundary_table == NULL) {
-			//make specific input for this class
-			const string tab_id_name = hyd_label::tab_tempprof_bound;
 
-			string tab_id_col[9];
-			tab_id_col[0] = hyd_label::profdata_glob_id;
-			tab_id_col[1] = label::areastate_id;
-			tab_id_col[2] = label::measure_id;
-			tab_id_col[3] = hyd_label::sz_bound_id;
-			tab_id_col[4] = hyd_label::bounddata_stat;
-			tab_id_col[5] = hyd_label::bounddata_value;
-			tab_id_col[6] = hyd_label::bounddata_type;
-			tab_id_col[7] = hyd_label::bounddata_name;
-			tab_id_col[8] = label::applied_flag;
+	if (HydTemp_Profile::boundary_table == NULL) {
+		//make specific input for this class
+		const string tab_id_name = hyd_label::tab_tempprof_bound;
 
-			try {
-				HydTemp_Profile::boundary_table = new Tables(tab_id_name, tab_id_col, sizeof(tab_id_col) / sizeof(tab_id_col[0]));
-				HydTemp_Profile::boundary_table->set_name(ptr_database, _sys_table_type::hyd);
-			}
-			catch (bad_alloc& t) {
-				Error msg;
-				msg.set_msg("HydTemp_Profile::set_profile_boundary_table(QSqlDatabase *ptr_database)", "Can not allocate the memory", "Check the memory", 10, false);
-				ostringstream info;
-				info << "Info bad alloc: " << t.what() << endl;
-				msg.make_second_info(info.str());
-				throw msg;
-			}
-			catch (Error msg) {
-				HydTemp_Profile::close_boundary_table();
-				throw msg;
-			}
+		string tab_id_col[9];
+		tab_id_col[0] = hyd_label::profdata_glob_id;
+		tab_id_col[1] = label::areastate_id;
+		tab_id_col[2] = label::measure_id;
+		tab_id_col[3] = hyd_label::sz_bound_id;
+		tab_id_col[4] = hyd_label::bounddata_stat;
+		tab_id_col[5] = hyd_label::bounddata_value;
+		tab_id_col[6] = hyd_label::bounddata_type;
+		tab_id_col[7] = hyd_label::bounddata_name;
+		tab_id_col[8] = label::applied_flag;
+
+		try {
+			HydTemp_Profile::boundary_table = new Tables(tab_id_name, tab_id_col, sizeof(tab_id_col) / sizeof(tab_id_col[0]));
+			HydTemp_Profile::boundary_table->set_name(ptr_database, _sys_table_type::hyd);
+		}
+		catch (bad_alloc& t) {
+			Error msg;
+			msg.set_msg("HydTemp_Profile::set_profile_boundary_table(QSqlDatabase *ptr_database)", "Can not allocate the memory", "Check the memory", 10, false);
+			ostringstream info;
+			info << "Info bad alloc: " << t.what() << endl;
+			msg.make_second_info(info.str());
+			throw msg;
+		}
+		catch (Error msg) {
+			HydTemp_Profile::close_boundary_table();
+			throw msg;
 		}
 	}
+	
 }
 //Create the database table for the profile data of the temperature  model (static)
 void HydTemp_Profile::create_profile_table(QSqlDatabase *ptr_database){
-	if (Sys_Project::get_project_type() == _sys_project_type::proj_hyd_temp) {
-		if (HydTemp_Profile::profile_table == NULL) {
-			ostringstream cout;
-			cout << "Create temperature profile database table..." << endl;
-			Sys_Common_Output::output_hyd->output_txt(&cout);
-			//make specific input for this class
-			const string tab_name = hyd_label::tab_tempprof;
-			const int num_col = 9;
-			_Sys_data_tab_column tab_col[num_col];
-			//init
-			for (int i = 0; i < num_col; i++) {
-				tab_col[i].key_flag = false;
-				tab_col[i].unsigned_flag = false;
-				tab_col[i].primary_key_flag = false;
-			}
 
-			tab_col[0].name = hyd_label::profdata_glob_id;
-			tab_col[0].type = sys_label::tab_col_type_int;
-			tab_col[0].unsigned_flag = true;
-			tab_col[0].primary_key_flag = true;
-
-			tab_col[1].name = hyd_label::profdata_rvno;
-			tab_col[1].type = sys_label::tab_col_type_int;
-			tab_col[1].unsigned_flag = true;
-			tab_col[1].key_flag = true;
-
-			tab_col[2].name = hyd_label::profdata_prof_id;
-			tab_col[2].type = sys_label::tab_col_type_int;
-			tab_col[2].unsigned_flag = true;
-
-			tab_col[3].name = label::areastate_id;
-			tab_col[3].type = sys_label::tab_col_type_int;
-			tab_col[3].unsigned_flag = true;
-			tab_col[3].key_flag = true;
-
-			tab_col[4].name = label::measure_id;
-			tab_col[4].type = sys_label::tab_col_type_int;
-			tab_col[4].unsigned_flag = true;
-			tab_col[4].key_flag = true;
-
-			tab_col[5].name = label::applied_flag;
-			tab_col[5].type = sys_label::tab_col_type_bool;
-			tab_col[5].default_value = "true";
-			tab_col[5].key_flag = true;
-
-			tab_col[6].name = hyd_label::profdata_name;
-			tab_col[6].type = sys_label::tab_col_type_string;
-
-			tab_col[7].name = hyd_label::profdata_init;
-			tab_col[7].type = sys_label::tab_col_type_double;
-			tab_col[7].unsigned_flag = true;
-			tab_col[7].default_value = "0";
-
-
-			tab_col[8].name = label::description;
-			tab_col[8].type = sys_label::tab_col_type_string;
-
-
-			try {
-				HydTemp_Profile::profile_table = new Tables();
-				if (HydTemp_Profile::profile_table->create_non_existing_tables(tab_name, tab_col, num_col, ptr_database, _sys_table_type::hyd) == false) {
-					cout << " Table exists" << endl;
-					Sys_Common_Output::output_hyd->output_txt(&cout);
-				};
-			}
-			catch (bad_alloc& t) {
-				Error msg;
-				msg.set_msg("HydTemp_Profile::create_profile_table(QSqlDatabase *ptr_database)", "Can not allocate the memory", "Check the memory", 10, false);
-				ostringstream info;
-				info << "Info bad alloc: " << t.what() << endl;
-				msg.make_second_info(info.str());
-				throw msg;
-			}
-			catch (Error msg) {
-				HydTemp_Profile::close_profile_table();
-				throw msg;
-			}
-
-			HydTemp_Profile::close_profile_table();
+	if (HydTemp_Profile::profile_table == NULL) {
+		ostringstream cout;
+		cout << "Create temperature profile database table..." << endl;
+		Sys_Common_Output::output_hyd->output_txt(&cout);
+		//make specific input for this class
+		const string tab_name = hyd_label::tab_tempprof;
+		const int num_col = 9;
+		_Sys_data_tab_column tab_col[num_col];
+		//init
+		for (int i = 0; i < num_col; i++) {
+			tab_col[i].key_flag = false;
+			tab_col[i].unsigned_flag = false;
+			tab_col[i].primary_key_flag = false;
 		}
+
+		tab_col[0].name = hyd_label::profdata_glob_id;
+		tab_col[0].type = sys_label::tab_col_type_int;
+		tab_col[0].unsigned_flag = true;
+		tab_col[0].primary_key_flag = true;
+
+		tab_col[1].name = hyd_label::profdata_rvno;
+		tab_col[1].type = sys_label::tab_col_type_int;
+		tab_col[1].unsigned_flag = true;
+		tab_col[1].key_flag = true;
+
+		tab_col[2].name = hyd_label::profdata_prof_id;
+		tab_col[2].type = sys_label::tab_col_type_int;
+		tab_col[2].unsigned_flag = true;
+
+		tab_col[3].name = label::areastate_id;
+		tab_col[3].type = sys_label::tab_col_type_int;
+		tab_col[3].unsigned_flag = true;
+		tab_col[3].key_flag = true;
+
+		tab_col[4].name = label::measure_id;
+		tab_col[4].type = sys_label::tab_col_type_int;
+		tab_col[4].unsigned_flag = true;
+		tab_col[4].key_flag = true;
+
+		tab_col[5].name = label::applied_flag;
+		tab_col[5].type = sys_label::tab_col_type_bool;
+		tab_col[5].default_value = "true";
+		tab_col[5].key_flag = true;
+
+		tab_col[6].name = hyd_label::profdata_name;
+		tab_col[6].type = sys_label::tab_col_type_string;
+
+		tab_col[7].name = hyd_label::profdata_init;
+		tab_col[7].type = sys_label::tab_col_type_double;
+		tab_col[7].unsigned_flag = true;
+		tab_col[7].default_value = "0";
+
+
+		tab_col[8].name = label::description;
+		tab_col[8].type = sys_label::tab_col_type_string;
+
+
+		try {
+			HydTemp_Profile::profile_table = new Tables();
+			if (HydTemp_Profile::profile_table->create_non_existing_tables(tab_name, tab_col, num_col, ptr_database, _sys_table_type::hyd) == false) {
+				cout << " Table exists" << endl;
+				Sys_Common_Output::output_hyd->output_txt(&cout);
+			};
+		}
+		catch (bad_alloc& t) {
+			Error msg;
+			msg.set_msg("HydTemp_Profile::create_profile_table(QSqlDatabase *ptr_database)", "Can not allocate the memory", "Check the memory", 10, false);
+			ostringstream info;
+			info << "Info bad alloc: " << t.what() << endl;
+			msg.make_second_info(info.str());
+			throw msg;
+		}
+		catch (Error msg) {
+			HydTemp_Profile::close_profile_table();
+			throw msg;
+		}
+
+		HydTemp_Profile::close_profile_table();
 	}
+	
 }
 //Get the maximum value of the global index of the profiles in database table (static)
 int HydTemp_Profile::get_max_glob_id_prof_table(QSqlDatabase *ptr_database){
@@ -977,310 +977,310 @@ int HydTemp_Profile::get_max_glob_id_prof_table(QSqlDatabase *ptr_database){
 }
 //Create the database table for the temperature  boundary profile data (static)
 void HydTemp_Profile::create_profile_boundary_table(QSqlDatabase *ptr_database){
-	if (Sys_Project::get_project_type() == _sys_project_type::proj_hyd_temp) {
-		if (HydTemp_Profile::boundary_table == NULL) {
-			ostringstream cout;
-			cout << "Create temperature profile boundary database table..." << endl;
-			Sys_Common_Output::output_hyd->output_txt(&cout);
-			//make specific input for this class
-			const string tab_name = hyd_label::tab_tempprof_bound;
-			const int num_col = 9;
-			_Sys_data_tab_column tab_col[num_col];
-			//init
-			for (int i = 0; i < num_col; i++) {
-				tab_col[i].key_flag = false;
-				tab_col[i].unsigned_flag = false;
-				tab_col[i].primary_key_flag = false;
-			}
-			tab_col[0].name = hyd_label::profdata_glob_id;
-			tab_col[0].type = sys_label::tab_col_type_int;
-			tab_col[0].unsigned_flag = true;
-			tab_col[0].key_flag = true;
-
-			tab_col[1].name = label::areastate_id;
-			tab_col[1].type = sys_label::tab_col_type_int;
-			tab_col[1].unsigned_flag = true;
-			tab_col[1].default_value = "0";
-			tab_col[1].key_flag = true;
-
-			tab_col[2].name = label::measure_id;
-			tab_col[2].type = sys_label::tab_col_type_int;
-			tab_col[2].unsigned_flag = true;
-			tab_col[2].default_value = "0";
-			tab_col[2].key_flag = true;
-
-			tab_col[3].name = label::applied_flag;
-			tab_col[3].type = sys_label::tab_col_type_bool;
-			tab_col[3].default_value = "true";
-			tab_col[3].key_flag = true;
-
-			tab_col[4].name = hyd_label::sz_bound_id;
-			tab_col[4].type = sys_label::tab_col_type_int;
-			tab_col[4].unsigned_flag = true;
-			tab_col[4].default_value = "0";
-			tab_col[4].key_flag = true;
-
-			tab_col[5].name = hyd_label::bounddata_name;
-			tab_col[5].type = sys_label::tab_col_type_string;
-
-			tab_col[6].name = hyd_label::bounddata_stat;
-			tab_col[6].type = sys_label::tab_col_type_bool;
-			tab_col[6].default_value = "false";
-
-			tab_col[7].name = hyd_label::bounddata_value;
-			tab_col[7].type = sys_label::tab_col_type_double;
-			tab_col[7].default_value = "0";
-
-			tab_col[8].name = hyd_label::bounddata_type;
-			tab_col[8].type = sys_label::tab_col_type_string;
-
-
-
-			try {
-				HydTemp_Profile::boundary_table = new Tables();
-				if (HydTemp_Profile::boundary_table->create_non_existing_tables(tab_name, tab_col, num_col, ptr_database, _sys_table_type::hyd) == false) {
-					cout << " Table exists" << endl;
-					Sys_Common_Output::output_hyd->output_txt(&cout);
-				};
-			}
-			catch (bad_alloc& t) {
-				Error msg;
-				msg.set_msg("HydTemp_Profile::create_profile_boundary_table(QSqlDatabase *ptr_database)", "Can not allocate the memory", "Check the memory", 10, false);
-				ostringstream info;
-				info << "Info bad alloc: " << t.what() << endl;
-				msg.make_second_info(info.str());
-				throw msg;
-			}
-			catch (Error msg) {
-				HydTemp_Profile::close_boundary_table();
-				throw msg;
-			}
-
-			HydTemp_Profile::close_boundary_table();
+	
+	if (HydTemp_Profile::boundary_table == NULL) {
+		ostringstream cout;
+		cout << "Create temperature profile boundary database table..." << endl;
+		Sys_Common_Output::output_hyd->output_txt(&cout);
+		//make specific input for this class
+		const string tab_name = hyd_label::tab_tempprof_bound;
+		const int num_col = 9;
+		_Sys_data_tab_column tab_col[num_col];
+		//init
+		for (int i = 0; i < num_col; i++) {
+			tab_col[i].key_flag = false;
+			tab_col[i].unsigned_flag = false;
+			tab_col[i].primary_key_flag = false;
 		}
+		tab_col[0].name = hyd_label::profdata_glob_id;
+		tab_col[0].type = sys_label::tab_col_type_int;
+		tab_col[0].unsigned_flag = true;
+		tab_col[0].key_flag = true;
+
+		tab_col[1].name = label::areastate_id;
+		tab_col[1].type = sys_label::tab_col_type_int;
+		tab_col[1].unsigned_flag = true;
+		tab_col[1].default_value = "0";
+		tab_col[1].key_flag = true;
+
+		tab_col[2].name = label::measure_id;
+		tab_col[2].type = sys_label::tab_col_type_int;
+		tab_col[2].unsigned_flag = true;
+		tab_col[2].default_value = "0";
+		tab_col[2].key_flag = true;
+
+		tab_col[3].name = label::applied_flag;
+		tab_col[3].type = sys_label::tab_col_type_bool;
+		tab_col[3].default_value = "true";
+		tab_col[3].key_flag = true;
+
+		tab_col[4].name = hyd_label::sz_bound_id;
+		tab_col[4].type = sys_label::tab_col_type_int;
+		tab_col[4].unsigned_flag = true;
+		tab_col[4].default_value = "0";
+		tab_col[4].key_flag = true;
+
+		tab_col[5].name = hyd_label::bounddata_name;
+		tab_col[5].type = sys_label::tab_col_type_string;
+
+		tab_col[6].name = hyd_label::bounddata_stat;
+		tab_col[6].type = sys_label::tab_col_type_bool;
+		tab_col[6].default_value = "false";
+
+		tab_col[7].name = hyd_label::bounddata_value;
+		tab_col[7].type = sys_label::tab_col_type_double;
+		tab_col[7].default_value = "0";
+
+		tab_col[8].name = hyd_label::bounddata_type;
+		tab_col[8].type = sys_label::tab_col_type_string;
+
+
+
+		try {
+			HydTemp_Profile::boundary_table = new Tables();
+			if (HydTemp_Profile::boundary_table->create_non_existing_tables(tab_name, tab_col, num_col, ptr_database, _sys_table_type::hyd) == false) {
+				cout << " Table exists" << endl;
+				Sys_Common_Output::output_hyd->output_txt(&cout);
+			};
+		}
+		catch (bad_alloc& t) {
+			Error msg;
+			msg.set_msg("HydTemp_Profile::create_profile_boundary_table(QSqlDatabase *ptr_database)", "Can not allocate the memory", "Check the memory", 10, false);
+			ostringstream info;
+			info << "Info bad alloc: " << t.what() << endl;
+			msg.make_second_info(info.str());
+			throw msg;
+		}
+		catch (Error msg) {
+			HydTemp_Profile::close_boundary_table();
+			throw msg;
+		}
+
+		HydTemp_Profile::close_boundary_table();
 	}
+	
 }
 //Create the database view for the connection of boundary ids and theriver profiles (static)
 void HydTemp_Profile::create_bound2profile_view(QSqlDatabase *ptr_database) {
 
-	if (Sys_Project::get_project_type() == _sys_project_type::proj_hyd_temp) {
 
-		//Set tables
+
+	//Set tables
+	ostringstream cout;
+	//the table is set (the name and the column names) and allocated
+	try {
+		_Hyd_River_Profile::set_profile_table(ptr_database);
+		HydTemp_Profile::set_profile_boundary_table(ptr_database);
+	}
+	catch (Error msg) {
+		throw msg;
+	}
+
+
+	cout << "Create database view to river profile element with temperature boundary conditions..." << endl;
+	Sys_Common_Output::output_hyd->output_txt(&cout);
+	//make specific input for this class
+	const string view_name = hyd_label::view_rvprofile2tempbound;
+
+	QSqlQueryModel query;
+
+	ostringstream query_string;
+	query_string << "CREATE VIEW ";
+	query_string << Sys_Project::get_complete_project_database_schemata_name() << "." << hyd_label::view_rvprofile2tempbound;
+	query_string << " AS SELECT ";
+	query_string << "row_number() over() AS Id" << " , ";
+	query_string << _Hyd_River_Profile::profile_table->get_column_name_table(hyd_label::profdata_glob_id) << " , ";
+	query_string << _Hyd_River_Profile::profile_table->get_column_name_table(hyd_label::profdata_rvno) << " , ";
+	query_string << HydTemp_Profile::boundary_table->get_column_name_table(label::areastate_id) << " , ";
+	query_string << HydTemp_Profile::boundary_table->get_column_name_table(label::measure_id) << " , ";
+	query_string << HydTemp_Profile::boundary_table->get_column_name_table(hyd_label::sz_bound_id) << " , ";
+	query_string << HydTemp_Profile::boundary_table->get_column_name_table(label::applied_flag) << " , ";
+
+	query_string << HydTemp_Profile::boundary_table->get_column_name_table(hyd_label::bounddata_name) << " , ";
+	query_string << HydTemp_Profile::boundary_table->get_column_name_table(hyd_label::bounddata_stat) << " , ";
+	query_string << HydTemp_Profile::boundary_table->get_column_name_table(hyd_label::bounddata_value) << " , ";
+	query_string << HydTemp_Profile::boundary_table->get_column_name_table(hyd_label::bounddata_type) << " , ";
+
+	query_string << _Hyd_River_Profile::profile_table->get_column_name_table(hyd_label::profdata_polyline) << "  ";
+
+	query_string << " FROM ";
+	query_string << HydTemp_Profile::boundary_table->get_table_name() << "  ";
+	query_string << " JOIN ";
+	query_string << _Hyd_River_Profile::profile_table->get_table_name() << "  ";
+	query_string << " ON ";
+	query_string << HydTemp_Profile::boundary_table->get_column_name_table(hyd_label::profdata_glob_id) << "  ";
+	query_string << " = ";
+	query_string << _Hyd_River_Profile::profile_table->get_column_name_table(hyd_label::profdata_glob_id) << "  ";
+
+
+	Data_Base::database_request(&query, query_string.str(), ptr_database);
+	if (query.lastError().isValid() == true) {
+		Error msg;
+		msg.set_msg("create_bound2profile_view(QSqlDatabase *ptr_database)", "Invalid database request", "Check the database", 2, false);
+		ostringstream info;
+		info << "View Name      : " << hyd_label::view_rvprofile2bound << endl;
+		info << "View error info: " << query.lastError().text().toStdString() << endl;
+		msg.make_second_info(info.str());
+		throw msg;
+	}
+
+	
+}
+//Check if the view exists already (static)
+bool HydTemp_Profile::check_bound2profile_view_exists(QSqlDatabase *ptr_database) {
+
+	QSqlQueryModel query;
+
+	ostringstream query_string;
+	query_string << "SELECT EXISTS ( SELECT * FROM information_schema.tables ";
+	query_string << "WHERE table_schema ='" << Sys_Project::get_complete_project_database_schemata_name() << "' ";
+	query_string << "AND table_name ='" << functions::convert_string2lower_case(hyd_label::view_rvprofile2tempbound) << "' )";
+
+
+	Data_Base::database_request(&query, query_string.str(), ptr_database);
+	if (query.lastError().isValid() == true) {
+		Error msg;
+		msg.set_msg("HydTemp_Profile::check_bound2profile_view_exists(QSqlDatabase *ptr_database)", "Invalid database request", "Check the database", 2, false);
+		ostringstream info;
+		info << "View Name      : " << hyd_label::view_rvprofile2tempbound << endl;
+		info << "View error info: " << query.lastError().text().toStdString() << endl;
+		msg.make_second_info(info.str());
+		throw msg;
+	}
+
+
+	if (query.rowCount() > 0) {
+		return true;
+	}
+	
+return false;
+
+}
+//Create the database table for the temperature results of an hydraulic simulation for the river profiles (static)
+void HydTemp_Profile::create_erg_table(QSqlDatabase *ptr_database){
+	
+	if (HydTemp_Profile::erg_table == NULL) {
 		ostringstream cout;
+		cout << "Create temperature profile result database table..." << endl;
+		Sys_Common_Output::output_hyd->output_txt(&cout);
+		//make specific input for this class
+		const string tab_name = hyd_label::tab_tempprof_erg_max;
+		const int num_col = 14;
+		_Sys_data_tab_column tab_col[num_col];
+		//init
+		for (int i = 0; i < num_col; i++) {
+			tab_col[i].key_flag = false;
+			tab_col[i].unsigned_flag = false;
+			tab_col[i].primary_key_flag = false;
+		}
+
+		tab_col[0].name = label::glob_id;
+		tab_col[0].type = sys_label::tab_col_type_int;
+		tab_col[0].unsigned_flag = true;
+		tab_col[0].primary_key_flag = true;
+
+		tab_col[1].name = hyd_label::profdata_rvno;
+		tab_col[1].type = sys_label::tab_col_type_int;
+		tab_col[1].unsigned_flag = true;
+		tab_col[1].key_flag = true;
+
+		tab_col[2].name = hyd_label::profdata_prof_id;
+		tab_col[2].type = sys_label::tab_col_type_int;
+		tab_col[2].unsigned_flag = true;
+		tab_col[2].key_flag = true;
+
+		tab_col[3].name = label::areastate_id;
+		tab_col[3].type = sys_label::tab_col_type_int;
+		tab_col[3].unsigned_flag = true;
+		tab_col[3].key_flag = true;
+
+		tab_col[4].name = label::measure_id;
+		tab_col[4].type = sys_label::tab_col_type_int;
+		tab_col[4].unsigned_flag = true;
+		tab_col[4].key_flag = true;
+
+		tab_col[5].name = label::applied_flag;
+		tab_col[5].type = sys_label::tab_col_type_bool;
+		tab_col[5].default_value = "true";
+		tab_col[5].key_flag = true;
+
+		tab_col[6].name = hyd_label::sz_bound_id;
+		tab_col[6].type = sys_label::tab_col_type_int;
+		tab_col[6].unsigned_flag = true;
+		tab_col[6].key_flag = true;
+
+		tab_col[7].name = risk_label::sz_break_id;
+		tab_col[7].type = sys_label::tab_col_type_string;
+		tab_col[7].key_flag = true;
+
+		tab_col[8].name = hyd_label::proferg_T_max;
+		tab_col[8].type = sys_label::tab_col_type_double;
+		tab_col[8].unsigned_flag = true;
+		tab_col[8].default_value = "0.0";
+
+		tab_col[9].name = hyd_label::proferg_t_T_max;
+		tab_col[9].type = sys_label::tab_col_type_double;
+		tab_col[9].unsigned_flag = true;
+		tab_col[9].default_value = "0.0";
+
+		tab_col[10].name = hyd_label::proferg_T_min;
+		tab_col[10].type = sys_label::tab_col_type_double;
+		tab_col[10].unsigned_flag = true;
+		tab_col[10].default_value = "0.0";
+
+		tab_col[11].name = hyd_label::proferg_t_T_min;
+		tab_col[11].type = sys_label::tab_col_type_double;
+		tab_col[11].unsigned_flag = true;
+		tab_col[11].default_value = "0.0";
+
+		tab_col[12].name = hyd_label::proferg_T_av;
+		tab_col[12].type = sys_label::tab_col_type_double;
+		tab_col[12].unsigned_flag = true;
+		tab_col[12].default_value = "0.0";
+
+
+
+		tab_col[13].name = hyd_label::proferg_polygon;
+		tab_col[13].type = sys_label::tab_col_type_polygon;
+
+		try {
+			HydTemp_Profile::erg_table = new Tables();
+			if (HydTemp_Profile::erg_table->create_non_existing_tables(tab_name, tab_col, num_col, ptr_database, _sys_table_type::hyd) == false) {
+				cout << " Table exists" << endl;
+				Sys_Common_Output::output_hyd->output_txt(&cout);
+			};
+		}
+		catch (bad_alloc& t) {
+			Error msg;
+			msg.set_msg("HydTemp_Profile::create_erg_table(QSqlDatabase *ptr_database)", "Can not allocate the memory", "Check the memory", 10, false);
+			ostringstream info;
+			info << "Info bad alloc: " << t.what() << endl;
+			msg.make_second_info(info.str());
+			throw msg;
+		}
+		catch (Error msg) {
+			HydTemp_Profile::close_erg_table();
+			throw msg;
+		}
+
+		HydTemp_Profile::close_erg_table();
+
+		//make indizes
 		//the table is set (the name and the column names) and allocated
 		try {
-			_Hyd_River_Profile::set_profile_table(ptr_database);
-			HydTemp_Profile::set_profile_boundary_table(ptr_database);
+			HydTemp_Profile::set_erg_table(ptr_database);
 		}
 		catch (Error msg) {
 			throw msg;
 		}
 
 
-		cout << "Create database view to river profile element with temperature boundary conditions..." << endl;
-		Sys_Common_Output::output_hyd->output_txt(&cout);
-		//make specific input for this class
-		const string view_name = hyd_label::view_rvprofile2tempbound;
-
-		QSqlQueryModel query;
-
-		ostringstream query_string;
-		query_string << "CREATE VIEW ";
-		query_string << Sys_Project::get_complete_project_database_schemata_name() << "." << hyd_label::view_rvprofile2tempbound;
-		query_string << " AS SELECT ";
-		query_string << "row_number() over() AS Id" << " , ";
-		query_string << _Hyd_River_Profile::profile_table->get_column_name_table(hyd_label::profdata_glob_id) << " , ";
-		query_string << _Hyd_River_Profile::profile_table->get_column_name_table(hyd_label::profdata_rvno) << " , ";
-		query_string << HydTemp_Profile::boundary_table->get_column_name_table(label::areastate_id) << " , ";
-		query_string << HydTemp_Profile::boundary_table->get_column_name_table(label::measure_id) << " , ";
-		query_string << HydTemp_Profile::boundary_table->get_column_name_table(hyd_label::sz_bound_id) << " , ";
-		query_string << HydTemp_Profile::boundary_table->get_column_name_table(label::applied_flag) << " , ";
-
-		query_string << HydTemp_Profile::boundary_table->get_column_name_table(hyd_label::bounddata_name) << " , ";
-		query_string << HydTemp_Profile::boundary_table->get_column_name_table(hyd_label::bounddata_stat) << " , ";
-		query_string << HydTemp_Profile::boundary_table->get_column_name_table(hyd_label::bounddata_value) << " , ";
-		query_string << HydTemp_Profile::boundary_table->get_column_name_table(hyd_label::bounddata_type) << " , ";
-
-		query_string << _Hyd_River_Profile::profile_table->get_column_name_table(hyd_label::profdata_polyline) << "  ";
-
-		query_string << " FROM ";
-		query_string << HydTemp_Profile::boundary_table->get_table_name() << "  ";
-		query_string << " JOIN ";
-		query_string << _Hyd_River_Profile::profile_table->get_table_name() << "  ";
-		query_string << " ON ";
-		query_string << HydTemp_Profile::boundary_table->get_column_name_table(hyd_label::profdata_glob_id) << "  ";
-		query_string << " = ";
-		query_string << _Hyd_River_Profile::profile_table->get_column_name_table(hyd_label::profdata_glob_id) << "  ";
+		HydTemp_Profile::erg_table->create_spatial_index2column(ptr_database, HydTemp_Profile::erg_table->get_column_name(hyd_label::proferg_polygon));
 
 
-		Data_Base::database_request(&query, query_string.str(), ptr_database);
-		if (query.lastError().isValid() == true) {
-			Error msg;
-			msg.set_msg("create_bound2profile_view(QSqlDatabase *ptr_database)", "Invalid database request", "Check the database", 2, false);
-			ostringstream info;
-			info << "View Name      : " << hyd_label::view_rvprofile2bound << endl;
-			info << "View error info: " << query.lastError().text().toStdString() << endl;
-			msg.make_second_info(info.str());
-			throw msg;
-		}
-
+		HydTemp_Profile::close_erg_table();
 	}
-}
-//Check if the view exists already (static)
-bool HydTemp_Profile::check_bound2profile_view_exists(QSqlDatabase *ptr_database) {
-	if (Sys_Project::get_project_type() == _sys_project_type::proj_hyd_temp) {
-		QSqlQueryModel query;
-
-		ostringstream query_string;
-		query_string << "SELECT EXISTS ( SELECT * FROM information_schema.tables ";
-		query_string << "WHERE table_schema ='" << Sys_Project::get_complete_project_database_schemata_name() << "' ";
-		query_string << "AND table_name ='" << functions::convert_string2lower_case(hyd_label::view_rvprofile2tempbound) << "' )";
-
-
-		Data_Base::database_request(&query, query_string.str(), ptr_database);
-		if (query.lastError().isValid() == true) {
-			Error msg;
-			msg.set_msg("HydTemp_Profile::check_bound2profile_view_exists(QSqlDatabase *ptr_database)", "Invalid database request", "Check the database", 2, false);
-			ostringstream info;
-			info << "View Name      : " << hyd_label::view_rvprofile2tempbound << endl;
-			info << "View error info: " << query.lastError().text().toStdString() << endl;
-			msg.make_second_info(info.str());
-			throw msg;
-		}
-
-
-		if (query.rowCount() > 0) {
-			return true;
-		}
-	}
-	return false;
-
-}
-//Create the database table for the temperature results of an hydraulic simulation for the river profiles (static)
-void HydTemp_Profile::create_erg_table(QSqlDatabase *ptr_database){
-	if (Sys_Project::get_project_type() == _sys_project_type::proj_hyd_temp) {
-		if (HydTemp_Profile::erg_table == NULL) {
-			ostringstream cout;
-			cout << "Create temperature profile result database table..." << endl;
-			Sys_Common_Output::output_hyd->output_txt(&cout);
-			//make specific input for this class
-			const string tab_name = hyd_label::tab_tempprof_erg_max;
-			const int num_col = 14;
-			_Sys_data_tab_column tab_col[num_col];
-			//init
-			for (int i = 0; i < num_col; i++) {
-				tab_col[i].key_flag = false;
-				tab_col[i].unsigned_flag = false;
-				tab_col[i].primary_key_flag = false;
-			}
-
-			tab_col[0].name = label::glob_id;
-			tab_col[0].type = sys_label::tab_col_type_int;
-			tab_col[0].unsigned_flag = true;
-			tab_col[0].primary_key_flag = true;
-
-			tab_col[1].name = hyd_label::profdata_rvno;
-			tab_col[1].type = sys_label::tab_col_type_int;
-			tab_col[1].unsigned_flag = true;
-			tab_col[1].key_flag = true;
-
-			tab_col[2].name = hyd_label::profdata_prof_id;
-			tab_col[2].type = sys_label::tab_col_type_int;
-			tab_col[2].unsigned_flag = true;
-			tab_col[2].key_flag = true;
-
-			tab_col[3].name = label::areastate_id;
-			tab_col[3].type = sys_label::tab_col_type_int;
-			tab_col[3].unsigned_flag = true;
-			tab_col[3].key_flag = true;
-
-			tab_col[4].name = label::measure_id;
-			tab_col[4].type = sys_label::tab_col_type_int;
-			tab_col[4].unsigned_flag = true;
-			tab_col[4].key_flag = true;
-
-			tab_col[5].name = label::applied_flag;
-			tab_col[5].type = sys_label::tab_col_type_bool;
-			tab_col[5].default_value = "true";
-			tab_col[5].key_flag = true;
-
-			tab_col[6].name = hyd_label::sz_bound_id;
-			tab_col[6].type = sys_label::tab_col_type_int;
-			tab_col[6].unsigned_flag = true;
-			tab_col[6].key_flag = true;
-
-			tab_col[7].name = risk_label::sz_break_id;
-			tab_col[7].type = sys_label::tab_col_type_string;
-			tab_col[7].key_flag = true;
-
-			tab_col[8].name = hyd_label::proferg_T_max;
-			tab_col[8].type = sys_label::tab_col_type_double;
-			tab_col[8].unsigned_flag = true;
-			tab_col[8].default_value = "0.0";
-
-			tab_col[9].name = hyd_label::proferg_t_T_max;
-			tab_col[9].type = sys_label::tab_col_type_double;
-			tab_col[9].unsigned_flag = true;
-			tab_col[9].default_value = "0.0";
-
-			tab_col[10].name = hyd_label::proferg_T_min;
-			tab_col[10].type = sys_label::tab_col_type_double;
-			tab_col[10].unsigned_flag = true;
-			tab_col[10].default_value = "0.0";
-
-			tab_col[11].name = hyd_label::proferg_t_T_min;
-			tab_col[11].type = sys_label::tab_col_type_double;
-			tab_col[11].unsigned_flag = true;
-			tab_col[11].default_value = "0.0";
-
-			tab_col[12].name = hyd_label::proferg_T_av;
-			tab_col[12].type = sys_label::tab_col_type_double;
-			tab_col[12].unsigned_flag = true;
-			tab_col[12].default_value = "0.0";
-
-
-
-			tab_col[13].name = hyd_label::proferg_polygon;
-			tab_col[13].type = sys_label::tab_col_type_polygon;
-
-			try {
-				HydTemp_Profile::erg_table = new Tables();
-				if (HydTemp_Profile::erg_table->create_non_existing_tables(tab_name, tab_col, num_col, ptr_database, _sys_table_type::hyd) == false) {
-					cout << " Table exists" << endl;
-					Sys_Common_Output::output_hyd->output_txt(&cout);
-				};
-			}
-			catch (bad_alloc& t) {
-				Error msg;
-				msg.set_msg("HydTemp_Profile::create_erg_table(QSqlDatabase *ptr_database)", "Can not allocate the memory", "Check the memory", 10, false);
-				ostringstream info;
-				info << "Info bad alloc: " << t.what() << endl;
-				msg.make_second_info(info.str());
-				throw msg;
-			}
-			catch (Error msg) {
-				HydTemp_Profile::close_erg_table();
-				throw msg;
-			}
-
-			HydTemp_Profile::close_erg_table();
-
-			//make indizes
-			//the table is set (the name and the column names) and allocated
-			try {
-				HydTemp_Profile::set_erg_table(ptr_database);
-			}
-			catch (Error msg) {
-				throw msg;
-			}
-
-
-			HydTemp_Profile::erg_table->create_spatial_index2column(ptr_database, HydTemp_Profile::erg_table->get_column_name(hyd_label::proferg_polygon));
-
-
-			HydTemp_Profile::close_erg_table();
-		}
-	}
+	
 }
 //Close and delete the database table for the results of an hydraulic simulation the river profiles (static)
 void HydTemp_Profile::close_erg_table(void) {
@@ -1291,56 +1291,56 @@ void HydTemp_Profile::close_erg_table(void) {
 }
 //Set the database table for the results of an hydraulic simulation for the river profiles: it sets the table name and the name of the columns and allocate them (static)
 void HydTemp_Profile::set_erg_table(QSqlDatabase *ptr_database, const bool not_close){
-	if (Sys_Project::get_project_type() == _sys_project_type::proj_hyd_temp) {
-		if (HydTemp_Profile::erg_table == NULL) {
-			//make specific input for this class
-			const string tab_id_name = hyd_label::tab_tempprof_erg_max;
 
-			string tab_id_col[14];
-			tab_id_col[0] = hyd_label::profdata_rvno;
-			tab_id_col[1] = hyd_label::profdata_prof_id;
-			tab_id_col[2] = label::areastate_id;
-			tab_id_col[3] = label::measure_id;
-			tab_id_col[4] = hyd_label::sz_bound_id;
-			tab_id_col[5] = risk_label::sz_break_id;
-			tab_id_col[6] = label::glob_id;
-			tab_id_col[7] = label::applied_flag;
-			tab_id_col[8] = hyd_label::proferg_T_max;
-			tab_id_col[9] = hyd_label::proferg_t_T_max;
-			tab_id_col[10] = hyd_label::proferg_T_min;
-			tab_id_col[11] = hyd_label::proferg_t_T_min;
-			tab_id_col[12] = hyd_label::proferg_T_av;
-			tab_id_col[13] = hyd_label::proferg_polygon;
+	if (HydTemp_Profile::erg_table == NULL) {
+		//make specific input for this class
+		const string tab_id_name = hyd_label::tab_tempprof_erg_max;
 
-
+		string tab_id_col[14];
+		tab_id_col[0] = hyd_label::profdata_rvno;
+		tab_id_col[1] = hyd_label::profdata_prof_id;
+		tab_id_col[2] = label::areastate_id;
+		tab_id_col[3] = label::measure_id;
+		tab_id_col[4] = hyd_label::sz_bound_id;
+		tab_id_col[5] = risk_label::sz_break_id;
+		tab_id_col[6] = label::glob_id;
+		tab_id_col[7] = label::applied_flag;
+		tab_id_col[8] = hyd_label::proferg_T_max;
+		tab_id_col[9] = hyd_label::proferg_t_T_max;
+		tab_id_col[10] = hyd_label::proferg_T_min;
+		tab_id_col[11] = hyd_label::proferg_t_T_min;
+		tab_id_col[12] = hyd_label::proferg_T_av;
+		tab_id_col[13] = hyd_label::proferg_polygon;
 
 
 
 
-			try {
-				HydTemp_Profile::erg_table = new Tables(tab_id_name, tab_id_col, sizeof(tab_id_col) / sizeof(tab_id_col[0]));
-				HydTemp_Profile::erg_table->set_name(ptr_database, _sys_table_type::hyd);
+
+
+		try {
+			HydTemp_Profile::erg_table = new Tables(tab_id_name, tab_id_col, sizeof(tab_id_col) / sizeof(tab_id_col[0]));
+			HydTemp_Profile::erg_table->set_name(ptr_database, _sys_table_type::hyd);
+		}
+		catch (bad_alloc& t) {
+			Error msg;
+			msg.set_msg("HydTemp_Profile::set_erg_table(QSqlDatabase *ptr_database)", "Can not allocate the memory", "Check the memory", 10, false);
+			ostringstream info;
+			info << "Info bad alloc: " << t.what() << endl;
+			msg.make_second_info(info.str());
+			throw msg;
+		}
+		catch (Error msg) {
+			if (not_close == false) {
+				HydTemp_Profile::close_erg_table();
 			}
-			catch (bad_alloc& t) {
-				Error msg;
-				msg.set_msg("HydTemp_Profile::set_erg_table(QSqlDatabase *ptr_database)", "Can not allocate the memory", "Check the memory", 10, false);
-				ostringstream info;
-				info << "Info bad alloc: " << t.what() << endl;
-				msg.make_second_info(info.str());
-				throw msg;
-			}
-			catch (Error msg) {
-				if (not_close == false) {
-					HydTemp_Profile::close_erg_table();
-				}
-				throw msg;
-			}
+			throw msg;
 		}
 	}
+	
 }
 //Create the database table for the instationary results of an hydraulic simulation for the river profiles
 void HydTemp_Profile::create_erg_instat_table(QSqlDatabase *ptr_database) {
-	if (Sys_Project::get_project_type() == _sys_project_type::proj_hyd_temp) {
+	
 		if (HydTemp_Profile::erg_instat_table == NULL) {
 			ostringstream cout;
 			cout << "Create temperature profile instationary result database table..." << endl;
@@ -1478,12 +1478,12 @@ void HydTemp_Profile::create_erg_instat_table(QSqlDatabase *ptr_database) {
 
 			HydTemp_Profile::close_erg_instat_table();
 		}
-	}
+	
 
 }
 //Set the database table for the instationary results of an hydraulic simulation for the river profiles: it sets the table name and the name of the columns and allocate them
 void HydTemp_Profile::set_erg_instat_table(QSqlDatabase *ptr_database, const bool not_close) {
-	if (Sys_Project::get_project_type() == _sys_project_type::proj_hyd_temp) {
+
 		if (HydTemp_Profile::erg_instat_table == NULL) {
 			//make specific input for this class
 			const string tab_id_name = hyd_label::tab_tempprof_instat_erg_max;
@@ -1530,7 +1530,7 @@ void HydTemp_Profile::set_erg_instat_table(QSqlDatabase *ptr_database, const boo
 			}
 		}
 
-	}
+	
 }
 //Close and delete the database table for the instationary results of an hydraulic simulation the river profiles
 void HydTemp_Profile::close_erg_instat_table(void) {
@@ -2137,13 +2137,13 @@ int HydTemp_Profile::select_data_in_instat_erg_table(QSqlQueryModel *query, QSql
 //Delete all data in the database of all tables for the river profile data (static)
 void HydTemp_Profile::delete_data_in_table(QSqlDatabase *ptr_database){
 	//delete all tables
-	if (Sys_Project::get_project_type() == _sys_project_type::proj_hyd_temp) {
+	
 		HydTemp_Profile::delete_data_in_profile_table(ptr_database);
 		HydTemp_Profile::delete_data_in_boundary_table(ptr_database);
 
 		HydTemp_Profile::delete_data_in_erg_table(ptr_database);
 		HydTemp_Profile::delete_data_in_erg_instat_table(ptr_database);
-	}
+	
 
 
 }

@@ -61,11 +61,6 @@
             <string>HYDROL</string>
            </attribute>
           </widget>
-          <widget class="QWidget" name="tab_fpl_data_view">
-           <attribute name="title">
-            <string>FPL</string>
-           </attribute>
-          </widget>
           <widget class="QWidget" name="tab_hyd_data_view">
            <attribute name="title">
             <string>HYD</string>
@@ -267,83 +262,6 @@
     <addaction name="menu_sys_common"/>
     <addaction name="action_Quit"/>
    </widget>
-   <widget class="QMenu" name="menu_FPL_system">
-    <property name="enabled">
-     <bool>false</bool>
-    </property>
-    <property name="tearOffEnabled">
-     <bool>false</bool>
-    </property>
-    <property name="title">
-     <string>&amp;FPL</string>
-    </property>
-    <property name="separatorsCollapsible">
-     <bool>false</bool>
-    </property>
-    <widget class="QMenu" name="menu_fpl_calc">
-     <property name="enabled">
-      <bool>false</bool>
-     </property>
-     <property name="title">
-      <string>&amp;Calculation</string>
-     </property>
-     <addaction name="action_calc_determ"/>
-     <addaction name="action_calc_mc"/>
-     <addaction name="action_calc_frc"/>
-     <addaction name="separator"/>
-     <addaction name="action_test_random"/>
-    </widget>
-    <widget class="QMenu" name="menu_fpl_common">
-     <property name="title">
-      <string>&amp;Common</string>
-     </property>
-     <addaction name="action_check_fpl_tables"/>
-     <addaction name="separator"/>
-     <addaction name="action_set_outputflag_fpl"/>
-     <addaction name="action_set_logfile_fpl"/>
-     <addaction name="action_Reset_Fpl_display"/>
-    </widget>
-    <widget class="QMenu" name="menu_check_fpl">
-     <property name="enabled">
-      <bool>false</bool>
-     </property>
-     <property name="title">
-      <string>&amp;Section check</string>
-     </property>
-     <addaction name="action_check_fpl_file"/>
-     <addaction name="action_check_fpl_db"/>
-    </widget>
-    <widget class="QMenu" name="menu_fpl2hyd">
-     <property name="title">
-      <string>&amp;FPL2HYD</string>
-     </property>
-     <addaction name="action_fpl2hyd_combine"/>
-     <addaction name="action_fpl2hyd_check_ideal"/>
-    </widget>
-    <widget class="QMenu" name="menu_Export">
-     <property name="title">
-      <string>&amp;Export results</string>
-     </property>
-     <addaction name="action_export_DETERM"/>
-     <addaction name="action_export_MC"/>
-     <addaction name="action_export_FRC"/>
-    </widget>
-    <addaction name="action_fpl_import_file"/>
-    <addaction name="separator"/>
-    <addaction name="menu_fpl_calc"/>
-    <addaction name="action_user_defined_frc"/>
-    <addaction name="separator"/>
-    <addaction name="menu_check_fpl"/>
-    <addaction name="separator"/>
-    <addaction name="menu_Export"/>
-    <addaction name="separator"/>
-    <addaction name="menu_fpl2hyd"/>
-    <addaction name="separator"/>
-    <addaction name="action_stop_fpl_calc"/>
-    <addaction name="action_delete_fpl_section"/>
-    <addaction name="action_restore_standard_fpl"/>
-    <addaction name="menu_fpl_common"/>
-   </widget>
    <widget class="QMenu" name="menu_HYD_system">
     <property name="enabled">
      <bool>false</bool>
@@ -497,19 +415,44 @@
      <property name="title">
       <string>&amp;ECoNomic</string>
      </property>
-     <widget class="QMenu" name="menu_ecn_imp">
-      <property name="enabled">
-       <bool>false</bool>
-      </property>
+     <widget class="QMenu" name="menuShipping">
       <property name="title">
-       <string>&amp;Import</string>
+       <string>Shipping</string>
       </property>
-      <addaction name="action_imp_ecn_dam_func"/>
-      <addaction name="action_add_ecn_dam_raster"/>
+      <addaction name="action_Import_data_shipping"/>
      </widget>
-     <addaction name="menu_ecn_imp"/>
+     <widget class="QMenu" name="menu_Hydropower">
+      <property name="title">
+       <string>&amp;Hydropower</string>
+      </property>
+      <addaction name="action_Import_data_hydropower"/>
+     </widget>
+     <widget class="QMenu" name="menu_Tourism">
+      <property name="title">
+       <string>&amp;Tourism</string>
+      </property>
+      <addaction name="action_Import_data_tourism"/>
+     </widget>
+     <widget class="QMenu" name="menu_Fishing">
+      <property name="title">
+       <string>&amp;Fishing</string>
+      </property>
+      <addaction name="action_Import_data_fishing"/>
+     </widget>
+     <widget class="QMenu" name="menu_Process_water">
+      <property name="title">
+       <string>&amp;Process water</string>
+      </property>
+      <addaction name="action_Import_data_process"/>
+     </widget>
      <addaction name="action_del_all_ecn"/>
-     <addaction name="action_connect_raster_ecn"/>
+     <addaction name="action_connect_2hyd_ecn"/>
+     <addaction name="separator"/>
+     <addaction name="menuShipping"/>
+     <addaction name="menu_Hydropower"/>
+     <addaction name="menu_Tourism"/>
+     <addaction name="menu_Fishing"/>
+     <addaction name="menu_Process_water"/>
     </widget>
     <widget class="QMenu" name="menu_dam_common">
      <property name="enabled">
@@ -531,39 +474,23 @@
      <property name="title">
       <string>ECOlogic</string>
      </property>
-     <widget class="QMenu" name="menu_eco_imp">
+     <widget class="QMenu" name="menu_Fish">
       <property name="title">
-       <string>&amp;Import</string>
+       <string>&amp;Fish</string>
       </property>
-      <addaction name="action_imp_eco_biotope_types"/>
-      <addaction name="action_add_eco_biotope_raster"/>
-      <addaction name="separator"/>
-      <addaction name="action_imp_eco_soil_cost_functions"/>
-      <addaction name="action_imp_eco_soil_erosion_functions"/>
-      <addaction name="action_add_eco_soil_raster"/>
+      <addaction name="action_Import_data_fish"/>
      </widget>
-     <addaction name="menu_eco_imp"/>
-     <addaction name="action_del_eco_btype"/>
-     <addaction name="action_del_eco_soil"/>
+     <widget class="QMenu" name="menu_Macrozoobenthos">
+      <property name="title">
+       <string>&amp;Macrozoobenthos</string>
+      </property>
+      <addaction name="action_Import_data_macro"/>
+     </widget>
+     <addaction name="action_del_all_eco"/>
      <addaction name="action_connect_raster_eco"/>
-    </widget>
-    <widget class="QMenu" name="menu_dam_pop">
-     <property name="enabled">
-      <bool>false</bool>
-     </property>
-     <property name="title">
-      <string>&amp;PeOPle</string>
-     </property>
-     <widget class="QMenu" name="menu_pop_imp">
-      <property name="title">
-       <string>&amp;Import</string>
-      </property>
-      <addaction name="action_imp_pop_dam_func"/>
-      <addaction name="action_add_pop_raster"/>
-     </widget>
-     <addaction name="menu_pop_imp"/>
-     <addaction name="action_del_all_pop"/>
-     <addaction name="action_connect_raster_pop"/>
+     <addaction name="separator"/>
+     <addaction name="menu_Fish"/>
+     <addaction name="menu_Macrozoobenthos"/>
     </widget>
     <widget class="QMenu" name="menu_dam_system">
      <property name="enabled">
@@ -577,47 +504,6 @@
      <addaction name="separator"/>
      <addaction name="action_dam_connect"/>
      <addaction name="action_dam_calculate"/>
-     <addaction name="action_dam_instat_calculate"/>
-    </widget>
-    <widget class="QMenu" name="menu_dam_sc">
-     <property name="enabled">
-      <bool>false</bool>
-     </property>
-     <property name="title">
-      <string>&amp;SimpleCounting</string>
-     </property>
-     <widget class="QMenu" name="menu_Import">
-      <property name="title">
-       <string>&amp;Import</string>
-      </property>
-      <addaction name="action_imp_points"/>
-      <addaction name="action_imp_subcategory"/>
-     </widget>
-     <addaction name="menu_Import"/>
-     <addaction name="action_sc_delete"/>
-     <addaction name="action_sc_connect"/>
-    </widget>
-    <widget class="QMenu" name="menu_dam_pys">
-     <property name="enabled">
-      <bool>false</bool>
-     </property>
-     <property name="title">
-      <string>&amp;PsYchoSocial</string>
-     </property>
-     <widget class="QMenu" name="menu_pys_imp">
-      <property name="enabled">
-       <bool>false</bool>
-      </property>
-      <property name="title">
-       <string>&amp;Import</string>
-      </property>
-      <addaction name="action_imp_pys_cat"/>
-      <addaction name="action_imp_pys_density"/>
-      <addaction name="action_add_pys_raster"/>
-     </widget>
-     <addaction name="menu_pys_imp"/>
-     <addaction name="action_del_all_pys"/>
-     <addaction name="action_connect_raster_pys"/>
     </widget>
     <widget class="QMenu" name="menu_import_HYD_results">
      <property name="enabled">
@@ -629,26 +515,11 @@
      <addaction name="action_import_hyd_res_base"/>
      <addaction name="action_add_hyd_res"/>
     </widget>
-    <widget class="QMenu" name="menu_dam_CI">
-     <property name="enabled">
-      <bool>false</bool>
-     </property>
-     <property name="title">
-      <string>&amp;Critical Infrastructure</string>
-     </property>
-     <addaction name="action_CI_Import"/>
-     <addaction name="action_CI_delete"/>
-     <addaction name="action_CI_connect"/>
-    </widget>
     <addaction name="menu_import_HYD_results"/>
     <addaction name="action_delete_hyd_results"/>
     <addaction name="separator"/>
     <addaction name="menu_dam_ecn"/>
     <addaction name="menu_dam_eco"/>
-    <addaction name="menu_dam_pop"/>
-    <addaction name="menu_dam_pys"/>
-    <addaction name="menu_dam_sc"/>
-    <addaction name="menu_dam_CI"/>
     <addaction name="separator"/>
     <addaction name="menu_dam_system"/>
     <addaction name="separator"/>
@@ -829,7 +700,6 @@
    </widget>
    <addaction name="menu_System"/>
    <addaction name="menu_HYDROL_system"/>
-   <addaction name="menu_FPL_system"/>
    <addaction name="menu_HYD_system"/>
    <addaction name="menu_DAM_system"/>
    <addaction name="menu_RISK_system"/>
@@ -878,7 +748,7 @@
         <enum>QTabWidget::Rounded</enum>
        </property>
        <property name="currentIndex">
-        <number>2</number>
+        <number>3</number>
        </property>
        <widget class="QWidget" name="tab_systemtxt">
         <attribute name="title">
@@ -933,26 +803,6 @@
         <layout class="QGridLayout" name="gridLayout">
          <item row="0" column="0">
           <widget class="Sys_Output_Text_Wid" name="textEdit_hydroltxt"/>
-         </item>
-        </layout>
-       </widget>
-       <widget class="QWidget" name="tab_fpltxt">
-        <attribute name="title">
-         <string>FPL</string>
-        </attribute>
-        <layout class="QGridLayout">
-         <item row="0" column="0">
-          <widget class="Sys_Output_Text_Wid" name="textEdit_fpltxt">
-           <property name="lineWrapMode">
-            <enum>QTextEdit::NoWrap</enum>
-           </property>
-           <property name="readOnly">
-            <bool>true</bool>
-           </property>
-           <property name="cursorWidth">
-            <number>1</number>
-           </property>
-          </widget>
          </item>
         </layout>
        </widget>
@@ -1449,9 +1299,9 @@
     <string>&amp;Add raster...</string>
    </property>
   </action>
-  <action name="action_del_eco_btype">
+  <action name="action_del_all_eco">
    <property name="text">
-    <string>&amp;Delete biotope-type...</string>
+    <string>&amp;Delete...</string>
    </property>
   </action>
   <action name="action_del_all_pop">
@@ -1583,14 +1433,14 @@
     <string>&amp;User defined reliability...</string>
    </property>
   </action>
-  <action name="action_connect_raster_ecn">
+  <action name="action_connect_2hyd_ecn">
    <property name="text">
-    <string>&amp;Connect raster</string>
+    <string>&amp;Connect2HYD</string>
    </property>
   </action>
   <action name="action_connect_raster_eco">
    <property name="text">
-    <string>&amp;Connect raster</string>
+    <string>&amp;Connect2HYD</string>
    </property>
   </action>
   <action name="action_connect_raster_pop">
@@ -2160,6 +2010,41 @@
     <string>Temp per database...</string>
    </property>
   </action>
+  <action name="action_Import_data_shipping">
+   <property name="text">
+    <string>&amp;Import data...</string>
+   </property>
+  </action>
+  <action name="action_Import_data_hydropower">
+   <property name="text">
+    <string>&amp;Import data...</string>
+   </property>
+  </action>
+  <action name="action_Import_data_tourism">
+   <property name="text">
+    <string>&amp;Import data...</string>
+   </property>
+  </action>
+  <action name="action_Import_data_fishing">
+   <property name="text">
+    <string>&amp;Import data...</string>
+   </property>
+  </action>
+  <action name="action_Import_data_process">
+   <property name="text">
+    <string>&amp;Inport data...</string>
+   </property>
+  </action>
+  <action name="action_Import_data_fish">
+   <property name="text">
+    <string>&amp;Import data...</string>
+   </property>
+  </action>
+  <action name="action_Import_data_macro">
+   <property name="text">
+    <string>&amp;Import data...</string>
+   </property>
+  </action>
  </widget>
  <customwidgets>
   <customwidget>
@@ -2204,7 +2089,6 @@
   <tabstop>tabWidget_outtext</tabstop>
   <tabstop>textEdit_systemtxt</tabstop>
   <tabstop>textEdit_exceptiontxt</tabstop>
-  <tabstop>textEdit_fpltxt</tabstop>
   <tabstop>textEdit_hydtxt</tabstop>
   <tabstop>textEdit_damtxt</tabstop>
   <tabstop>textEdit_risktxt</tabstop>

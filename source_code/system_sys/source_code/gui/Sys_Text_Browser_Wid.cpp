@@ -91,12 +91,12 @@ void Sys_Text_Browser_Wid::set_current_file_name(const QFileInfo file){
 	 this->pure_file_name=file.baseName();
 	 this->groupBox_title->setTitle(file.fileName());
      this->textEdit->document()->setModified(false);
-	 if(file.suffix()=="prm"){
+	 if(file.suffix()=="lof"){
 		 this->file_read_only=true;
 		 this->textEdit->setReadOnly(this->file_read_only);
 		
 		 this->label_path->setText(file.absoluteFilePath());
-		 this->label_path->setToolTip(".prm-file is not editable");
+		 this->label_path->setToolTip(".lof-file is not editable");
 	 }
 	 else{
 		 this->file_read_only=false;

@@ -706,16 +706,7 @@ void Hyd_Param_Global::check_members(void){
 		this->max_v_change_rv=this->default_max_v_change_rv;
 		msg.output_msg(2);
 	}
-	if (Sys_Project::get_project_type() != _sys_project_type::proj_hyd_temp && this->tempmodel_applied == true) {
-		Warning msg = this->set_warning(11);
-		stringstream info;
-		info << "Project type: " << Sys_Project::convert_project_type2txt(Sys_Project::get_project_type()) << endl;
-		msg.make_second_info(info.str());
-		//reaction
-		this->tempmodel_applied = false;
-		msg.output_msg(2);
 
-	}
 
 }
 //(static) Filename conversion functions

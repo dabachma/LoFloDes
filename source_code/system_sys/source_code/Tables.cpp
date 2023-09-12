@@ -6,7 +6,7 @@ string Tables::table_file_name=label::not_set;
 string Tables::project_prefix="proj1_";
 
 //Default constructor
-Tables::Tables(void): table_suffix("_prm"){
+Tables::Tables(void): table_suffix("_lof"){
 	this->column=NULL;
 	this->modul_type=_sys_system_modules::SYS_SYS;
 	//set the table names
@@ -16,7 +16,7 @@ Tables::Tables(void): table_suffix("_prm"){
 	this->col_num=0;
 }
 //Constructor with a given id-name for the table and the id-names for the column; also the number of table columns is given
-Tables::Tables(const string id_name, const string id_column[], const int column_number): table_suffix("_prm"){
+Tables::Tables(const string id_name, const string id_column[], const int column_number): table_suffix("_lof"){
 	this->column=NULL;
 	this->modul_type=_sys_system_modules::SYS_SYS;
 	//set the table names

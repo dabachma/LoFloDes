@@ -45,8 +45,7 @@ public:
 	///Set the number of area state and measure state
 	void set_system_state(const _sys_system_id id);
 
-	///Set the fpl-status text-label of the statusbar to "yes" (true) or "no" (false)
-	void set_fplthread(const bool flag);
+
 	///Set the fpl-status text-label of the statusbar to "yes" (true) or "no" (false)
 	void set_hydthread(const bool flag, const string number="");
 	///Set the hydraulic-status text-label of the statusbar to "sleep"

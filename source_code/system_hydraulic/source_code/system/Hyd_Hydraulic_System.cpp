@@ -165,11 +165,12 @@ void Hyd_Hydraulic_System::set_system_per_file(const string global_file){
 		this->input_coast_model(global_file);
 
 		//allocate it
-		if (Sys_Project::get_project_type() == _sys_project_type::proj_hyd_temp) {
+		if (this->global_parameters.tempmodel_applied == true) {
 			this->allocate_temp_model();
 			//init and set temperaturmodel models with parser
 			this->input_temp_model(global_file);
 		}
+		
 		Hyd_Multiple_Hydraulic_Systems::check_stop_thread_flag();
 		this->set_final_warning_number();
 	}
@@ -232,17 +233,17 @@ void Hyd_Hydraulic_System::set_system_per_database(const bool modul_extern_start
 		Hyd_Multiple_Hydraulic_Systems::check_stop_thread_flag();
 
 		//temp model
-		if ((Sys_Project::get_project_type() == _sys_project_type::proj_hyd_temp)) {
-			int no_temp=HydTemp_Model::select_relevant_model_database(&results, this->system_id);
-			if (no_temp > 0) {
-				this->global_parameters.tempmodel_applied = true;
-				//HydTemp_Model::select_relevant_model_database(&results, this->system_id);
-				this->allocate_temp_model();
-				this->input_temp_model(&results, &this->database);
-				Hyd_Multiple_Hydraulic_Systems::check_stop_thread_flag();
+		
+		int no_temp=HydTemp_Model::select_relevant_model_database(&results, this->system_id);
+		if (no_temp > 0) {
+			this->global_parameters.tempmodel_applied = true;
+			//HydTemp_Model::select_relevant_model_database(&results, this->system_id);
+			this->allocate_temp_model();
+			this->input_temp_model(&results, &this->database);
+			Hyd_Multiple_Hydraulic_Systems::check_stop_thread_flag();
 
-			}
 		}
+		
 
 		//set and allocate diversion channel couplings
 		this->global_parameters.number_div_channel=Hyd_Coupling_RV2RV_Diversion::select_relevant_dv_channels_database(&results, this->system_id);
@@ -348,7 +349,7 @@ void Hyd_Hydraulic_System::set_temp_system_per_database(const bool modul_extern_
 		Hyd_Multiple_Hydraulic_Systems::check_stop_thread_flag();
 
 		//temp model
-		if ((Sys_Project::get_project_type() == _sys_project_type::proj_hyd_temp)) {
+		
 			int no_temp = HydTemp_Model::select_relevant_model_database(&results, this->system_id);
 			if (no_temp > 0) {
 				this->global_parameters.tempmodel_applied = true;
@@ -358,7 +359,7 @@ void Hyd_Hydraulic_System::set_temp_system_per_database(const bool modul_extern_
 				Hyd_Multiple_Hydraulic_Systems::check_stop_thread_flag();
 
 			}
-		}
+		
 
 	
 		this->set_final_warning_number();
@@ -492,16 +493,17 @@ void Hyd_Hydraulic_System::import_basesystem_file2db(const string global_file){
 
 
 		//temp model
-		if (Sys_Project::get_project_type() == _sys_project_type::proj_hyd_temp) {
-			if (this->global_parameters.tempmodel_applied == true) {
-				this->allocate_temp_model();
-				//init and set temperaturmodel models with parser
-				this->input_temp_model(global_file);
-				//transfer temp model to database
-				this->transfer_tempmodel_data2database(&this->database);
-			}
-
+		
+		if (this->global_parameters.tempmodel_applied == true) {
+			this->allocate_temp_model();
+			//init and set temperaturmodel models with parser
+			this->input_temp_model(global_file);
+			//transfer temp model to database
+			this->transfer_tempmodel_data2database(&this->database);
 		}
+			
+
+	
 		Hyd_Multiple_Hydraulic_Systems::check_stop_thread_flag();
 		//set and allocate diversion channel couplings
 		this->coupling_managment.set_rv2rv_diversion(this->global_parameters.number_div_channel);
@@ -575,7 +577,7 @@ void Hyd_Hydraulic_System::import_new_hydraulic_boundary_sz2database(void){
 		if(this->global_parameters.coastmodel_applied==true){
 			this->my_comodel->transfer_hydraulic_boundary_sz2database(&this->database);
 		}
-		if (Sys_Project::get_project_type() == _sys_project_type::proj_hyd_temp && this->global_parameters.tempmodel_applied == true) {
+		if(this->global_parameters.tempmodel_applied == true) {
 			for (int i = 0; i < this->global_parameters.GlobNofRV; i++) {
 				this->my_temp_model[i].transfer_hydraulic_boundary_sz2database(&this->database);
 				Hyd_Multiple_Hydraulic_Systems::check_stop_thread_flag();
@@ -658,16 +660,16 @@ void Hyd_Hydraulic_System::create_hyd_database_tables(void){
 
 
 
-		if (Sys_Project::get_project_type() == _sys_project_type::proj_hyd_temp) {
-			HydTemp_Model::create_table(&this->database);
-			HydTemp_Profile::create_erg_instat_table(&this->database);
-			HydTemp_Profile::create_erg_table(&this->database);
-			HydTemp_Profile::create_profile_boundary_table(&this->database);
-			HydTemp_Profile::create_profile_table(&this->database);
-			HydTemp_Profile::create_bound2profile_view(&this->database);
+		
+		HydTemp_Model::create_table(&this->database);
+		HydTemp_Profile::create_erg_instat_table(&this->database);
+		HydTemp_Profile::create_erg_table(&this->database);
+		HydTemp_Profile::create_profile_boundary_table(&this->database);
+		HydTemp_Profile::create_profile_table(&this->database);
+		HydTemp_Profile::create_bound2profile_view(&this->database);
 
 
-		}
+		
 
 	}
 }
@@ -822,28 +824,28 @@ void Hyd_Hydraulic_System::check_hyd_database_tables(void){
 			Hyd_Multiple_Hydraulic_Systems::check_stop_thread_flag();
 			Hyd_Coupling_RV2FP_Merged::set_max_h_table(&this->database);
 
-			if (Sys_Project::get_project_type() == _sys_project_type::proj_hyd_temp) {
-				cout << "Check the temperature table..." << endl;
-				Sys_Common_Output::output_hyd->output_txt(&cout, false, false);
-				cout << "Check the temperature result table..." << endl;
-				Sys_Common_Output::output_hyd->output_txt(&cout, false, false);
-				HydTemp_Model::set_table(&this->database);
-				cout << "Check the temperature instationary result table..." << endl;
-				Sys_Common_Output::output_hyd->output_txt(&cout, false, false);
-				HydTemp_Profile::set_erg_instat_table(&this->database);
-				cout << "Check the temperature general parameters table..." << endl;
-				Sys_Common_Output::output_hyd->output_txt(&cout, false, false);
-				HydTemp_Profile::set_erg_table(&this->database);
-				cout << "Check the temperature profile table..." << endl;
-				Sys_Common_Output::output_hyd->output_txt(&cout, false, false);
-				HydTemp_Profile::set_profile_table(&this->database);
-				cout << "Check the temperature profile boundary data table..." << endl;
-				Sys_Common_Output::output_hyd->output_txt(&cout, false, false);
-				HydTemp_Profile::set_profile_boundary_table(&this->database);
+			
+			cout << "Check the temperature table..." << endl;
+			Sys_Common_Output::output_hyd->output_txt(&cout, false, false);
+			cout << "Check the temperature result table..." << endl;
+			Sys_Common_Output::output_hyd->output_txt(&cout, false, false);
+			HydTemp_Model::set_table(&this->database);
+			cout << "Check the temperature instationary result table..." << endl;
+			Sys_Common_Output::output_hyd->output_txt(&cout, false, false);
+			HydTemp_Profile::set_erg_instat_table(&this->database);
+			cout << "Check the temperature general parameters table..." << endl;
+			Sys_Common_Output::output_hyd->output_txt(&cout, false, false);
+			HydTemp_Profile::set_erg_table(&this->database);
+			cout << "Check the temperature profile table..." << endl;
+			Sys_Common_Output::output_hyd->output_txt(&cout, false, false);
+			HydTemp_Profile::set_profile_table(&this->database);
+			cout << "Check the temperature profile boundary data table..." << endl;
+			Sys_Common_Output::output_hyd->output_txt(&cout, false, false);
+			HydTemp_Profile::set_profile_boundary_table(&this->database);
 			
 
 
-			}
+			
 
 		}
 	}
@@ -896,13 +898,13 @@ void Hyd_Hydraulic_System::delete_data_hyd_database_tables(void){
 
 		Hyd_Coupling_RV2FP_Merged::delete_data_max_h_table(&this->database);
 
-		if (Sys_Project::get_project_type() == _sys_project_type::proj_hyd_temp) {
+		
 
-			HydTemp_Model::delete_data_in_table(&this->database);
-			HydTemp_Profile::delete_data_in_table(&this->database);
+		HydTemp_Model::delete_data_in_table(&this->database);
+		HydTemp_Profile::delete_data_in_table(&this->database);
 
 
-		}
+		
 	}
 }
 //Close all hydraulic database tables (static)
@@ -940,10 +942,10 @@ void Hyd_Hydraulic_System::close_hyd_database_tables(void){
 		_Hyd_Coupling_Dikebreak::close_table();
 		_Hyd_Coupling_Dikebreak::close_result_table();
 		Hyd_Coupling_RV2FP_Merged::close_max_h_table();
-		if (Sys_Project::get_project_type() == _sys_project_type::proj_hyd_temp) {
-			HydTemp_Model::close_table();
-			HydTemp_Profile::close_table();
-		}
+		
+		HydTemp_Model::close_table();
+		HydTemp_Profile::close_table();
+		
 	}
 }
 //Switch applied flag of the hydraulic results for a given system id (static)
@@ -1015,12 +1017,12 @@ void Hyd_Hydraulic_System::set_new_hyd_bound_sz_id(Hyd_Boundary_Szenario new_sz)
 		this->my_comodel->set_hydraulic_bound_sz(this->hyd_sz);
 	}
 	//temp model
-	if ((Sys_Project::get_project_type() == _sys_project_type::proj_hyd_temp)){
-		if (this->global_parameters.tempmodel_applied == true) {
-			this->my_temp_model->set_new_hyd_bound_sz_id(this->hyd_sz);
-		}
 
+	if (this->global_parameters.tempmodel_applied == true) {
+		this->my_temp_model->set_new_hyd_bound_sz_id(this->hyd_sz);
 	}
+
+	
 }
 //Get a pointer to the currently used hydraulic boundary scenario
 Hyd_Boundary_Szenario* Hyd_Hydraulic_System::get_ptr_hyd_bound_scenario(void){
@@ -1050,16 +1052,16 @@ void Hyd_Hydraulic_System::output_glob_models(void){
 	}
 
 	//temp model
-	if (Sys_Project::get_project_type() == _sys_project_type::proj_hyd_temp) {
-		if (this->global_parameters.GlobNofRV > 0) {
-			cout << "Temperature model information of river..." << endl;
-			Sys_Common_Output::output_hyd->output_txt(&cout);
-			for (int j = 0; j < this->global_parameters.GlobNofRV; j++) {
-				this->my_temp_model[j].output_members();
-			}
+	
+	if (this->global_parameters.GlobNofRV > 0 && this->global_parameters.tempmodel_applied==true) {
+		cout << "Temperature model information of river..." << endl;
+		Sys_Common_Output::output_hyd->output_txt(&cout);
+		for (int j = 0; j < this->global_parameters.GlobNofRV; j++) {
+			this->my_temp_model[j].output_members();
 		}
-
 	}
+
+	
 
 	//floodplain models
 	if(this->global_parameters.GlobNofFP>0){
@@ -3279,7 +3281,7 @@ void Hyd_Hydraulic_System::check_models(void){
 
 	//check river temp models
 	try {
-		if (Sys_Project::get_project_type() == _sys_project_type::proj_hyd_temp) {
+		if (this->global_parameters.tempmodel_applied == true) {
 			for (int i = 0; i < this->global_parameters.GlobNofRV; i++) {
 				this->my_temp_model[i].check_temp_model();
 			}

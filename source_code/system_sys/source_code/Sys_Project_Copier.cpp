@@ -64,7 +64,7 @@ void Sys_Project_Copier::copy_relevant_database_tables(Data_Base *ptr_database, 
 	if(Data_Base::get_driver_type()==_sys_driver_type::POSTGRESQL){
 		QSqlQuery my_query(*ptr_database->get_database());
 		ostringstream filter;
-		new_project_name.append("_prm");
+		new_project_name.append("_lof");
 		filter << "CREATE SCHEMA " << new_project_name;
 		my_query.exec(filter.str().c_str());
 		table_start=Sys_Project::get_complete_project_database_schemata_name();

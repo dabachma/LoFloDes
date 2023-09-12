@@ -33,7 +33,7 @@ Sys_New_Project_Dia::Sys_New_Project_Dia(QWidget *parent) : QDialog(parent){
 	
 	QObject::connect(ui.pushButton_set_db, SIGNAL(clicked()), this, SLOT(set_database_connection()));
 	QObject::connect(ui.pushButton_check_db, SIGNAL(clicked()), this, SLOT(check_database_connection()));
-	QObject::connect(ui.radioButton_hyd_file, SIGNAL(toggled(bool )), this, SLOT(decide_database_conn(bool )));
+	
 
 	this->ui.widget_browser->set_text_label("Choose the project directory");
 	this->ui.widget_browser->set_tooltip("Choose the project directory");
@@ -43,7 +43,7 @@ Sys_New_Project_Dia::Sys_New_Project_Dia(QWidget *parent) : QDialog(parent){
 	//for development
 	#ifdef development
         this->database_conn_params.host_name="localhost";
-        this->database_conn_params.database_name="promaides";
+        this->database_conn_params.database_name="LoFloDes";
         this->database_conn_params.user_name="postgres";
 		this->database_conn_params.password="";
 	#endif
@@ -64,8 +64,7 @@ Sys_New_Project_Dia::Sys_New_Project_Dia(QWidget *parent) : QDialog(parent){
 	this->ui.radioButton_hyd_dam->setEnabled(false);
 	this->ui.radioButton_dam_typ->setEnabled(false);
 	this->ui.radioButton_risk_typ->setEnabled(false);
-	this->ui.radioButton_fpl_typ->setEnabled(false);
-	this->ui.radioButton_hyd_file->setEnabled(false);
+
 
 	#ifdef proj_all_license
 		this->ui.radioButton_all_types->setEnabled(true);
@@ -73,8 +72,6 @@ Sys_New_Project_Dia::Sys_New_Project_Dia(QWidget *parent) : QDialog(parent){
 		this->ui.radioButton_hyd_dam->setEnabled(true);
 		this->ui.radioButton_dam_typ->setEnabled(true);
 		this->ui.radioButton_risk_typ->setEnabled(true);
-		this->ui.radioButton_fpl_typ->setEnabled(true);
-		this->ui.radioButton_hyd_file->setEnabled(true);
 		this->ui.radioButton_hydrol->setEnabled(true);
 		this->decide_radio_button2projecttype(_sys_project_type::proj_all);
 	#endif
@@ -263,24 +260,14 @@ _sys_project_type Sys_New_Project_Dia::find_project_type(void){
 	else if(this->ui.radioButton_risk_typ->isChecked()==true){
 		buffer=_sys_project_type::proj_risk;
 	}
-	else if(this->ui.radioButton_hyd->isChecked()==true){
-		buffer=_sys_project_type::proj_hyd;
-	}
-	else if(this->ui.radioButton_hyd_dam->isChecked()==true){
+	else if (this->ui.radioButton_hyd_dam->isChecked()==true){
 		buffer=_sys_project_type::proj_dam_hyd;
 	}
 	else if(this->ui.radioButton_dam_typ->isChecked()==true){
 		buffer=_sys_project_type::proj_dam;
 	}
-	else if(this->ui.radioButton_fpl_typ->isChecked()==true){
-		buffer=_sys_project_type::proj_fpl;
-	}
-	else if(this->ui.radioButton_hyd_file->isChecked()==true){
-		buffer=_sys_project_type::proj_hyd_file;
-	}
-	else if (this->ui.radioButton_hyd_temp->isChecked() == true) {
-		buffer = _sys_project_type::proj_hyd_temp;
-	}
+
+
 
 	return buffer;
 }
@@ -367,12 +354,10 @@ void Sys_New_Project_Dia::check_project_name_set(QString pro_name){
 	else{
 		if(this->just_copy==false){
 			this->ui.lineEdit_author->setEnabled(true);
+			this->ui.groupBox_database->setEnabled(true);
 			this->ui.groupbox_descript->setEnabled(true);
 			this->ui.groupBox_pro_type->setEnabled(true);
 			this->ui.groupBox_logfile->setEnabled(true);
-			if(ui.radioButton_hyd_file->isChecked()==false){
-				this->ui.groupBox_database->setEnabled(true);
-			}
 		}
 		this->ui.okButton->setEnabled(true);
 
@@ -571,7 +556,7 @@ bool Sys_New_Project_Dia::check_exist_project_name(void){
 			QSqlQuery my_query(*db.get_database());
 
 			ostringstream buffer;
-			buffer<<this->project_name<<"_prm";
+			buffer<<this->project_name<<"_lof";
 
 			ostringstream filter;
 			filter << "CREATE SCHEMA " << buffer.str();
@@ -608,18 +593,10 @@ void Sys_New_Project_Dia::decide_radio_button2projecttype(_sys_project_type type
 		else if(type==_sys_project_type::proj_risk){
 			this->ui.radioButton_risk_typ->setChecked(true);
 		}
-		else if(type==_sys_project_type::proj_fpl){
-			this->ui.radioButton_fpl_typ->setChecked(true);
-		}
-		else if(type==_sys_project_type::proj_hyd_file){
-			this->ui.radioButton_hyd_file->setChecked(true);
-		}
 		else if(type==_sys_project_type::proj_dam){
 			this->ui.radioButton_dam_typ->setChecked(true);
 		}
-		else if (type == _sys_project_type::proj_hyd_temp) {
-			this->ui.radioButton_hyd_temp->setChecked(true);
-		}
+
 
 }
 //Decide radion buttons for a project upgrade
@@ -628,8 +605,6 @@ void Sys_New_Project_Dia::decide_radio_button_upgrade(_sys_project_type type){
 	this->ui.radioButton_hyd->setEnabled(false);
 	this->ui.radioButton_hyd_dam->setEnabled(false);
 	this->ui.radioButton_risk_typ->setEnabled(false);
-	this->ui.radioButton_fpl_typ->setEnabled(false);
-	this->ui.radioButton_hyd_file->setEnabled(false);
 	this->ui.radioButton_hydrol->setEnabled(false);
 	this->ui.radioButton_dam_typ->setEnabled(false);
 
@@ -652,17 +627,6 @@ void Sys_New_Project_Dia::decide_radio_button_upgrade(_sys_project_type type){
 		else if(type==_sys_project_type::proj_risk){
 			this->ui.radioButton_risk_typ->setChecked(true);
 			this->ui.radioButton_all_types->setEnabled(true);
-		}
-		else if(type==_sys_project_type::proj_fpl){
-			this->ui.radioButton_fpl_typ->setChecked(true);
-			this->ui.radioButton_risk_typ->setEnabled(true);
-			this->ui.radioButton_all_types->setEnabled(true);
-		}
-		else if(type==_sys_project_type::proj_hyd_file){
-			this->ui.radioButton_hyd_file->setChecked(true);
-		}
-		else if (type == _sys_project_type::proj_hyd_temp) {
-			this->ui.radioButton_hyd_temp->setChecked(true);
 		}
 		else if(type==_sys_project_type::proj_dam){
 			this->ui.radioButton_dam_typ->setChecked(true);

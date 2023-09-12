@@ -12,53 +12,56 @@
   cvode_spgmr.c
   cvode_spils.c
 c:\users\daniel bachmann\documents\2_forschung\9_loflodes\1_programmierung\source_code\system_hydraulic\source_code\solver\cvode_band.c(320): warning C4100: 'fcur': unreferenced formal parameter
-c:\users\daniel bachmann\documents\2_forschung\9_loflodes\1_programmierung\source_code\system_hydraulic\source_code\solver\cvode_band.c(320): warning C4100: 'ycur': unreferenced formal parameter
-c:\users\daniel bachmann\documents\2_forschung\9_loflodes\1_programmierung\source_code\system_hydraulic\source_code\solver\cvode_band.c(319): warning C4100: 'weight': unreferenced formal parameter
 c:\users\daniel bachmann\documents\2_forschung\9_loflodes\1_programmierung\source_code\system_hydraulic\source_code\solver\cvode_bbdpre.c(345): warning C4100: 'fy': unreferenced formal parameter
+c:\users\daniel bachmann\documents\2_forschung\9_loflodes\1_programmierung\source_code\system_hydraulic\source_code\solver\cvode_dense.c(301): warning C4100: 'fcur': unreferenced formal parameter
+c:\users\daniel bachmann\documents\2_forschung\9_loflodes\1_programmierung\source_code\system_hydraulic\source_code\solver\cvode_band.c(320): warning C4100: 'ycur': unreferenced formal parameter
 c:\users\daniel bachmann\documents\2_forschung\9_loflodes\1_programmierung\source_code\system_hydraulic\source_code\solver\cvode_bbdpre.c(421): warning C4100: 'tmp': unreferenced formal parameter
+c:\users\daniel bachmann\documents\2_forschung\9_loflodes\1_programmierung\source_code\system_hydraulic\source_code\solver\cvode_dense.c(301): warning C4100: 'ycur': unreferenced formal parameter
+c:\users\daniel bachmann\documents\2_forschung\9_loflodes\1_programmierung\source_code\system_hydraulic\source_code\solver\cvode_band.c(319): warning C4100: 'weight': unreferenced formal parameter
 c:\users\daniel bachmann\documents\2_forschung\9_loflodes\1_programmierung\source_code\system_hydraulic\source_code\solver\cvode_bbdpre.c(421): warning C4100: 'lr': unreferenced formal parameter
+c:\users\daniel bachmann\documents\2_forschung\9_loflodes\1_programmierung\source_code\system_hydraulic\source_code\solver\cvode_dense.c(300): warning C4100: 'weight': unreferenced formal parameter
 c:\users\daniel bachmann\documents\2_forschung\9_loflodes\1_programmierung\source_code\system_hydraulic\source_code\solver\cvode_bbdpre.c(420): warning C4100: 'delta': unreferenced formal parameter
 c:\users\daniel bachmann\documents\2_forschung\9_loflodes\1_programmierung\source_code\system_hydraulic\source_code\solver\cvode_bbdpre.c(420): warning C4100: 'gamma': unreferenced formal parameter
 c:\users\daniel bachmann\documents\2_forschung\9_loflodes\1_programmierung\source_code\system_hydraulic\source_code\solver\cvode_bbdpre.c(418): warning C4100: 'fy': unreferenced formal parameter
-c:\users\daniel bachmann\documents\2_forschung\9_loflodes\1_programmierung\source_code\system_hydraulic\source_code\solver\iluk.c(24): warning C4100: 'lofM': unreferenced formal parameter (compiling source file cvode_bandpre.c)
 c:\users\daniel bachmann\documents\2_forschung\9_loflodes\1_programmierung\source_code\system_hydraulic\source_code\solver\cvode_bbdpre.c(418): warning C4100: 'y': unreferenced formal parameter
-c:\users\daniel bachmann\documents\2_forschung\9_loflodes\1_programmierung\source_code\system_hydraulic\source_code\solver\iluk.c(57): warning C4101: 'ierr': unreferenced local variable (compiling source file cvode_bandpre.c)
 c:\users\daniel bachmann\documents\2_forschung\9_loflodes\1_programmierung\source_code\system_hydraulic\source_code\solver\cvode_bbdpre.c(418): warning C4100: 't': unreferenced formal parameter
-c:\users\daniel bachmann\documents\2_forschung\9_loflodes\1_programmierung\source_code\system_hydraulic\source_code\solver\iluk.c(164): warning C4100: 'fp': unreferenced formal parameter (compiling source file cvode_bandpre.c)
-c:\users\daniel bachmann\documents\2_forschung\9_loflodes\1_programmierung\source_code\system_hydraulic\source_code\solver\cvode_direct.c(318): warning C4100: 'tmp3': unreferenced formal parameter
-c:\users\daniel bachmann\documents\2_forschung\9_loflodes\1_programmierung\source_code\system_hydraulic\source_code\solver\cvode_direct.c(394): warning C4100: 'tmp3': unreferenced formal parameter
-c:\users\daniel bachmann\documents\2_forschung\9_loflodes\1_programmierung\source_code\system_hydraulic\source_code\solver\cvode_direct.c(392): warning C4100: 't': unreferenced formal parameter
-c:\users\daniel bachmann\documents\2_forschung\9_loflodes\1_programmierung\source_code\system_hydraulic\source_code\solver\sets.c(360): warning C4100: 'n': unreferenced formal parameter (compiling source file cvode_bandpre.c)
 c:\users\daniel bachmann\documents\2_forschung\9_loflodes\1_programmierung\source_code\system_hydraulic\source_code\solver\cvode_diag.c(318): warning C4100: 'vtemp3': unreferenced formal parameter
-c:\users\daniel bachmann\documents\2_forschung\9_loflodes\1_programmierung\source_code\system_hydraulic\source_code\solver\sets.c(1335): warning C4100: 'val': unreferenced formal parameter (compiling source file cvode_bandpre.c)
 c:\users\daniel bachmann\documents\2_forschung\9_loflodes\1_programmierung\source_code\system_hydraulic\source_code\solver\cvode_diag.c(316): warning C4100: 'convfail': unreferenced formal parameter
+c:\users\daniel bachmann\documents\2_forschung\9_loflodes\1_programmierung\source_code\system_hydraulic\source_code\solver\cvode_direct.c(318): warning C4100: 'tmp3': unreferenced formal parameter
 c:\users\daniel bachmann\documents\2_forschung\9_loflodes\1_programmierung\source_code\system_hydraulic\source_code\solver\cvode_diag.c(387): warning C4100: 'fcur': unreferenced formal parameter
-  cvode_sptfqmr.c
+c:\users\daniel bachmann\documents\2_forschung\9_loflodes\1_programmierung\source_code\system_hydraulic\source_code\solver\cvode_direct.c(394): warning C4100: 'tmp3': unreferenced formal parameter
+c:\users\daniel bachmann\documents\2_forschung\9_loflodes\1_programmierung\source_code\system_hydraulic\source_code\solver\cvode_diag.c(387): warning C4100: 'ycur': unreferenced formal parameter
+c:\users\daniel bachmann\documents\2_forschung\9_loflodes\1_programmierung\source_code\system_hydraulic\source_code\solver\cvode_lapack.c(449): warning C4100: 'fctC': unreferenced formal parameter
+c:\users\daniel bachmann\documents\2_forschung\9_loflodes\1_programmierung\source_code\system_hydraulic\source_code\solver\cvode_direct.c(392): warning C4100: 't': unreferenced formal parameter
+c:\users\daniel bachmann\documents\2_forschung\9_loflodes\1_programmierung\source_code\system_hydraulic\source_code\solver\cvode_diag.c(386): warning C4100: 'weight': unreferenced formal parameter
+c:\users\daniel bachmann\documents\2_forschung\9_loflodes\1_programmierung\source_code\system_hydraulic\source_code\solver\cvode_lapack.c(449): warning C4100: 'yC': unreferenced formal parameter
+c:\users\daniel bachmann\documents\2_forschung\9_loflodes\1_programmierung\source_code\system_hydraulic\source_code\solver\cvode_lapack.c(448): warning C4100: 'weight': unreferenced formal parameter
+c:\users\daniel bachmann\documents\2_forschung\9_loflodes\1_programmierung\source_code\system_hydraulic\source_code\solver\cvode_lapack.c(596): warning C4100: 'fctC': unreferenced formal parameter
+c:\users\daniel bachmann\documents\2_forschung\9_loflodes\1_programmierung\source_code\system_hydraulic\source_code\solver\cvode_lapack.c(596): warning C4100: 'yC': unreferenced formal parameter
+c:\users\daniel bachmann\documents\2_forschung\9_loflodes\1_programmierung\source_code\system_hydraulic\source_code\solver\cvode_lapack.c(595): warning C4100: 'weight': unreferenced formal parameter
+c:\users\daniel bachmann\documents\2_forschung\9_loflodes\1_programmierung\source_code\system_hydraulic\source_code\solver\iluk.c(24): warning C4100: 'lofM': unreferenced formal parameter (compiling source file cvode_bandpre.c)
+c:\users\daniel bachmann\documents\2_forschung\9_loflodes\1_programmierung\source_code\system_hydraulic\source_code\solver\iluk.c(57): warning C4101: 'ierr': unreferenced local variable (compiling source file cvode_bandpre.c)
+c:\users\daniel bachmann\documents\2_forschung\9_loflodes\1_programmierung\source_code\system_hydraulic\source_code\solver\iluk.c(164): warning C4100: 'fp': unreferenced formal parameter (compiling source file cvode_bandpre.c)
+c:\users\daniel bachmann\documents\2_forschung\9_loflodes\1_programmierung\source_code\system_hydraulic\source_code\solver\sets.c(360): warning C4100: 'n': unreferenced formal parameter (compiling source file cvode_bandpre.c)
+c:\users\daniel bachmann\documents\2_forschung\9_loflodes\1_programmierung\source_code\system_hydraulic\source_code\solver\sets.c(1335): warning C4100: 'val': unreferenced formal parameter (compiling source file cvode_bandpre.c)
 c:\users\daniel bachmann\documents\2_forschung\9_loflodes\1_programmierung\source_code\system_hydraulic\source_code\solver\cvode_bandpre.c(366): warning C4100: 'tmp3': unreferenced formal parameter
 c:\users\daniel bachmann\documents\2_forschung\9_loflodes\1_programmierung\source_code\system_hydraulic\source_code\solver\cvode_bandpre.c(526): warning C4100: 'tmp': unreferenced formal parameter
 c:\users\daniel bachmann\documents\2_forschung\9_loflodes\1_programmierung\source_code\system_hydraulic\source_code\solver\cvode_bandpre.c(526): warning C4100: 'lr': unreferenced formal parameter
 c:\users\daniel bachmann\documents\2_forschung\9_loflodes\1_programmierung\source_code\system_hydraulic\source_code\solver\cvode_bandpre.c(525): warning C4100: 'delta': unreferenced formal parameter
 c:\users\daniel bachmann\documents\2_forschung\9_loflodes\1_programmierung\source_code\system_hydraulic\source_code\solver\cvode_bandpre.c(525): warning C4100: 'gamma': unreferenced formal parameter
 c:\users\daniel bachmann\documents\2_forschung\9_loflodes\1_programmierung\source_code\system_hydraulic\source_code\solver\cvode_bandpre.c(523): warning C4100: 'fy': unreferenced formal parameter
-c:\users\daniel bachmann\documents\2_forschung\9_loflodes\1_programmierung\source_code\system_hydraulic\source_code\solver\cvode_dense.c(301): warning C4100: 'fcur': unreferenced formal parameter
-c:\users\daniel bachmann\documents\2_forschung\9_loflodes\1_programmierung\source_code\system_hydraulic\source_code\solver\cvode_diag.c(387): warning C4100: 'ycur': unreferenced formal parameter
 c:\users\daniel bachmann\documents\2_forschung\9_loflodes\1_programmierung\source_code\system_hydraulic\source_code\solver\cvode_bandpre.c(523): warning C4100: 'y': unreferenced formal parameter
-c:\users\daniel bachmann\documents\2_forschung\9_loflodes\1_programmierung\source_code\system_hydraulic\source_code\solver\cvode_dense.c(301): warning C4100: 'ycur': unreferenced formal parameter
-c:\users\daniel bachmann\documents\2_forschung\9_loflodes\1_programmierung\source_code\system_hydraulic\source_code\solver\cvode_diag.c(386): warning C4100: 'weight': unreferenced formal parameter
 c:\users\daniel bachmann\documents\2_forschung\9_loflodes\1_programmierung\source_code\system_hydraulic\source_code\solver\cvode_bandpre.c(523): warning C4100: 't': unreferenced formal parameter
-c:\users\daniel bachmann\documents\2_forschung\9_loflodes\1_programmierung\source_code\system_hydraulic\source_code\solver\cvode_dense.c(300): warning C4100: 'weight': unreferenced formal parameter
 c:\users\daniel bachmann\documents\2_forschung\9_loflodes\1_programmierung\source_code\system_hydraulic\source_code\solver\cvode_bandpre.c(700): warning C4101: 'i': unreferenced local variable
 c:\users\daniel bachmann\documents\2_forschung\9_loflodes\1_programmierung\source_code\system_hydraulic\source_code\solver\cvode_bandpre.c(700): warning C4101: 'i2': unreferenced local variable
 c:\users\daniel bachmann\documents\2_forschung\9_loflodes\1_programmierung\source_code\system_hydraulic\source_code\solver\cvode_bandpre.c(700): warning C4101: 'i1': unreferenced local variable
+  cvode_sptfqmr.c
   fnvector_serial.c
-c:\users\daniel bachmann\documents\2_forschung\9_loflodes\1_programmierung\source_code\system_hydraulic\source_code\solver\cvode_lapack.c(449): warning C4100: 'fctC': unreferenced formal parameter
-c:\users\daniel bachmann\documents\2_forschung\9_loflodes\1_programmierung\source_code\system_hydraulic\source_code\solver\cvode_lapack.c(449): warning C4100: 'yC': unreferenced formal parameter
-c:\users\daniel bachmann\documents\2_forschung\9_loflodes\1_programmierung\source_code\system_hydraulic\source_code\solver\cvode_lapack.c(448): warning C4100: 'weight': unreferenced formal parameter
   sundials_band.c
   sundials_dense.c
-c:\users\daniel bachmann\documents\2_forschung\9_loflodes\1_programmierung\source_code\system_hydraulic\source_code\solver\cvode_lapack.c(596): warning C4100: 'fctC': unreferenced formal parameter
-c:\users\daniel bachmann\documents\2_forschung\9_loflodes\1_programmierung\source_code\system_hydraulic\source_code\solver\cvode_lapack.c(596): warning C4100: 'yC': unreferenced formal parameter
-c:\users\daniel bachmann\documents\2_forschung\9_loflodes\1_programmierung\source_code\system_hydraulic\source_code\solver\cvode_lapack.c(595): warning C4100: 'weight': unreferenced formal parameter
+  sundials_direct.c
+  sundials_iterative.c
+  sundials_math.c
 c:\users\daniel bachmann\documents\2_forschung\9_loflodes\1_programmierung\source_code\system_hydraulic\source_code\solver\sundials_band.c(361): warning C4100: 'a_smu': unreferenced formal parameter
 c:\users\daniel bachmann\documents\2_forschung\9_loflodes\1_programmierung\source_code\system_hydraulic\source_code\solver\sundials_band.c(440): warning C4100: 'neq': unreferenced formal parameter
 c:\users\daniel bachmann\documents\2_forschung\9_loflodes\1_programmierung\source_code\system_hydraulic\source_code\solver\sundials_band.c(440): warning C4100: 'r_id': unreferenced formal parameter
@@ -70,13 +73,10 @@ c:\users\daniel bachmann\documents\2_forschung\9_loflodes\1_programmierung\sourc
 c:\users\daniel bachmann\documents\2_forschung\9_loflodes\1_programmierung\source_code\system_hydraulic\source_code\solver\sundials_band.c(442): warning C4101: 'id1': unreferenced local variable
 c:\users\daniel bachmann\documents\2_forschung\9_loflodes\1_programmierung\source_code\system_hydraulic\source_code\solver\sundials_band.c(442): warning C4101: 'copySize': unreferenced local variable
 c:\users\daniel bachmann\documents\2_forschung\9_loflodes\1_programmierung\source_code\system_hydraulic\source_code\solver\sundials_band.c(442): warning C4101: 'b_buff': unreferenced local variable
-c:\users\daniel bachmann\documents\2_forschung\9_loflodes\1_programmierung\source_code\system_hydraulic\source_code\solver\sundials_band.c(540): warning C4101: 'i': unreferenced local variable
-c:\users\daniel bachmann\documents\2_forschung\9_loflodes\1_programmierung\source_code\system_hydraulic\source_code\solver\misc.c(596): warning C4700: uninitialized local variable 'work' used
-  sundials_direct.c
-  sundials_iterative.c
-  sundials_math.c
   sundials_nvector.c
+c:\users\daniel bachmann\documents\2_forschung\9_loflodes\1_programmierung\source_code\system_hydraulic\source_code\solver\sundials_band.c(540): warning C4101: 'i': unreferenced local variable
   sundials_spbcgs.c
+c:\users\daniel bachmann\documents\2_forschung\9_loflodes\1_programmierung\source_code\system_hydraulic\source_code\solver\misc.c(596): warning C4700: uninitialized local variable 'work' used
   sundials_spgmr.c
   sundials_sptfqmr.c
   solver.vcxproj -> C:\Users\Daniel Bachmann\Documents\2_Forschung\9_loflodes\1_programmierung\x64\Release\solver.lib

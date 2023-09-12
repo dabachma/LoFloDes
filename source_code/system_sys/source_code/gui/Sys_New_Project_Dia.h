@@ -25,22 +25,16 @@
 enum _sys_project_type{
 	///All moduls are availabe
 	proj_all,
-	///Hydraulic modul (HYD) is availabe
+	///Hydraulic modul (HYD) with TEMP is availabe
 	proj_hyd,
 	///Hydraulic modul (HYD) just with file is availabe
 	proj_hyd_file,
-	///Hydraulic modul (HYD) with temperature availabe
-	proj_hyd_temp,
 	///Risk modul, which includes HYD, DAM and FPL is availabe
 	proj_risk,
 	///Damage (DAM) and hydraulic (HYD) modul are available
 	proj_dam_hyd,
 	///Damage (DAM) modul is available
 	proj_dam,
-	///Failure probabilty modul (FPL) is available
-	proj_fpl,
-	///Failure probabilty modul (FPL) just with file is available
-	proj_fpl_file,
 	///Hydrology (HYDROL) is available
 	proj_hydrol,
 	///Not know project type

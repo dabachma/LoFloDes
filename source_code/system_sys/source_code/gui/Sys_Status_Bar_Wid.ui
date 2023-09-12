@@ -252,48 +252,6 @@
      </rect>
     </property>
     <layout class="QGridLayout" name="gridLayout">
-     <item row="0" column="0">
-      <widget class="QLabel" name="label_fpl_calctxt">
-       <property name="text">
-        <string>FPL</string>
-       </property>
-      </widget>
-     </item>
-     <item row="0" column="1">
-      <widget class="QLabel" name="label_status_fpl">
-       <property name="text">
-        <string>no</string>
-       </property>
-      </widget>
-     </item>
-     <item row="0" column="2">
-      <widget class="QLabel" name="label_dam_calctxt">
-       <property name="text">
-        <string>DAM</string>
-       </property>
-      </widget>
-     </item>
-     <item row="0" column="3">
-      <widget class="QLabel" name="label_status_dam">
-       <property name="text">
-        <string>no</string>
-       </property>
-      </widget>
-     </item>
-     <item row="0" column="4">
-      <widget class="QLabel" name="label_madm_calctxt">
-       <property name="text">
-        <string>MADM</string>
-       </property>
-      </widget>
-     </item>
-     <item row="0" column="5">
-      <widget class="QLabel" name="label_status_madm">
-       <property name="text">
-        <string>no</string>
-       </property>
-      </widget>
-     </item>
      <item row="1" column="0">
       <widget class="QLabel" name="label_hyd_calctxt">
        <property name="text">
@@ -317,6 +275,34 @@
      </item>
      <item row="1" column="3">
       <widget class="QLabel" name="label_status_risk">
+       <property name="text">
+        <string>no</string>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="0">
+      <widget class="QLabel" name="label_dam_calctxt">
+       <property name="text">
+        <string>DAM</string>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="1">
+      <widget class="QLabel" name="label_status_dam">
+       <property name="text">
+        <string>no</string>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="2">
+      <widget class="QLabel" name="label_madm_calctxt">
+       <property name="text">
+        <string>MADM</string>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="3">
+      <widget class="QLabel" name="label_status_madm">
        <property name="text">
         <string>no</string>
        </property>

@@ -108,7 +108,7 @@ void Sys_File_Tree_Wid::delete_selected(void){
 	QDir my_dir;
 	for(int i=0; i<counter; i++){
 		my_info=this->my_model->fileInfo(my_list.at(i));
-		if(my_info.isFile()==true && my_info.completeSuffix()!="prm"){
+		if(my_info.isFile()==true && my_info.completeSuffix()!="lof"){
 			my_dir.remove(my_info.absoluteFilePath());
 		}
 

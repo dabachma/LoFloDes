@@ -50,7 +50,7 @@ void Cost_System::create_cost_database_tables(void){
 	Sys_Common_Output::output_cost->output_txt(&cout);
 	this->set_start_warnings_number();
 	try{
-		Cost_Ecn_Cost_System::create_table_cost(&this->qsqldatabase);
+		//Cost_Ecn_Cost_System::create_table_cost(&this->qsqldatabase);
 	}
 	catch(Error msg){
 		this->number_error++;
@@ -72,7 +72,7 @@ void Cost_System::check_cost_database_tables(void){
 		cout << "Check database table of economical cost..." << endl ;
 		Sys_Common_Output::output_cost->output_txt(&cout,false, false);
 		Cost_System::check_stop_thread_flag();
-		Cost_Ecn_Cost_System::set_table_cost(&this->qsqldatabase);
+		//Cost_Ecn_Cost_System::set_table_cost(&this->qsqldatabase);
 
 	}
 	catch(Error msg){
@@ -92,7 +92,7 @@ void Cost_System::check_cost_database_tables(void){
 //Delete the data of all madm database tables
 void Cost_System::delete_data_cost_database_tables(void){
 	try{
-		Cost_Ecn_Cost_System::delete_data_in_table_cost(&this->qsqldatabase);
+		//Cost_Ecn_Cost_System::delete_data_in_table_cost(&this->qsqldatabase);
 	}
 	catch(Error msg){
 		msg.output_msg(7);
@@ -100,7 +100,7 @@ void Cost_System::delete_data_cost_database_tables(void){
 }
 //Close all madm database tables (static)
 void Cost_System::close_cost_database_tables(void){
-	Cost_Ecn_Cost_System::close_table_cost();
+	//Cost_Ecn_Cost_System::close_table_cost();
 }
 //Set the stop thread flag (static)
 void Cost_System::set_stop_thread_flag(const bool flag){

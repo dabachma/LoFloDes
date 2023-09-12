@@ -220,7 +220,7 @@ bool _Madm_Solver::check_data_in_ranking_table(QSqlDatabase *ptr_database, const
 	test_filter << " WHERE " ;
 	test_filter << _Madm_Solver::table_ranking->get_column_name(label::areastate_id) << " = "  << areastate; 
 	test_filter << " AND " ;
-	//test_filter << _Madm_Solver::table_ranking->get_column_name(risk_label::risk_type) << " = '"  << Risk_Break_Scenario::convert_risk_type2txt(risktype)<<"'"; 
+	test_filter << _Madm_Solver::table_ranking->get_column_name(risk_label::risk_type) << " = '"  << "NOBREAK" <<"'";
 			
 	Data_Base::database_request(&model, test_filter.str(), ptr_database);
 		

@@ -64,7 +64,7 @@ Main_Wid::Main_Wid(int argc, char *argv[]){
 	//connect the text-display widget
 	this->output_connect();
 
-	this->actionTemp_per_database->setVisible(false);
+	//this->actionTemp_per_database->setVisible(false);
 	
 
 	//connect and set-up the status bar widget
@@ -337,6 +337,11 @@ void Main_Wid::slot_connect_hyd(void){
 	//Set a hydraulic calculation per database (menu hyd/calculation/per database)
 	QObject::connect(this->action_hydcalc_per_db, SIGNAL(triggered()), this, SLOT(set_hydcalc_per_db()));
 
+	//Set a hydraulic calculation per database (menu hyd/twmp calculation/per database)
+	QObject::connect(this->actionTemp_per_database, SIGNAL(triggered()), this, SLOT(set_hydtempcalc_per_db()));
+
+	
+
 	//set a new output flag (menu hyd/common)
 	QObject::connect(this->action_set_output_flag_hyd, SIGNAL(triggered()), this, SLOT(set_hyd_outputflag()));
 	//set a new output logfile (menu hyd/common)
@@ -403,9 +408,7 @@ void Main_Wid::slot_connect_dam(void){
 	QObject::connect(this->action_add_ecn_dam_raster, SIGNAL(triggered()), this, SLOT(add_ecn_dam_rasters()));
 	//Delete all economical data in the database to database (menu dam/ECoNomic/)
 	QObject::connect(this->action_del_all_ecn, SIGNAL(triggered()), this, SLOT(delete_all_ecn_dam()));
-	//Connect the econimical raster (menu dam/ECoNomic/)
-	QObject::connect(this->action_connect_raster_ecn, SIGNAL(triggered()), this, SLOT(connect_ecn_raster()));
-
+	
 
 
 	//system
@@ -494,8 +497,6 @@ void Main_Wid::slot_connect_risk(void){
 	//TODO_CI select all available scenarios
 	QObject::connect(this->action_CI_DAM_instat_calculation, SIGNAL(triggered()), this, SLOT(calculate_instat_damage_nobreak_sz()));
 
-	//Perform a test for the random generator (menu fpl/calculation)
-	QObject::connect(this->action_test_random_generator_1, SIGNAL(triggered()), this, SLOT(perform_test_random()));
 
 	//Stop by next hydraulic calculation (menu risk/calculation/catchment risk)
 	QObject::connect(this->action_stop_next_HYD_calc, SIGNAL(triggered()), this, SLOT(stop_by_next_hyd_calc()));
@@ -690,7 +691,7 @@ void Main_Wid::close_text_searcher(void){
 	this->textEdit_risktxt->my_searcher.close();
 	this->textEdit_damtxt->my_searcher.close();
 	this->textEdit_madmtxt->my_searcher.close();
-	this->textEdit_fpltxt->my_searcher.close();
+	
 	this->textEdit_hydtxt->my_searcher.close();
 	this->textEdit_exceptiontxt->my_searcher.close();
 }
@@ -698,7 +699,6 @@ void Main_Wid::close_text_searcher(void){
 void Main_Wid::delete_output_classes(void){
 	//static function to close the output classes
 	Sys_Common_Output::delete_output_system();
-	Sys_Common_Output::delete_output_fpl();
 	Sys_Common_Output::delete_output_excep();
 	Sys_Common_Output::delete_output_hyd();
 	Sys_Common_Output::delete_output_dam();
@@ -738,7 +738,7 @@ void Main_Wid::statusbar_connect(void){
 }
 //Enable/disable menu and show/hide the data tabs in the dataview corresponding the project type, when a project is open
 void Main_Wid::enable_menu_project_open(const bool new_project){
-	this->actionTemp_per_database->setVisible(false);
+	
 
 	this->system_state.set_systemid(this->project_manager.get_stored_system_state());
 	this->setEnabled(false);
@@ -752,7 +752,7 @@ void Main_Wid::enable_menu_project_open(const bool new_project){
 	this->action_close_all_tables->setEnabled(true);
 	this->menu_hyd_import->setEnabled(true);
 	this->action_delete_boundary_scenario->setEnabled(true);
-	this->menu_fpl2hyd->setEnabled(false);
+	
 	this->menu_import_HYD_results->setEnabled(false);
 	this->action_delete_hyd_results->setEnabled(false);
 	this->action_madm_calc_database->setEnabled(false);
@@ -780,7 +780,7 @@ void Main_Wid::enable_menu_project_open(const bool new_project){
 	this->tabWidget_outtext->addTab(this->tab_exceptiontxt, my_icon4_excep, sys_label::str_excep.c_str());
 
 	if(this->project_manager.get_project_type()==_sys_project_type::proj_all){
-		this->menu_FPL_system->setEnabled(true);
+		
 		this->menu_HYD_system->setEnabled(true);
 		this->menu_DAM_system->setEnabled(true);
 		this->menu_RISK_system->setEnabled(true);
@@ -812,23 +812,17 @@ void Main_Wid::enable_menu_project_open(const bool new_project){
 			//dam
 			this->menu_dam_ecn->setEnabled(false);
 			this->menu_dam_eco->setEnabled(false);
-			this->menu_dam_pys->setEnabled(false);
-			this->menu_dam_pop->setEnabled(false);
-			this->menu_dam_sc->setEnabled(false);
-			this->menu_dam_CI->setEnabled(false);
+
 			this->action_dam_connect->setEnabled(false);
 			//fpl
 			this->action_fpl_import_file->setEnabled(false);
 			this->action_delete_fpl_section->setEnabled(false);
 		}
 
-		this->menu_fpl2hyd->setEnabled(true);
+		
 
 		//data-tabs of the data view
-		QIcon my_icon;
-		my_icon.addFile(":fpl_icon");
-		this->tabWidget_data_output->addTab(this->tab_fpl_data_view, my_icon, sys_label::str_fpl.c_str());
-		QIcon my_icon1;
+			QIcon my_icon1;
 		my_icon1.addFile(":hyd_icon");
 		this->tabWidget_data_output->addTab(this->tab_hyd_data_view, my_icon1,sys_label::str_hyd.c_str());
 		QIcon my_icon2;
@@ -850,9 +844,6 @@ void Main_Wid::enable_menu_project_open(const bool new_project){
 		
 
 		//data-tabs of the txt output
-		QIcon my_icon4;
-		my_icon4.addFile(":fpl_icon" );
-		this->tabWidget_outtext->addTab(this->tab_fpltxt, my_icon4,sys_label::str_fpl.c_str());
 		QIcon my_icon5;
 		my_icon5.addFile(":hyd_icon");
 		this->tabWidget_outtext->addTab(this->tab_hydtxt, my_icon5, sys_label::str_hyd.c_str());
@@ -881,8 +872,8 @@ void Main_Wid::enable_menu_project_open(const bool new_project){
 		this->treeWidget_data->set_ptr_data_tab_alt(this->tab_alt_data_view);
 		this->treeWidget_data->set_ptr_data_tab_cost(this->tab_cost_data_view);
 	}
-	else if(this->project_manager.get_project_type()==_sys_project_type::proj_hyd || this->project_manager.get_project_type() == _sys_project_type::proj_hyd_temp){
-		this->menu_FPL_system->setEnabled(false);
+	else if(this->project_manager.get_project_type()==_sys_project_type::proj_hyd ){
+		
 		this->menu_HYD_system->setEnabled(true);
 		this->menu_DAM_system->setEnabled(false);
 		this->menu_RISK_system->setEnabled(false);
@@ -901,15 +892,9 @@ void Main_Wid::enable_menu_project_open(const bool new_project){
 		//set pointer to data-tree of the tab data widgets
 		this->treeWidget_data->set_ptr_data_tab_hyd(this->tab_hyd_data_view);
 
-		if (this->project_manager.get_project_type() == _sys_project_type::proj_hyd_temp) {
-			this->actionTemp_per_database->setVisible(true);
-			//Set a hydraulic calculation per database (menu hyd/calculation/per database)
-			QObject::connect(this->actionTemp_per_database, SIGNAL(triggered()), this, SLOT(set_hydtempcalc_per_db()));
-			
-		}
 	}
 	else if(this->project_manager.get_project_type()==_sys_project_type::proj_hyd_file ){
-		this->menu_FPL_system->setEnabled(false);
+		
 		this->menu_HYD_system->setEnabled(true);
 		this->menu_DAM_system->setEnabled(false);
 		this->menu_RISK_system->setEnabled(false);
@@ -936,7 +921,7 @@ void Main_Wid::enable_menu_project_open(const bool new_project){
 		this->tabWidget_outtext->addTab(this->tab_hydtxt, my_icon5, sys_label::str_hyd.c_str());
 	}
 	else if(this->project_manager.get_project_type()==_sys_project_type::proj_risk){
-		this->menu_FPL_system->setEnabled(true);
+		
 		this->menu_HYD_system->setEnabled(true);
 		this->menu_DAM_system->setEnabled(true);
 		this->menu_RISK_system->setEnabled(true);
@@ -949,12 +934,9 @@ void Main_Wid::enable_menu_project_open(const bool new_project){
 		}
 		this->menu_ALT_system->setEnabled(false);
 		this->menu_MADM_system->setEnabled(false);
-		this->menu_fpl2hyd->setEnabled(true);
+		
 
 		//data-tabs of the data view
-		QIcon my_icon;
-		my_icon.addFile(":fpl_icon");
-		this->tabWidget_data_output->addTab(this->tab_fpl_data_view, my_icon, sys_label::str_fpl.c_str());
 		QIcon my_icon1;
 		my_icon1.addFile(":hyd_icon");
 		this->tabWidget_data_output->addTab(this->tab_hyd_data_view, my_icon1,sys_label::str_hyd.c_str());
@@ -966,9 +948,6 @@ void Main_Wid::enable_menu_project_open(const bool new_project){
 		this->tabWidget_data_output->addTab(this->tab_risk_data_view, my_icon3,sys_label::str_risk.c_str());
 
 		//data-tabs of the txt output
-		QIcon my_icon4;
-		my_icon4.addFile(":fpl_icon" );
-		this->tabWidget_outtext->addTab(this->tab_fpltxt, my_icon4,sys_label::str_fpl.c_str());
 		QIcon my_icon5;
 		my_icon5.addFile(":hyd_icon");
 		this->tabWidget_outtext->addTab(this->tab_hydtxt, my_icon5, sys_label::str_hyd.c_str());
@@ -985,7 +964,7 @@ void Main_Wid::enable_menu_project_open(const bool new_project){
 		this->treeWidget_data->set_ptr_data_tab_risk(this->tab_risk_data_view);
 	}
 	else if(this->project_manager.get_project_type()==_sys_project_type::proj_dam){
-		this->menu_FPL_system->setEnabled(false);
+		
 		this->menu_HYD_system->setEnabled(false);
 		this->menu_import_HYD_results->setEnabled(true);
 		this->action_delete_hyd_results->setEnabled(true);
@@ -1015,7 +994,7 @@ void Main_Wid::enable_menu_project_open(const bool new_project){
 		this->treeWidget_data->set_ptr_data_tab_dam(this->tab_dam_data_view);
 	}
 	else if(this->project_manager.get_project_type()==_sys_project_type::proj_dam_hyd){
-		this->menu_FPL_system->setEnabled(false);
+		
 		this->menu_HYD_system->setEnabled(true);
 		this->menu_DAM_system->setEnabled(true);
 		this->menu_RISK_system->setEnabled(false);
@@ -1042,27 +1021,7 @@ void Main_Wid::enable_menu_project_open(const bool new_project){
 		this->treeWidget_data->set_ptr_data_tab_hyd(this->tab_hyd_data_view);
 		this->treeWidget_data->set_ptr_data_tab_dam(this->tab_dam_data_view);
 	}
-	else if(this->project_manager.get_project_type()==_sys_project_type::proj_fpl){
-		this->menu_FPL_system->setEnabled(true);
-		this->menu_HYD_system->setEnabled(false);
-		this->menu_DAM_system->setEnabled(false);
-		this->menu_RISK_system->setEnabled(false);
-		this->menu_ALT_system->setEnabled(false);
-		this->menu_MADM_system->setEnabled(false);
-		this->menu_fpl2hyd->setEnabled(false);
 
-		//data-tabs of the data view
-		QIcon my_icon;
-		my_icon.addFile(":fpl_icon");
-		this->tabWidget_data_output->addTab(this->tab_fpl_data_view, my_icon, sys_label::str_fpl.c_str());
-
-		//data-tabs of the txt output
-		QIcon my_icon4;
-		my_icon4.addFile(":fpl_icon" );
-		this->tabWidget_outtext->addTab(this->tab_fpltxt, my_icon4,sys_label::str_fpl.c_str());
-
-
-	}
 	this->setEnabled(true);
 }
 //Enable/disable menu and show/hide the data tabs in the dataview corresponding the project type, when a project is closed
@@ -1090,7 +1049,7 @@ void Main_Wid::enable_menu_project_closed(void){
 	buffer_id.measure_nr=0;
 	this->set_system_state(buffer_id);
 
-	this->menu_FPL_system->setEnabled(false);
+	
 	this->menu_HYD_system->setEnabled(false);
 	this->menu_DAM_system->setEnabled(false);
 	this->menu_RISK_system->setEnabled(false);
@@ -1137,7 +1096,7 @@ void Main_Wid::enable_menu_project_closed(void){
 }
 //Enable/disable menu
 void Main_Wid::enable_menu(const bool flag) {
-	this->menu_FPL_system->setEnabled(flag);
+	
 	this->menu_HYD_system->setEnabled(flag);
 	this->menu_DAM_system->setEnabled(flag);
 	this->menu_RISK_system->setEnabled(flag);
@@ -1205,9 +1164,7 @@ void Main_Wid::menu_enable_checkdb(void){
 		this->action_calc_frc->setEnabled(true);
 		this->action_calc_mc->setEnabled(true);
 		this->action_calc_determ->setEnabled(true);
-		if(Sys_Project::get_project_type()==_sys_project_type::proj_risk || Sys_Project::get_project_type()==_sys_project_type::proj_all){
-			this->menu_fpl2hyd->setEnabled(true);
-		}
+
 		this->action_check_fpl_db->setEnabled(true);
 		if(this->system_state.get_sys_system_id().measure_nr==0){
 			this->action_fpl_import_file->setEnabled(true);
@@ -1228,13 +1185,9 @@ void Main_Wid::menu_enable_checkdb(void){
 		//menu dam
 		if(this->system_state.get_sys_system_id().measure_nr==0){
 			this->menu_dam_ecn->setEnabled(true);
-			this->menu_ecn_imp->setEnabled(true);
-			this->menu_dam_eco->setEnabled(true);
-			this->menu_dam_pop->setEnabled(true);
-			this->menu_dam_pys->setEnabled(true);
-			this->menu_pys_imp->setEnabled(true);
-			this->menu_dam_sc->setEnabled(true);
-			this->menu_dam_CI->setEnabled(true);
+			//add other damage modules!!
+		
+
 		}
 		this->menu_dam_system->setEnabled(true);
 		this->action_check_dam_tables->setEnabled(true);
@@ -1291,19 +1244,7 @@ void Main_Wid::menu_enable_checkdb(void){
 		this->status_wid->set_dbcon(true);
 	}
 	else{
-		//menu fpl
-		this->action_check_fpl_tables->setEnabled(false);
-		this->action_export_DETERM->setEnabled(false);
-		this->action_export_MC->setEnabled(false);
-		this->action_export_FRC->setEnabled(false);
-		this->action_user_defined_frc->setEnabled(false);
-		this->action_calc_frc->setEnabled(false);
-		this->action_calc_mc->setEnabled(false);
-		this->action_calc_determ->setEnabled(false);
-		this->menu_fpl2hyd->setEnabled(false);
-		this->action_check_fpl_db->setEnabled(false);
-		this->action_fpl_import_file->setEnabled(false);
-		this->action_delete_fpl_section->setEnabled(false);
+
 		//menu hyd
 		this->menu_hyd_import->setEnabled(false);
 		this->action_check_hyd_tables->setEnabled(false);
@@ -1312,13 +1253,9 @@ void Main_Wid::menu_enable_checkdb(void){
 		this->action_delete_boundary_scenario->setEnabled(false);
 		//menu dam
 		this->menu_dam_ecn->setEnabled(false);
-		this->menu_ecn_imp->setEnabled(false);
-		this->menu_dam_eco->setEnabled(false);
-		this->menu_dam_pop->setEnabled(false);
-		this->menu_dam_pys->setEnabled(false);
-		this->menu_pys_imp->setEnabled(false);
-		this->menu_dam_sc->setEnabled(false);
-		this->menu_dam_CI->setEnabled(false);
+		///add other dam systems
+
+
 		this->menu_dam_system->setEnabled(false);
 		this->action_check_dam_tables->setEnabled(false);
 		//menu sys
@@ -1382,16 +1319,10 @@ void Main_Wid::check_hyd_thread_is_running(void){
 		//dam
 		this->action_dam_connect->setEnabled(false);
 		this->action_dam_calculate->setEnabled(false);
-		this->action_connect_raster_ecn->setEnabled(false);
-		this->action_connect_raster_pop->setEnabled(false);
-		this->action_connect_raster_eco->setEnabled(false);
-		this->action_connect_raster_pys->setEnabled(false);
-		this->action_sc_connect->setEnabled(false);
-		this->action_CI_connect->setEnabled(false);
-		this->action_dam_instat_calculate->setEnabled(false);
 
-		//fpl
-		this->menu_fpl2hyd->setEnabled(false);
+		
+
+
 
 		//risk
 		this->status_wid->get_ptr_risk_state_check_box()->setEnabled(false);
@@ -1428,13 +1359,7 @@ void Main_Wid::check_hyd_thread_is_running(void){
 				this->action_dam_connect->setEnabled(true);
 			}
 			this->action_dam_calculate->setEnabled(true);
-			this->action_connect_raster_ecn->setEnabled(true);
-			this->action_connect_raster_pop->setEnabled(true);
-			this->action_connect_raster_eco->setEnabled(true);
-			this->action_connect_raster_pys->setEnabled(true);
-			this->action_sc_connect->setEnabled(true);
-			this->action_CI_connect->setEnabled(true);
-			this->action_dam_instat_calculate->setEnabled(true);
+
 		}
 
 
@@ -1516,10 +1441,7 @@ void Main_Wid::check_dam_thread_is_running(void){
 		//dam
 		this->menu_dam_ecn->setEnabled(false);
 		this->menu_dam_eco->setEnabled(false);
-		this->menu_dam_pop->setEnabled(false);
-		this->menu_dam_pys->setEnabled(false);
-		this->menu_dam_sc->setEnabled(false);
-		this->menu_dam_CI->setEnabled(false);
+		
 		this->menu_dam_system->setEnabled(false);
 		this->action_check_dam_tables->setEnabled(false);
 		this->menu_import_HYD_results->setEnabled(false);
@@ -1543,11 +1465,7 @@ void Main_Wid::check_dam_thread_is_running(void){
 		if(this->system_state.get_sys_system_id().measure_nr==0){
 			this->menu_dam_ecn->setEnabled(true);
 			this->menu_dam_eco->setEnabled(true);
-			this->menu_dam_pop->setEnabled(true);
-			this->menu_dam_pys->setEnabled(true);
-			this->menu_pys_imp->setEnabled(true);
-			this->menu_dam_sc->setEnabled(true);
-			this->menu_dam_CI->setEnabled(true);
+			
 			if(Sys_Project::get_project_type()==_sys_project_type::proj_dam){
 				this->menu_import_HYD_results->setEnabled(true);
 				this->action_delete_hyd_results->setEnabled(true);
@@ -1561,12 +1479,7 @@ void Main_Wid::check_dam_thread_is_running(void){
 				this->action_dam_connect->setEnabled(true);
 			}
 			this->action_dam_calculate->setEnabled(true);
-			this->action_connect_raster_ecn->setEnabled(true);
-			this->action_connect_raster_pop->setEnabled(true);
-			this->action_connect_raster_eco->setEnabled(true);
-			this->action_connect_raster_pys->setEnabled(true);
-			this->action_sc_connect->setEnabled(true);
-			this->action_CI_connect->setEnabled(true);
+
 		}
 
 		Sys_Common_Output::output_dam->reset_userprefix();
@@ -2112,7 +2025,7 @@ void Main_Wid::set_risk_state_flag(const _risk_state_flags flags){
 		}
 		this->menu_HYD_system->setEnabled(!this->risk_flags.risk_state_flag);
 		this->menu_DAM_system->setEnabled(!this->risk_flags.risk_state_flag);
-		this->menu_FPL_system->setEnabled(!this->risk_flags.risk_state_flag);
+		
 	}
 }
 //Set the system state and change the status bar
@@ -2480,7 +2393,6 @@ void Main_Wid::close_project(void){
 	Sys_Common_Output::output_system->close_file();
 	Sys_Common_Output::output_dam->close_file();
 	Sys_Common_Output::output_excep->close_file();
-	Sys_Common_Output::output_fpl->close_file();
 	Sys_Common_Output::output_hyd->close_file();
 	Sys_Common_Output::output_madm->close_file();
 	Sys_Common_Output::output_risk->close_file();
@@ -2694,7 +2606,7 @@ void Main_Wid::tables_creation_manager(void){
 				return;
 			}
 		}
-		else if(this->project_manager.get_project_type()==_sys_project_type::proj_hyd || this->project_manager.get_project_type() == _sys_project_type::proj_hyd_temp){
+		else if(this->project_manager.get_project_type()==_sys_project_type::proj_hyd ){
 			if(this->hyd_tables_created==false){
 				this->create_hyd_system_database_tables();
 				return;
@@ -2785,6 +2697,7 @@ void Main_Wid::tables_check_manager(void){
 
 		if(this->risk_tables_created==false){
 			this->check_risk_system_database_tables();
+			
 			return;
 		}
 		if(this->cost_tables_created==false){
@@ -2800,7 +2713,7 @@ void Main_Wid::tables_check_manager(void){
 			return;
 		}
 	}
-	else if(this->project_manager.get_project_type()==_sys_project_type::proj_hyd || this->project_manager.get_project_type() == _sys_project_type::proj_hyd_temp){
+	else if(this->project_manager.get_project_type()==_sys_project_type::proj_hyd ){
 		if(this->hyd_tables_created==false){
 			this->check_hyd_system_database_tables();
 			return;
@@ -2821,7 +2734,8 @@ void Main_Wid::tables_check_manager(void){
 		}
 
 		if(this->risk_tables_created==false){
-			this->check_risk_system_database_tables();
+				this->check_risk_system_database_tables();
+			
 			return;
 		}
 	}
@@ -2986,11 +2900,11 @@ void Main_Wid::read_existing_project(void){
 		emit send_txt2statusbar("Check for project updates...", 0);
 		//update project version
 		try{
-			if (Sys_Project::get_project_type() != _sys_project_type::proj_hydrol && Sys_Project::get_project_type() != _sys_project_type::proj_hyd_temp) {
+			
 				//this->version_update.check_update_hyd_table_obs_point(this->system_database->get_database());
 				//this->version_update.check_update_hyd_table_polysegment_name(this->project_manager.get_project_file_name());
 
-			}
+			
 			
 		}
 		catch(Error msg){
@@ -4137,7 +4051,7 @@ void Main_Wid::thread_hyd_check_tables_finished(void){
 		this->delete_multi_hydraulic_system();
 		this->hyd_tables_created=true;
 		emit send_table_check_is_finished();
-		if (this->task_flag == true && (this->project_manager.get_project_type() == _sys_project_type::proj_hyd || this->project_manager.get_project_type() == _sys_project_type::proj_hyd_temp)) {
+		if (this->task_flag == true && (this->project_manager.get_project_type() == _sys_project_type::proj_hyd)) {
 			emit send_task_by_file_start();
 		}
 	}
@@ -4718,7 +4632,7 @@ void Main_Wid::enable_hyd_module_extern(bool flag){
 		this->action_delete_boundary_scenario->setEnabled(false);
 		this->menu_hyd_calc->setEnabled(false);
 		this->menu_hyd_check->setEnabled(false);
-		this->menu_fpl2hyd->setEnabled(false);
+		
 	}
 	else{
 		if(this->system_state.get_sys_system_id().area_state==0 && this->system_state.get_sys_system_id().measure_nr==0){
@@ -4727,7 +4641,7 @@ void Main_Wid::enable_hyd_module_extern(bool flag){
 		}
 		this->menu_hyd_calc->setEnabled(true);
 		this->menu_hyd_check->setEnabled(true);
-		this->menu_fpl2hyd->setEnabled(true);
+		
 	}
 }
 //Recieve if a module extern uses the hydraulic thread
@@ -5537,6 +5451,8 @@ void Main_Wid::create_risk_system_database_tables(void){
 //	this->risk_calc->start();
 	this->check_risk_thread_is_running();
 	this->risk_tables_created=true;
+	//remove this after reinstalling tabels!
+	this->thread_risk_create_tables_finished();
 }
 //Check for the normal end of the risk create-tables thread
 void Main_Wid::thread_risk_create_tables_finished(void){
@@ -5568,9 +5484,11 @@ void Main_Wid::check_risk_system_database_tables(void){
 
 //	this->risk_calc->set_ptr2database(this->system_database->get_database());
 	//start calculation
-	this->risk_calc->start();
+	//this->risk_calc->start();
 	this->check_risk_thread_is_running();
 	this->risk_tables_created=true;
+	//remove this after reinstalling tabels!
+	this->thread_risk_check_tables_finished();
 }
 //Check for the normal end of the risk check-datbase tables thread
 void Main_Wid::thread_risk_check_tables_finished(void){
@@ -6625,10 +6543,7 @@ void Main_Wid::thread_measure_switch_is_finished(void){
 	//dam
 	this->menu_dam_ecn->setEnabled(false);
 	this->menu_dam_eco->setEnabled(false);
-	this->menu_dam_pys->setEnabled(false);
-	this->menu_dam_pop->setEnabled(false);
-	this->menu_dam_sc->setEnabled(false);
-	this->menu_dam_CI->setEnabled(false);
+
 	this->action_dam_connect->setEnabled(false);
 	//fpl
 
@@ -7072,11 +6987,11 @@ void Main_Wid::uncheck_status_display(bool flag){
 //Message with the "about"-text (menu help)
 void Main_Wid::about(void){
 	ostringstream text;
-	text << "ProMaIDes (Protection Measures against Inundation Desicion Support). <br><br>" << endl;
+	text << "LoFloDes (Low Flow Desicion Support). <br><br>" << endl;
     text << "This is version "<<Sys_Project::get_version_number()<<" produced at "<<Sys_Project::get_version_date() <<".<br><br>"<<endl;
-    text << "Produced by the <a href ='https://tinyurl.com/agfrm77'>AG FRM</a> of the University of applied sciences Magdeburg-Stendal<br> and the <a href ='https://www.iww.rwth-aachen.de/go/id/lygz/?lidx=1'>IWW</a> of RWTH Aachen University.<br><br>"<< endl;
+    text << "Produced by the <a href ='https://tinyurl.com/agfrm77'>AG FRM</a> of the University of applied sciences Magdeburg-Stendal during the BMBF-WaX-DryRivers project<br>.<br><br>"<< endl;
     text << "Copyright by AG FRM (HS-M), IWW (RWTH) 2023.<br>"<< endl;
-	text << "It is distributed under <a href='https://promaides.myjetbrains.com/youtrack/articles/PMID-A-34/License'>a GPL-3.0-only license</a>." << endl;
+	text << "It is distributed under <a href='https://promaides.myjetbrains.com/youtrack/articles/LFD-A-15/License'>a GPL-3.0-only license</a>." << endl;
 	text << "This program comes with ABSOLUTELY NO WARRANTY. This is free software, and you are welcome to redistribute it under GPL-3.0-only conditions." << endl;
 	QString buff;
 	buff = text.str().c_str();
@@ -7094,13 +7009,13 @@ void Main_Wid::about(void){
 void Main_Wid::open_doku(void){
 
 	ostringstream text;
-	text << "ProMaIDes (Protection Measures against Inundation Desicion Support). <br><br>" << endl;
+	text << "LoFloDes (Low Flow Desicion Support). <br><br>" << endl;
 	text << "Please follow our online manuals:<br><br>" << endl;
-	text << " - <a href ='https://promaides.myjetbrains.com/youtrack/articles/PMID-A-7/General'>General information</a> <br>" << endl;
-	text << " - <a href ='https://promaides.myjetbrains.com/youtrack/articles/PMID-A-1/Theory-guide'>Theory guide</a> <br>" << endl;
-	text << " - <a href ='https://promaides.myjetbrains.com/youtrack/articles/PMID-A-5/Application-guide'>Application guide</a> <br>" << endl;
+	text << " - <a href ='https://promaides.myjetbrains.com/youtrack/articles/LFD-A-1/General'>General information</a> <br>" << endl;
+	text << " - <a href ='https://promaides.myjetbrains.com/youtrack/articles/LFD-A-2/Theory-Guide'>Theory guide</a> <br>" << endl;
+	text << " - <a href ='https://promaides.myjetbrains.com/youtrack/articles/LFD-A-10/Application-Guide'>Application guide</a> <br>" << endl;
 	text << " - <a href ='https://promaides.myjetbrains.com/youtrack/articles/PMID-A-12/Development-guide'>Development guide</a> <br>" << endl;
-	text << " - <a href ='https://promaides.myjetbrains.com/youtrack/articles/PMDP-A-31/General'>Guide to ProMaIDes Helpers</a> <br>" << endl;
+	text << " - <a href ='https://promaides.myjetbrains.com/youtrack/articles/LFDH'>Guide to LoFloDes Helpers</a> <br>" << endl;
 
 	QString buff;
 	buff = text.str().c_str();
@@ -7125,7 +7040,7 @@ void Main_Wid::open_doku(void){
 //Open the Community of users (menu help)
 void Main_Wid::open_com_users(void) {
 	ostringstream text;
-	text << "ProMaIDes (Protection Measures against Inundation Desicion Support). <br><br>" << endl;
+	text << "LoFloDes (Low Flow Desicion Support). <br><br>" << endl;
 	text << "Interested in more information; please join our <a href ='https://promaides.myjetbrains.com/youtrack/articles/PMID-A-33/Community-of-users'>community of users</a>.<br>" << endl;
 
 	QString buff;
