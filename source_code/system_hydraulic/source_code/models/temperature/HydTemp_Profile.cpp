@@ -3370,7 +3370,7 @@ void HydTemp_Profile::output_result_members_per_timestep(ofstream *file, const d
 //Output the result members for each riverprofiletype at every timestep to csv file
 void HydTemp_Profile::output_result_members_per_timestep2csv(ofstream *file, const double rv_station, const double z_min) {
 	*file << W(10) << P(2) << FORMAT_FIXED_REAL << rv_station << ",";
-	//*file << W(10) << P(2) << FORMAT_FIXED_REAL << z_min << ",";
+	*file << W(10) << P(2) << FORMAT_FIXED_REAL << z_min << ",";
 	*file << W(10) << P(3) << FORMAT_FIXED_REAL << this->temp_current << ",";
 	//*file << W(10) << P(3) << FORMAT_FIXED_REAL << this->air_temp.current_value << ",";
 	//*file << W(10) << P(3) << FORMAT_FIXED_REAL << this->solar_rad.current_value << ",";
