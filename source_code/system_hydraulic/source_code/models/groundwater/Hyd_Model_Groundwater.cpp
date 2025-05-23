@@ -2225,7 +2225,7 @@ void Hyd_Model_Groundwater::output_result2database(QSqlDatabase *ptr_database, c
 void Hyd_Model_Groundwater::output_solver_errors(const double time_point, const int step_counter, const string timestring, const string realtime, const double diff_time, const int total_internal, const int internal_steps) {
 	//set prefix for output
 	ostringstream prefix;
-	prefix << "GW_" << this->Param_GW.GWNumber << "> ";
+	prefix << "FP_" << this->Param_GW.GWNumber << "> ";
 	Sys_Common_Output::output_hyd->set_userprefix(prefix.str());
 
 	ostringstream cout;
