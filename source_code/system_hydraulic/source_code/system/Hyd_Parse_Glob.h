@@ -50,6 +50,8 @@ private:
 	bool found_no_river;
 	///Foundflag for the number of floodplain setting
 	bool found_no_floodplain;
+	///Foundflag for the number of groundwater setting
+	bool found_no_groundwater;
 	///Foundflag for the number of internal timesteps
 	bool found_no_int_timesteps;
 	///Foundflag for the number of timesteps
@@ -60,6 +62,10 @@ private:
 	bool found_starttime;
 	///Foundflag for the material file name
 	bool found_material_file;
+	///Foundflag for the conductivity file name
+	bool found_conductivity_file;
+	///Foundflag for the porosity file name
+	bool found_porosity_file;
 
 
 	//methods
@@ -69,6 +75,8 @@ private:
 	void parse_floodplain_number(_hyd_keyword_file Key, word Command);
 	///Parse number of rivers 
 	void parse_river_number(_hyd_keyword_file Key, word Command);
+	///Parse number of groundwater 
+	void parse_groundwater_number(_hyd_keyword_file Key, word Command);
 	///Parse number of diversion channels 
 	void parse_diversion_channel_number(_hyd_keyword_file Key, word Command);
 	///Parse number of structure coupling (1d2d) 
@@ -91,6 +99,10 @@ private:
 	void parse_sync_setting(_hyd_keyword_file Key, word Command);
 	///Parse file name, where the manning values are set
 	void parse_material_file(_hyd_keyword_file Key, word Command);
+	///Parse file name, where the kf values are set
+	void parse_conductivity_file(_hyd_keyword_file Key, word Command);
+	///Parse file name, where the porosity values are set
+	void parse_porosity_file(_hyd_keyword_file Key, word Command);
 	///Parse file name, where the observation points are set
 	void parse_obs_point_file(_hyd_keyword_file Key, word Command);
 	///Check if the requiered paramaters were found

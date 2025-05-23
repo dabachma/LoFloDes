@@ -104,10 +104,32 @@
 #include "Hyd_Floodplain_Dikeline_Point.h"
 //List class for dikeline points
 #include "Hyd_Floodplain_Dikeline_Point_List.h"
+
+//A polygon of the groundwater (geometrical boundary, noflow-polygon etc.)
+#include "Hyd_Groundwater_Polygon.h"
+//A polysegement of the groundwater like riverlines
+#include "Hyd_Groundwater_Polysegment.h"
+//The numerical raster of the groundwater
+#include "Hyd_Groundwater_Raster.h"
+//A raster polygon of the numerical raster of the groundwater
+#include "Hyd_Groundwaterraster_Polygon.h"
+//A segment of the raster polygon (numerical raster of the groundwater)
+#include "Hyd_Groundwaterraster_Segment.h"
+//A point of the raster (numerical raster of the groundwater)
+#include "Hyd_Groundwaterraster_Point.h"
+//A list of raster points
+#include "Hyd_Groundwaterraster_Point_List.h"
+//Line Points
+#include "Hyd_Groundwater_Line_Point.h"
+//List of Line Points
+#include "Hyd_Groundwater_Line_Point_List.h"
+
 //boundary members
 #include "Hyd_Element_Bound_Members.h"
+#include "Hyd_Element_Bound_GW_Members.h"
 //coupling members
 #include "Hyd_Element_Coup_Members.h"
+#include "Hyd_Element_Coup_GW_Members.h"
 
 //Elements of the floodplain model
 #include "Hyd_Element_Floodplain.h"
@@ -124,6 +146,15 @@
 //Floodplain element which is just use in cause of an DAM-project
 #include "Hyd_Element_Floodplain_Type_Dam.h"
 
+//Elements of the groundwater model
+#include "Hyd_Element_Groundwater.h"
+//Base class for the element types
+#include "_Hyd_Element_Groundwater_Type.h"
+//Standard element
+#include "Hyd_Element_Groundwater_Type_Standard.h"
+//Noflow element
+#include "Hyd_Element_Groundwater_Type_Noflow.h"
+
 //class for coupling
 //List where indices of coupled models are stored
 #include "Hyd_Coupling_Model_List.h"
@@ -131,6 +162,10 @@
 #include "Hyd_Coupling_Management.h"
 //Coupling class for a river-model coupled with a coast-model
 #include "Hyd_Coupling_RV2CO.h"
+//Coupling class for river-models coupled with a groundwater-model
+#include "Hyd_Coupling_RV2GW.h"
+//Coupling class for river-models coupled with multiple groundwater models
+#include "Hyd_Coupling_RV2GW_Merged.h"
 //Coupling class for river-models coupled with a floodplain-model
 #include "Hyd_Coupling_RV2FP.h"
 //Merged coupling class one river-models coupled with multiple floodplain-model
@@ -143,6 +178,8 @@
 #include "Hyd_Coupling_FP2FP.h"
 //Coupling class for a river-model coupled with a river-model
 #include "Hyd_Coupling_RV2RV.h"
+//Coupling class for a groundwater-model coupled with a groundwater-model
+#include "Hyd_Coupling_GW2GW.h"
 //Coupling class for a river-model coupled with a river-model via a diversion channel
 #include "Hyd_Coupling_RV2RV_Diversion.h"
 //Coupling class for a river-model coupled with a floodplain-model via a hydraulic structure
@@ -157,12 +194,17 @@
 #include "_Hyd_Coupling_Point.h"
 //Base class of a list for the management of coupling points
 #include "_Hyd_Coupling_Point_List.h"
+#include "_Hyd_Coupling_Point_List_GW.h"
 #include "Hyd_Coupling_Point_RV2FP.h"
 #include "Hyd_Coupling_Point_RV2FP_List.h"
+#include "Hyd_Coupling_Point_RV2GW.h"
+#include "Hyd_Coupling_Point_RV2GW_List.h"
 #include "Hyd_Coupling_Point_FP2CO.h"
 #include "Hyd_Coupling_Point_FP2CO_List.h"
 #include "Hyd_Coupling_Point_FP2FP.h"
 #include "Hyd_Coupling_Point_FP2FP_List.h"
+#include "Hyd_Coupling_Point_GW2GW.h"
+#include "Hyd_Coupling_Point_GW2GW_List.h"
 
 //Base class for the coupling structures
 #include "_Hyd_Coupling_Structure.h"
@@ -176,10 +218,16 @@
 #include "Hyd_Param_RV.h" 
 //container class for the floodplain parameters
 #include "Hyd_Param_FP.h"			
+//container class for the groundwater parameters
+#include "Hyd_Param_GW.h"
 //container class the of global parameters
 #include "Hyd_Param_Global.h" 
 //cointainer class for the material parameters
 #include "Hyd_Param_Material.h"
+//container class for the conductivity parameters
+#include "Hyd_Param_Conductivity.h"
+//container class for the porosity parameters
+#include "Hyd_Param_Porosity.h"
 
 //Parser classes
 //Base class for the input per file
@@ -190,6 +238,8 @@
 #include "Hyd_Parse_RV.h"
 //class parsing the floodplain models
 #include "Hyd_Parse_FP.h"
+//class parsing the groundwater model
+#include "Hyd_Parse_GW.h"
 //class parsing the coast models
 #include "Hyd_Parse_CO.h"
 //class parsing the data for the diversion channel coupling
@@ -204,6 +254,8 @@
 
 //Class of instationary boundary conditions
 #include "Hyd_Instationary_Boundary.h"
+//Class of instationary GW boundary conditions
+#include "Hyd_Instationary_Boundary_GW.h"
 
 //Dialog for choosing one hydraulic file for importing it into a database
 #include "HydGui_System_Filechooser_Dia.h"
@@ -253,6 +305,7 @@
 
 //Widget for displaying data
 #include "HydGui_Floodplain_Member_Wid.h"
+#include "HydGui_Groundwater_Member_Wid.h"
 #include "HydGui_River_Member_Wid.h"
 #include "HydGui_System_Member_Wid.h"
 #include "HydGui_Rv_Profile_General_Wid.h"

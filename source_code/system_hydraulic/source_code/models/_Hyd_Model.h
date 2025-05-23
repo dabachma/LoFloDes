@@ -14,6 +14,7 @@
 #include "Hyd_Param_Global.h" 
 //class of Instationary boundary conditions
 #include "Hyd_Instationary_Boundary.h"
+#include "groundwater/Hyd_Instationary_Boundary_GW.h"
 
 //system_sys_ classes
 #include "_Sys_Common_System.h"
@@ -72,10 +73,14 @@ public:
 	//members
 	///Instationary boundary curves for river and floodplain models
 	Hyd_Instationary_Boundary *instat_boundary_curves;
+	///Instationary boundary curves for groundwater models
+	Hyd_Instationary_Boundary_GW *instat_boundary_curves_gw;
 
 	//methods
 	///Input the model members with the index per file with parser
 	virtual void input_members(const string global_file, const int index, const string global_path)=0;
+	///Input the model members with the index per file with parser. Special case for river-groundwater interaction
+	//virtual void input_members(const string global_file, const int index, const string global_path, bool gwmodel_applied) = 0;
 	///Transfer the model members to a database
 	virtual void transfer_input_members2database(QSqlDatabase *ptr_database)=0;
 	///Transfer a hydraulic boundary szenario from file to a database
@@ -117,6 +122,8 @@ public:
 	///Output final statistics of the river model
 	virtual void output_final(void)=0;
 
+	///Output the maximum result members to tecplot
+	//virtual void output_result_max2tecplot(void)=0;
 
 
 	///Output the solver errors per internal timestep

@@ -7,7 +7,7 @@ Tables *Hyd_Param_Global::global_param_table=NULL;
 //TODO: file input, database input, erase file pathes in Models
 
 //constructor
-Hyd_Param_Global::Hyd_Param_Global(void):default_max_steps(40000), default_init_stepsize(0.0), default_max_h_change_fp(1000.0), default_max_h_change_rv(1000.0), default_min_internal_step(10.0), default_max_v_change_rv(1000.0) {
+Hyd_Param_Global::Hyd_Param_Global(void):default_max_steps(40000), default_init_stepsize(0.0), default_max_h_change_fp(1000.0), default_max_h_change_gw(1000.0), default_max_h_change_rv(1000.0), default_min_internal_step(10.0), default_max_v_change_rv(1000.0) {
 
 	this->param_set_number=0;
 	//timesettings
@@ -17,9 +17,11 @@ Hyd_Param_Global::Hyd_Param_Global(void):default_max_steps(40000), default_init_
 	this->GlobNofITS = 10;
 	//modelsettings
 	this->GlobNofFP=0;
+	this->GlobNofGW = 0;
 	this->GlobNofRV=0;
 	this->coastmodel_applied=false;
 	this->tempmodel_applied = false;
+	this->gwmodel_applied = false;
 	//setted couplings
 	this->number_div_channel=0;
 	this->number_struc_coupling=0;
@@ -27,6 +29,11 @@ Hyd_Param_Global::Hyd_Param_Global(void):default_max_steps(40000), default_init_
 	this->number_dikebreak_fp2co_coupling=0;
 	//material file
 	this->material_file=label::not_set;
+	//conductivity file
+	this->conductivity_file = label::not_set;
+	//porosity file
+	this->porosity_file = label::not_set;
+	//observation point file
 	this->obs_point_file=label::not_set;
 	//solversettings
 	this->GlobMaxNumSteps = this->default_max_steps;
@@ -38,6 +45,7 @@ Hyd_Param_Global::Hyd_Param_Global(void):default_max_steps(40000), default_init_
 
 	//syncronisation settings
 	this->max_h_change_fp=this->default_max_h_change_fp;
+	this->max_h_change_gw = this->default_max_h_change_gw;
 	this->max_h_change_rv=this->default_max_h_change_rv;
 	this->max_v_change_rv=this->default_max_v_change_rv;
 	this->min_internal_step=this->default_min_internal_step;
@@ -59,7 +67,7 @@ Hyd_Param_Global::Hyd_Param_Global(void):default_max_steps(40000), default_init_
 	Sys_Memory_Count::self()->add_mem(sizeof(Hyd_Param_Global), _sys_system_modules::HYD_SYS);
 }
 //copy constructor
-Hyd_Param_Global::Hyd_Param_Global(Hyd_Param_Global &par):default_max_steps(40000), default_init_stepsize(0.0), default_max_h_change_fp(1000.0), default_max_h_change_rv(1000.0),  default_min_internal_step(10.0), default_max_v_change_rv(1000.0){
+Hyd_Param_Global::Hyd_Param_Global(Hyd_Param_Global &par):default_max_steps(40000), default_init_stepsize(0.0), default_max_h_change_fp(1000.0), default_max_h_change_gw(1000.0), default_max_h_change_rv(1000.0),  default_min_internal_step(10.0), default_max_v_change_rv(1000.0){
 	this->param_set_number=par.param_set_number;
 	//timesettings
 	this->GlobTStart = par.GlobTStart;
@@ -68,9 +76,11 @@ Hyd_Param_Global::Hyd_Param_Global(Hyd_Param_Global &par):default_max_steps(4000
 	this->GlobNofITS = par.GlobNofITS;
 	//modelsettings
 	this->GlobNofFP=par.GlobNofFP;
+	this->GlobNofGW = par.GlobNofGW;
 	this->GlobNofRV=par.GlobNofRV;
 	this->coastmodel_applied=par.coastmodel_applied;
 	this->tempmodel_applied = par.tempmodel_applied;
+	this->gwmodel_applied = par.gwmodel_applied;
 	//setted couplings
 	this->number_div_channel=par.number_div_channel;
 	this->number_struc_coupling=par.number_struc_coupling;
@@ -79,6 +89,10 @@ Hyd_Param_Global::Hyd_Param_Global(Hyd_Param_Global &par):default_max_steps(4000
 	this->number_dikebreak_fp2co_coupling=par.number_dikebreak_fp2co_coupling;
 	//material file
 	this->material_file=par.material_file;
+	//conductivity file
+	this->conductivity_file = par.conductivity_file;
+	//porosity file
+	this->porosity_file = par.porosity_file;
 	//observation point file
 	this->obs_point_file=par.obs_point_file;
 	//solversettings
@@ -90,6 +104,7 @@ Hyd_Param_Global::Hyd_Param_Global(Hyd_Param_Global &par):default_max_steps(4000
 	this->GlobGramSchmidt = par.GlobGramSchmidt;
 	//syncronisation settings
 	this->max_h_change_fp=par.max_h_change_fp;
+	this->max_h_change_gw = par.max_h_change_gw;
 	this->max_h_change_rv=par.max_h_change_rv;
 	this->max_v_change_rv=par.max_v_change_rv;
 	this->min_internal_step=par.min_internal_step;
@@ -157,6 +172,12 @@ void Hyd_Param_Global::globals_per_parser(const string globalfile){
 	buff<<this->get_global_path() << this->material_file;
 	this->material_file=_Hyd_Parse_IO::insert_linux_slash2string(buff.str());
 	buff.str("");
+	buff << this->get_global_path() << this->conductivity_file;
+	this->conductivity_file = _Hyd_Parse_IO::insert_linux_slash2string(buff.str());
+	buff.str("");
+	buff << this->get_global_path() << this->porosity_file;
+	this->porosity_file = _Hyd_Parse_IO::insert_linux_slash2string(buff.str());
+	buff.str("");
 	if(this->obs_point_file!=label::not_set){
 		buff<<this->get_global_path() << this->obs_point_file;
 		this->obs_point_file=_Hyd_Parse_IO::insert_linux_slash2string(buff.str());
@@ -192,7 +213,7 @@ void Hyd_Param_Global::create_table(QSqlDatabase *ptr_database){
 			Sys_Common_Output::output_hyd->output_txt(&cout);
 			//make specific input for this class
 			const string tab_name=hyd_label::tab_sys_param;
-			const int num_col=21;
+			const int num_col=22;//REVIEW_Y: original num_col=21
 			_Sys_data_tab_column tab_col[num_col];
 			//init
 			for(int i=0; i< num_col; i++){
@@ -291,6 +312,11 @@ void Hyd_Param_Global::create_table(QSqlDatabase *ptr_database){
 			tab_col[20].name=label::description;
 			tab_col[20].type=sys_label::tab_col_type_string;
 
+			tab_col[21].name = hyd_label::syn_maxchange_h_gw;
+			tab_col[21].type = sys_label::tab_col_type_double;
+			tab_col[21].unsigned_flag = true;
+			tab_col[21].default_value = "0.01";
+
 			try{
 				Hyd_Param_Global::global_param_table= new Tables();
 				if(Hyd_Param_Global::global_param_table->create_non_existing_tables(tab_name, tab_col, num_col,ptr_database, _sys_table_type::hyd)==false){
@@ -319,7 +345,7 @@ void Hyd_Param_Global::set_table(QSqlDatabase *ptr_database, const bool not_clos
 	if(Hyd_Param_Global::global_param_table==NULL){
 		//make specific input for this class
 		const string tab_id_name=hyd_label::tab_sys_param;
-		string tab_id_col[20];
+		string tab_id_col[21];//REVIEW_Y: original tab_id_col[20]
 
 		tab_id_col[0]=hyd_label::nofset;
 		tab_id_col[1]=hyd_label::tstart;
@@ -341,6 +367,7 @@ void Hyd_Param_Global::set_table(QSqlDatabase *ptr_database, const bool not_clos
 		tab_id_col[17] = hyd_label::output_paraview_1d;
 		tab_id_col[18] = hyd_label::output_paraview_2d;
 		tab_id_col[19] = hyd_label::output_instat_db;
+		tab_id_col[20] = hyd_label::syn_maxchange_h_gw;
 
 		try{
 			Hyd_Param_Global::global_param_table= new Tables(tab_id_name, tab_id_col, sizeof(tab_id_col)/sizeof(tab_id_col[0]));
@@ -499,6 +526,7 @@ void Hyd_Param_Global::globals_per_database(QSqlDatabase *ptr_database, const bo
 	this->max_h_change_rv=(model.record(0).value((Hyd_Param_Global::global_param_table->get_column_name(hyd_label::syn_maxchange_h_rv)).c_str()).toDouble());
 	this->min_internal_step=(model.record(0).value((Hyd_Param_Global::global_param_table->get_column_name(hyd_label::syn_min_int_tstep)).c_str()).toDouble());
 	this->max_v_change_rv=(model.record(0).value((Hyd_Param_Global::global_param_table->get_column_name(hyd_label::syn_maxchange_v_rv)).c_str()).toDouble());
+	this->max_h_change_gw = (model.record(0).value((Hyd_Param_Global::global_param_table->get_column_name(hyd_label::syn_maxchange_h_gw)).c_str()).toDouble());
 	//output
 	this->output_flags.tecplot_1d_required = (model.record(0).value((Hyd_Param_Global::global_param_table->get_column_name(hyd_label::output_tecplot_1d)).c_str()).toBool());
 	this->output_flags.tecplot_2d_required = (model.record(0).value((Hyd_Param_Global::global_param_table->get_column_name(hyd_label::output_tecplot_2d)).c_str()).toBool());
@@ -528,8 +556,10 @@ void Hyd_Param_Global::output_members(void){
 	//output
 	cout << "MODEL SETTINGS"<< endl;
 	cout << " Total number of Floodplain models             : " << W(7) << this->GlobNofFP << endl;
+	cout << " Total number of Groundwater models            : " << W(7) << this->GlobNofGW << endl;
 	cout << " Total number of Riverflow models              : " << W(7) << this->GlobNofRV << endl;
 	cout << " Coastmodel applied                            : " << W(7) << functions::convert_boolean2string(this->coastmodel_applied)<< endl;
+	cout << " GWmodel applied                            : " << W(7) << functions::convert_boolean2string(this->gwmodel_applied) << endl;
 	cout << " Total number of models                        : " << W(7) << this->total_number_models << endl;
 	cout << "SETTED COUPLINGS"<<endl;
 	cout << " Total number of diversion channels (1d1d)     : " << W(7) << this->number_div_channel << endl;
@@ -553,6 +583,7 @@ void Hyd_Param_Global::output_members(void){
 	cout << " Gram-Schmidt scheme                           : " << W(7) << this->convert_gramschmidttype2txt(this->GlobGramSchmidt) << endl;
 	cout << "SYNCRONISATION SETTINGS" <<endl;
 	cout << " Maximum of waterlevel change (FP)             : " << W(7)<< P(6) << this->max_h_change_fp << label::m << endl;
+	cout << " Maximum of groundwaterlevel change (GW)       : " << W(7) << P(6) << this->max_h_change_gw << label::m << endl;
 	cout << " Maximum of waterlevel change (RV)             : " << W(7)<< P(6) << this->max_h_change_rv << label::m << endl;
 	cout << " Maximum of explicit velocity head change (RV) : " << W(7)<< P(6) << this->max_h_change_rv << label::m << endl;
 	cout << " Minimum of internal stepsize                  : " << W(7)<< P(2) << this->min_internal_step << label::sec<< endl;
@@ -591,11 +622,15 @@ void Hyd_Param_Global::check_members(void){
 		Error msg=this->set_error(3);
 		throw msg;
 	}
+	if (this->GlobNofGW < 0) {
+		Error msg = this->set_error(11);
+		throw msg;
+	}
 	if(this->GlobNofRV<0){
 		Error msg=this->set_error(4);
 		throw msg;
 	}
-	if(this->GlobNofRV==0 && this->GlobNofFP==0){
+	if(this->GlobNofRV==0 && this->GlobNofFP==0 && this->GlobNofGW==0){
 		Error msg=this->set_error(5);
 		throw msg;
 	}
@@ -629,7 +664,19 @@ void Hyd_Param_Global::check_members(void){
 		msg.make_second_info(info.str());
 		throw msg;	
 	}
-
+	/* TO-DO make a warning for rv2gw couplings REVIEW
+	if ((this->gwmodel_applied == false || this->GlobNofRV == 0) && (this->number_rv2gw_coupling > 0)) {
+		ostringstream info;
+		info << "Models" << endl;
+		info << "Number of Floodplain models          : " << W(7) << this->GlobNofFP << endl;
+		info << "Coastmodel applied                   : " << W(7) << functions::convert_boolean2string(this->coastmodel_applied) << endl;
+		info << "Setted couplings" << endl;
+		info << "Number of dikebreak coupling (CO2FP) : " << W(7) << this->number_dikebreak_fp2co_coupling << endl;
+		Error msg = this->set_error(10);
+		msg.make_second_info(info.str());
+		throw msg;
+	}
+	*/
 	//warnings
 	if(this->GlobMaxNumSteps<=0){
 		Warning msg=this->set_warning(2);
@@ -679,6 +726,15 @@ void Hyd_Param_Global::check_members(void){
 		this->max_h_change_fp=this->default_max_h_change_fp;
 		msg.output_msg(2);
 	}
+	if (this->max_h_change_gw <= 0.0) {
+		Warning msg = this->set_warning(6);
+		stringstream info;
+		info << "Default value: " << this->default_max_h_change_gw << label::m << endl;
+		msg.make_second_info(info.str());
+		//reaction
+		this->max_h_change_gw = this->default_max_h_change_gw;
+		msg.output_msg(2);
+	}
 	if(this->max_h_change_rv<=0.0){
 		Warning msg=this->set_warning(8);
 		stringstream info;
@@ -706,7 +762,6 @@ void Hyd_Param_Global::check_members(void){
 		this->max_v_change_rv=this->default_max_v_change_rv;
 		msg.output_msg(2);
 	}
-
 
 }
 //(static) Filename conversion functions
@@ -740,7 +795,7 @@ double Hyd_Param_Global::get_stepsize(void){
 double Hyd_Param_Global::get_number_timesteps(void){
 	return this->GlobTNof;
 }
-//Get the total number of models (river, floodplian and coast-model)
+//Get the total number of models (river, floodplain, groundwater and coast-model)
 int Hyd_Param_Global::get_total_number_models(void){
 	return this->total_number_models;
 }
@@ -752,6 +807,10 @@ int Hyd_Param_Global::get_total_number_setted_couplings(void){
 int Hyd_Param_Global::get_number_floodplain_model(void){
 	return this->GlobNofFP;
 }
+//Get the number of groundwater models in the system
+int Hyd_Param_Global::get_number_groundwater_model(void) {
+	return this->GlobNofGW;
+}
 //Get the number of river models in the system
 int Hyd_Param_Global::get_number_river_model(void){
 	return this->GlobNofRV;
@@ -759,6 +818,10 @@ int Hyd_Param_Global::get_number_river_model(void){
 //Get the flag if the coast model is applied in the system
 bool Hyd_Param_Global::get_coast_model_applied(void){
 	return this->coastmodel_applied;
+}
+//Get the flag if the coast model is applied in the system
+bool Hyd_Param_Global::get_gw_model_applied(void) {
+	return this->gwmodel_applied;
 }
 //Get the output flags which output is required
 _hyd_output_flags Hyd_Param_Global::get_output_flags(void) {
@@ -772,9 +835,20 @@ void Hyd_Param_Global::set_number_river_models(const int number){
 void Hyd_Param_Global::set_number_floodplain_models(const int number){
 	this->GlobNofFP=number;
 }
+//Set the number of groundwater-models
+void Hyd_Param_Global::set_number_groundwater_models(const int number) {
+	this->GlobNofGW = number;
+	if (number > 0) {
+		this->set_gw_model_applied(true);
+	}
+}
 //Set if the coast-model is applied
 void Hyd_Param_Global::set_coast_model_applied(const bool applied){
 	this->coastmodel_applied=applied;
+}
+//Set if the gw-model is applied
+void Hyd_Param_Global::set_gw_model_applied(const bool applied) {
+	this->gwmodel_applied = applied;
 }
 //Set the number of diversion-channels
 void Hyd_Param_Global::set_number_diversion_channels(const int number){
@@ -806,6 +880,7 @@ void Hyd_Param_Global::total_reset(void){
 	this->GlobNofITS = 10;
 	//modelsettings
 	this->GlobNofFP=0;
+	this->GlobNofGW = 0;
 	this->GlobNofRV=0;
 	this->coastmodel_applied=false;
 	//setted couplings
@@ -815,6 +890,10 @@ void Hyd_Param_Global::total_reset(void){
 	this->number_dikebreak_fp2co_coupling=0;
 	//material file
 	this->material_file=label::not_set;
+	//conductivity file
+	this->conductivity_file = label::not_set;
+	//porosity file
+	this->porosity_file = label::not_set;
 	//solversettings
 	this->GlobMaxNumSteps = this->default_max_steps;
 	this->GlobMaxStepSize = 100.0;
@@ -825,6 +904,7 @@ void Hyd_Param_Global::total_reset(void){
 
 	//syncronisation settings
 	this->max_h_change_fp=this->default_max_h_change_fp;
+	this->max_h_change_gw = this->default_max_h_change_gw;
 	this->max_h_change_rv=this->default_max_h_change_rv;
 	this->max_v_change_rv=this->default_max_v_change_rv;
 	this->min_internal_step=this->default_min_internal_step;
@@ -840,6 +920,7 @@ Hyd_Param_Global& Hyd_Param_Global::operator= (const Hyd_Param_Global& par){
 	this->GlobNofITS = par.GlobNofITS;
 	//modelsettings
 	this->GlobNofFP=par.GlobNofFP;
+	this->GlobNofGW = par.GlobNofGW;
 	this->GlobNofRV=par.GlobNofRV;
 	this->coastmodel_applied=par.coastmodel_applied;
 	this->tempmodel_applied = par.tempmodel_applied;
@@ -850,6 +931,10 @@ Hyd_Param_Global& Hyd_Param_Global::operator= (const Hyd_Param_Global& par){
 	this->number_dikebreak_fp2co_coupling=par.number_dikebreak_fp2co_coupling;
 	//material file
 	this->material_file=par.material_file;
+	//conductivity file
+	this->conductivity_file = par.conductivity_file;
+	//porosity file
+	this->porosity_file = par.porosity_file;
 	//observation point file
 	this->obs_point_file=par.obs_point_file;
 	//solversettings
@@ -861,6 +946,7 @@ Hyd_Param_Global& Hyd_Param_Global::operator= (const Hyd_Param_Global& par){
 	this->GlobGramSchmidt = par.GlobGramSchmidt;
 	//syncronisation settings
 	this->max_h_change_fp=par.max_h_change_fp;
+	this->max_h_change_gw = par.max_h_change_gw;
 	this->max_h_change_rv=par.max_h_change_rv;
 	this->max_v_change_rv=par.max_v_change_rv;
 	this->min_internal_step=par.min_internal_step;
@@ -881,9 +967,12 @@ Hyd_Param_Global& Hyd_Param_Global::operator= (const Hyd_Param_Global& par){
 //Calculate the total number of models and the total number of setted coupling
 void Hyd_Param_Global::calculate_total_numbers(void){
 	//models
-	this->total_number_models=this->GlobNofFP+this->GlobNofRV;
+	this->total_number_models=this->GlobNofFP+this->GlobNofRV+this->GlobNofGW;
 	if(this->coastmodel_applied==true){
 		this->total_number_models++;
+	}
+	if (this->GlobNofGW >0) {
+		this->gwmodel_applied=true;
 	}
 	//setted couplings
 	this->total_setted_couplings=this->number_div_channel+this->number_struc_coupling+this->number_dikebreak_rv2fp_coupling+this->number_dikebreak_fp2co_coupling;
@@ -1040,6 +1129,7 @@ void Hyd_Param_Global::input_globals2database_table(QSqlDatabase *ptr_database, 
 	model.setData(model.index(0,model.record().indexOf((Hyd_Param_Global::global_param_table->get_column_name(hyd_label::gramschmidt)).c_str())),this->convert_gramschmidttype2txt(this->GlobGramSchmidt).c_str());
 	//syncron settings
 	model.setData(model.index(0,model.record().indexOf((Hyd_Param_Global::global_param_table->get_column_name(hyd_label::syn_maxchange_h_fp)).c_str())),this->max_h_change_fp);
+	model.setData(model.index(0, model.record().indexOf((Hyd_Param_Global::global_param_table->get_column_name(hyd_label::syn_maxchange_h_gw)).c_str())), this->max_h_change_gw);
 	model.setData(model.index(0,model.record().indexOf((Hyd_Param_Global::global_param_table->get_column_name(hyd_label::syn_maxchange_h_rv)).c_str())),this->max_h_change_rv);
 	model.setData(model.index(0,model.record().indexOf((Hyd_Param_Global::global_param_table->get_column_name(hyd_label::syn_min_int_tstep)).c_str())),this->min_internal_step);
 	model.setData(model.index(0,model.record().indexOf((Hyd_Param_Global::global_param_table->get_column_name(hyd_label::syn_maxchange_v_rv)).c_str())),this->max_v_change_rv);
@@ -1219,7 +1309,7 @@ Error Hyd_Param_Global::set_error(const int err_type){
 			help="Check the number of rivermodel";
 			type=3;
 			break;
-		case 5://number of rivermodels and floodplainmodel==0
+		case 5://number of rivermodels and floodplainmodel and groundwatermodel==0
 			place.append("check_members(void)");
 			reason="No model for calculation is set";
 			help="Check the number of models";
@@ -1256,6 +1346,12 @@ Error Hyd_Param_Global::set_error(const int err_type){
 			reason="The model and setted coupling combination is not possible";
 			help="Check the number of models";
 			type=3;
+			break;
+		case 11://number of groundwatermodels <0
+			place.append("check_members(void)");
+			reason = "Number of groundwatermodel is <0";
+			help = "Check the number of groundwatermodel";
+			type = 3;
 			break;
 		default:
 			place.append("set_error(const int err_type)");

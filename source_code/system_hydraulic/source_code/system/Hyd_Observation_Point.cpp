@@ -11,7 +11,10 @@ Hyd_Observation_Point::Hyd_Observation_Point(void){
 	this->element=NULL;
 	this->profile=NULL;
 	this->temp_profile = NULL;
-	this->floodplain_flag=true;
+	this->gw_profile = NULL;
+	this->floodplain_flag=false;
+	this->gw_flag = false;
+	this->rv_flag = false;
 	this->index_model=-1;
 	this->index=-1;
 
@@ -34,11 +37,27 @@ void Hyd_Observation_Point::set_number_time_point(const int no_output, const int
 	this->number_time_point=no_output*no_internal;
 	this->allocate_time_point();
 }
+//REVIE_Y
+bool Hyd_Observation_Point::get_model_flag(void) {
+	bool flag = false;
+	return flag;
+}
 //Synchronise observation time
 void Hyd_Observation_Point::synchron_obs_point(const double time){
 
 	
-	if(this->floodplain_flag==true){
+	if (this->gw_flag == true) {
+		if (this->gw_profile != NULL) {
+			this->time_point[this->counter_time_points].time = time;
+			this->time_point[this->counter_time_points].s_value = this->gw_profile->element_type->get_s_value();
+			this->time_point[this->counter_time_points].waterlevel = this->gw_profile->element_type->get_h_value();
+			this->time_point[this->counter_time_points].ds2dt_fr = this->gw_profile->element_type->get_ds2dt_value() * 60.0;
+			this->time_point[this->counter_time_points].ds2dt_coupling = this->gw_profile->element_type->get_coupling_discharge();
+			this->time_point[this->counter_time_points].ds2dt_bound = this->gw_profile->element_type->get_boundary_dsicharge_gw();
+
+		}
+	}
+	else if(this->floodplain_flag == true){
 		if(this->element!=NULL){
 			this->time_point[this->counter_time_points].time=time;
 			this->time_point[this->counter_time_points].s_value=this->element->element_type->get_s_value();
@@ -51,7 +70,7 @@ void Hyd_Observation_Point::synchron_obs_point(const double time){
 			this->time_point[this->counter_time_points].ds2dt_coupling=this->element->element_type->get_coupling_ds2dt();
 		}
 	}
-	else{
+	else if (this->rv_flag == true){
 		if(this->profile!=NULL){
 			this->time_point[this->counter_time_points].time=time;
 			this->time_point[this->counter_time_points].s_value=this->profile->typ_of_profile->get_actual_global_waterlevel();
@@ -86,6 +105,7 @@ void Hyd_Observation_Point::synchron_obs_point(const double time){
 			buffer[i].y_velocity=this->time_point[i].y_velocity;
 			buffer[i].ds2dt_fr=this->time_point[i].ds2dt_fr;
 			buffer[i].ds2dt_coupling=this->time_point[i].ds2dt_coupling;
+			buffer[i].ds2dt_bound = this->time_point[i].ds2dt_bound;
 			buffer[i].discharge=this->time_point[i].discharge;
 		}
 		//reset the new setted points
@@ -98,6 +118,7 @@ void Hyd_Observation_Point::synchron_obs_point(const double time){
 			buffer[i].y_velocity=-9999.9;
 			buffer[i].ds2dt_fr=-9999.9;
 			buffer[i].ds2dt_coupling=-9999.9;
+			buffer[i].ds2dt_bound = -9999.9;
 			buffer[i].discharge=-9999.9;
 		}
 		//delete them
@@ -110,6 +131,71 @@ void Hyd_Observation_Point::synchron_obs_point(const double time){
 
 	}
 }
+////Synchronise observation time for groundwater modelling
+//void Hyd_Observation_Point::synchron_gw_obs_point(const double time) {
+//	if (this->floodplain_flag == false) {
+//		if (this->gw_profile != NULL) {
+//			this->time_point[this->counter_time_points].time = time;
+//			this->time_point[this->counter_time_points].s_value = this->gw_profile->element_type->get_s_value();
+//			this->time_point[this->counter_time_points].waterlevel = this->gw_profile->element_type->get_h_value();
+//			this->time_point[this->counter_time_points].ds2dt_fr = this->gw_profile->element_type->get_ds2dt_value() * 60.0;
+//			//this->time_point[this->counter_time_points].velocity = this->gw_profile->element_type->get_flowvelocity_vtotal();
+//			//this->time_point[this->counter_time_points].x_velocity = this->gw_profile->element_type->get_flowvelocity_vx();
+//			//this->time_point[this->counter_time_points].y_velocity = this->gw_profile->element_type->get_flowvelocity_vy();
+//			//this->time_point[this->counter_time_points].y_velocity = this->gw_profile->element_type->get_flowvelocity_vy();
+//			this->time_point[this->counter_time_points].ds2dt_coupling = this->gw_profile->element_type->get_coupling_ds2dt();
+//		}
+//	}
+//
+//	this->counter_time_points++;
+//	//make block allocation
+//	if (this->counter_time_points > 0 && this->counter_time_points == this->number_time_point - 1) {
+//		const int add = 250;
+//		_hyd_observation_time_point* buffer = NULL;
+//		int count_buff = this->counter_time_points;
+//		try {
+//			buffer = new _hyd_observation_time_point[this->number_time_point + add];
+//			Sys_Memory_Count::self()->add_mem(sizeof(_hyd_observation_time_point) * (this->number_time_point + add), _sys_system_modules::HYD_SYS);
+//
+//		}
+//		catch (bad_alloc&) {
+//			Error msg = this->set_error(1);
+//			throw msg;
+//		}
+//		//copy the points
+//		for (int i = 0; i < this->number_time_point; i++) {
+//			buffer[i].s_value = this->time_point[i].s_value;
+//			buffer[i].time = this->time_point[i].time;
+//			buffer[i].waterlevel = this->time_point[i].waterlevel;
+//			buffer[i].velocity = this->time_point[i].velocity;
+//			buffer[i].x_velocity = this->time_point[i].x_velocity;
+//			buffer[i].y_velocity = this->time_point[i].y_velocity;
+//			buffer[i].ds2dt_fr = this->time_point[i].ds2dt_fr;
+//			buffer[i].ds2dt_coupling = this->time_point[i].ds2dt_coupling;
+//			buffer[i].discharge = this->time_point[i].discharge;
+//		}
+//		//reset the new setted points
+//		for (int i = this->number_time_point - 1; i < this->number_time_point + add; i++) {
+//			buffer[i].s_value = -9999.9;
+//			buffer[i].time = -9999.9;
+//			buffer[i].waterlevel = -9999.9;
+//			buffer[i].velocity = -9999.9;
+//			buffer[i].x_velocity = -9999.9;
+//			buffer[i].y_velocity = -9999.9;
+//			buffer[i].ds2dt_fr = -9999.9;
+//			buffer[i].ds2dt_coupling = -9999.9;
+//			buffer[i].discharge = -9999.9;
+//		}
+//		//delete them
+//		this->delete_time_point();
+//		//recopy
+//		this->time_point = buffer;
+//		this->counter_time_points = count_buff;
+//		//add the new to number
+//		this->number_time_point = this->number_time_point + add;
+//
+//	}
+//}
 //Synchronise observation time for temperature modelling
 void Hyd_Observation_Point::synchron_temp_obs_point(const double time) {
 	//do not rename them...just use the sequence of the names
@@ -180,10 +266,12 @@ void Hyd_Observation_Point::synchron_temp_obs_point(const double time) {
 
 
 }
+
 //Set the geometrical point information
 void Hyd_Observation_Point::set_geo_point_info(Geo_Point *point){
 	this->set_point_coordinate(point->get_xcoordinate(), point->get_ycoordinate());
 	this->set_point_name(point->get_point_name());
+	this->transform_string2flag(point->get_point_name2());
 
 }
 //Get the index of the element/profile
@@ -197,11 +285,12 @@ bool Hyd_Observation_Point::init_obs_point_river(Hyd_Model_River *model, const i
 	if(model->river_polygon.check_point_inside(this)==true){
 		this->index=model->find_river_profile_id_by_point(this);
 		if(this->index>0){
-			this->profile=model->get_ptr_river_profile(this->index);
+			this->index = this->index ;//REVIEW_Y: observation point on river considers the distance relation to the downstream/upstream profiles?
+			this->profile=model->get_ptr_river_profile(this->index-1);
 			if(this->profile!=NULL){
 				this->index_model=index;
 				found_flag=true;
-				this->floodplain_flag=false;
+				
 			}
 			else{
 				this->profile=NULL;
@@ -209,9 +298,15 @@ bool Hyd_Observation_Point::init_obs_point_river(Hyd_Model_River *model, const i
 			}
 		}
 	}
+	if (found_flag == true && rv_flag == true) {
+		found_flag = true;
+	}
+	else {
+		found_flag = false;
+	}
 	return found_flag;
 }
-//Initialize the observation points for river models
+//Initialize the observation points for Floodplain models
 bool Hyd_Observation_Point::init_obs_point_floodplain(Hyd_Model_Floodplain *model, const int index){
 
 	bool found_flag=false;
@@ -227,7 +322,7 @@ bool Hyd_Observation_Point::init_obs_point_floodplain(Hyd_Model_Floodplain *mode
 				this->element->get_elem_type()==_hyd_elem_type::RIVER_ELEM )){
 				this->index_model=index;
 				found_flag=true;
-				this->floodplain_flag=true;
+
 			}
 			else{
 				this->element=NULL;
@@ -237,9 +332,48 @@ bool Hyd_Observation_Point::init_obs_point_floodplain(Hyd_Model_Floodplain *mode
 		}		
 	}
 
+	if (found_flag == true && floodplain_flag == true) {
+		found_flag = true;
+	}
+	else {
+		found_flag = false;
+	}
 
 	return found_flag;
+}
+///Initialize the observation points for groundwater models
+bool Hyd_Observation_Point::init_obs_point_groundwater(Hyd_Model_Groundwater* model, const int index) {
+	bool found_flag = false;
 
+	if (model->raster.geometrical_bound.check_point_inside(this) == true) {
+
+		this->index = model->raster.find_elem_index_by_point_withboundary(this);
+		if (this->index > 0) {
+
+			this->gw_profile = model->get_ptr_groundwater_elem(this->index);
+			if (this->gw_profile != NULL && (this->gw_profile->get_elem_type() == _hyd_gw_elem_type::STANDARD_ELEM_GW ||
+				this->gw_profile->get_elem_type() == _hyd_gw_elem_type::NOFLOW_ELEM_GW || this->gw_profile->get_elem_type() == _hyd_gw_elem_type::LINE_ELEM_GW ||
+				this->gw_profile->get_elem_type() == _hyd_gw_elem_type::NOINFO_ELEM_GW)) {
+				this->index_model = index;
+				found_flag = true;
+
+			}
+			else {
+				this->element = NULL;
+				this->index = -1;
+			}
+
+		}
+	}
+
+	if (found_flag == true && gw_flag == true) {
+		found_flag = true;
+	}
+	else {
+		found_flag = false;
+	}
+
+	return found_flag;
 }
 //Initialize the observation points for temperature models
 bool Hyd_Observation_Point::init_temp_obs_point_river(HydTemp_Model *model, const int index) {
@@ -265,14 +399,22 @@ bool Hyd_Observation_Point::init_temp_obs_point_river(HydTemp_Model *model, cons
 
 
 }
-//Get the flag in which model (river/floodplain) the observation point is located
-bool Hyd_Observation_Point::get_model_flag(void){
+///Get the flag wenn the observation point is im floodplain model located
+bool Hyd_Observation_Point::get_model_floodplain_flag(void){
 	return this->floodplain_flag;
+}
+///Get the flag wenn the observation point is im groundwater model located
+bool Hyd_Observation_Point::get_model_gw_flag(void) {
+	return this->gw_flag;
+}
+///Get the flag wenn the observation point is im river model located
+bool Hyd_Observation_Point::get_model_rv_flag(void) {
+	return this->rv_flag;
 }
 //Ouput the observation point to file as tecplot output
 void Hyd_Observation_Point::output_obs_point2file(ofstream *output, const int counter_used){
 
-	if(this->element==NULL && this->profile==NULL){
+	if(this->element==NULL && this->profile==NULL && this->gw_profile == NULL ){
 		return;
 	}
 	
@@ -289,7 +431,18 @@ void Hyd_Observation_Point::output_obs_point2file(ofstream *output, const int co
 			}
 		}
 	}
-	else{
+	else if(this->gw_flag == true) {
+		*output << endl << "ZONE T= " << "\" Name " << this->name << "; Groundwater id " << this->index_model << "; Element id " << this->index << " \" " << " I = " << counter_used << endl;
+		for (int i = 0; i < counter_used; i++) {
+			if (this->time_point[i].time >= 0.0) {
+				*output << this->time_point[i].time << W(15) << this->time_point[i].waterlevel << W(15) << this->time_point[i].s_value << W(15);
+				//*output << this->time_point[i].velocity << W(15) << this->time_point[i].x_velocity << W(15) << this->time_point[i].y_velocity << W(15);
+				*output << this->time_point[i].ds2dt_fr << W(15) << this->time_point[i].ds2dt_coupling << W(15) << this->time_point[i].ds2dt_bound << endl;
+				output->flush();
+			}
+		}
+	}
+	else if(this->rv_flag == true){
 		*output << endl << "ZONE T= "<< "\" Name " <<this->name<<"; River id "<< this->index_model<<"; Profile id "<< this->index  <<" \" "<< " I = " << counter_used << endl;
 		
 		for(int i=0; i< counter_used; i++){
@@ -303,7 +456,7 @@ void Hyd_Observation_Point::output_obs_point2file(ofstream *output, const int co
 }
 //Ouput the observation point to file as csv output
 void Hyd_Observation_Point::output_obs_point2csvfile(ofstream *output, const int counter_used) {
-	if (this->element == NULL && this->profile == NULL) {
+	if (this->element == NULL && this->profile == NULL && this->gw_profile == NULL) {
 		return;
 	}
 
@@ -319,7 +472,16 @@ void Hyd_Observation_Point::output_obs_point2csvfile(ofstream *output, const int
 			}
 		}
 	}
-	else {
+	else if(this->gw_flag == true) {
+		for (int i = 0; i < counter_used; i++) {
+			if (this->time_point[i].time >= 0.0) {
+				*output << this->time_point[i].time << W(15) << "," << this->time_point[i].waterlevel << W(15) << "," << this->time_point[i].s_value << W(15);
+				*output << "," << this->time_point[i].ds2dt_fr << W(15) << "," << this->time_point[i].ds2dt_coupling << W(15) << "," << this->time_point[i].ds2dt_bound << endl;
+				output->flush();
+			}
+		}
+	}
+	else if (this->rv_flag ==true) {
 		
 		for (int i = 0; i < counter_used; i++) {
 			if (this->time_point[i].time >= 0.0) {
@@ -330,6 +492,22 @@ void Hyd_Observation_Point::output_obs_point2csvfile(ofstream *output, const int
 		}
 	}
 }
+////Output the groundwater observation point to file as csv output
+//void Hyd_Observation_Point::output_gw_obs_point2csvfile(ofstream* output, const int counter_used) {
+//	if (this->gw_profile == NULL) {
+//		return;
+//	}
+//
+//	if (this->floodplain_flag == false && this->gw_flag == true) {
+//		for (int i = 0; i < counter_used; i++) {
+//			if (this->time_point[i].time >= 0.0) {
+//				*output << this->time_point[i].time << W(15) << "," << this->time_point[i].waterlevel << W(15) << "," << this->time_point[i].s_value << W(15);
+//				*output << "," << this->time_point[i].ds2dt_fr << W(15) << "," << this->time_point[i].ds2dt_coupling << endl;
+//				output->flush();
+//			}
+//		}
+//	}
+//}
 //Ouput the temperature observation point to file as csv output
 void Hyd_Observation_Point::output_temp_obs_point2csvfile(ofstream *output, const int counter_used) {
 	if (this->temp_profile==NULL) {
@@ -373,12 +551,14 @@ void Hyd_Observation_Point::clear_obs_point(void){
 	this->counter_time_points=0;
 }
 //Clone the observation points; the pointer are not cloned
-void Hyd_Observation_Point::clone_obs_points(Hyd_Observation_Point *src, Hyd_Model_River *river,  Hyd_Model_Floodplain *floodplain){
+void Hyd_Observation_Point::clone_obs_points(Hyd_Observation_Point *src, Hyd_Model_River *river,  Hyd_Model_Floodplain *floodplain, Hyd_Model_Groundwater *gw){
 	Geo_Point::operator =(*src);
 	this->number_time_point=src->number_time_point;
 	this->counter_time_points=0;
 	this->allocate_time_point();
 	this->floodplain_flag=src->floodplain_flag;
+	this->gw_flag = src->gw_flag;
+	this->rv_flag = src->rv_flag;
 	this->index_model=src->index_model;
 	this->index=src->index;
 
@@ -386,12 +566,99 @@ void Hyd_Observation_Point::clone_obs_points(Hyd_Observation_Point *src, Hyd_Mod
 		if(this->floodplain_flag==true){
 			this->element=floodplain[this->index_model].get_ptr_floodplain_elem(this->index);
 		}
-		else{
+		else if(this->gw_flag == true) {
+			this->gw_profile = gw[this->index_model].get_ptr_groundwater_elem(this->index);
+		}
+		else if (this->rv_flag == true){
 			this->profile=river[this->index_model].get_ptr_river_profile(this->index);
 
 		}
 	}
 }
+
+void Hyd_Observation_Point::transform_string2flag(string txt) {
+
+
+	_Hyd_Parse_IO::string2lower(&txt);
+
+	if (txt == hyd_label::gw_obs) {
+		this->gw_flag = true;
+	}
+	else if (txt == hyd_label::rv_obs) {
+		this->rv_flag = true;
+	}
+	else if (txt == hyd_label::floodplain_obs) {
+		this->floodplain_flag = true;
+	}
+	else {
+		Error msg;
+		string place = "Hyd_Observation_Point::";
+		place.append("transform_string2flag(string txt)");
+		string reason = "The model for the observation point is not known";
+		string help = "Check the given model type";
+		ostringstream info;
+		info << "Given type    :" << txt << endl;
+		info << "Possible types: " << endl;
+		info << " " << hyd_label::gw_obs << endl;
+		info << " " << hyd_label::rv_obs << endl;
+		info << " " << hyd_label::floodplain_obs << endl;
+		msg.set_msg(place, reason, help, 1, false);
+		msg.make_second_info(info.str());
+		throw msg;
+
+	}
+
+	return;
+}
+string Hyd_Observation_Point::transform_flag2string(void) {
+	string txt;
+	
+
+	if (this->gw_flag == true) {
+		txt = hyd_label::gw_obs;
+	}
+	else if (this->rv_flag == true) {
+		txt = hyd_label::rv_obs;
+	}
+	else if (this->floodplain_flag == true) {
+		txt = hyd_label::floodplain_obs;
+	}
+	else {
+		Error msg;
+		string place = "Hyd_Observation_Point::";
+		place.append("string transform_flag2string(void)");
+		string reason = "The model for the observation point is not known";
+		string help = "Check the given model type";
+		ostringstream info;
+		info << "Given type    :" << txt << endl;
+		info << "Possible types: " << endl;
+		info << " " << hyd_label::gw_obs << endl;
+		info << " " << hyd_label::rv_obs << endl;
+		info << " " << hyd_label::floodplain_obs << endl;
+		msg.set_msg(place, reason, help, 1, false);
+		msg.make_second_info(info.str());
+		throw msg;
+
+	}
+	_Hyd_Parse_IO::string2lower(&txt);
+	return txt;
+}
+////Clone the groundwater observation points; the pointer are not cloned
+//void Hyd_Observation_Point::clone_gw_obs_points(Hyd_Observation_Point* src, Hyd_Model_Groundwater* gw) {
+//	Geo_Point::operator =(*src);
+//	this->number_time_point = src->number_time_point;
+//	this->counter_time_points = 0;
+//	this->allocate_time_point();
+//	this->floodplain_flag = src->floodplain_flag;
+//	this->index_model = src->index_model;
+//	this->index = src->index;
+//
+//	if (this->index_model >= 0 && this->index >= 0) {
+//		if (this->floodplain_flag == false) {
+//			this->gw_profile = gw[this->index_model].get_ptr_groundwater_elem(this->index);
+//		}
+//	}
+//}
 //_________________
 //private
 //Allocate the time points
@@ -414,6 +681,7 @@ void Hyd_Observation_Point::allocate_time_point(void){
 		this->time_point[i].y_velocity=-9999.9;
 		this->time_point[i].ds2dt_fr=-9999.9;
 		this->time_point[i].ds2dt_coupling=-9999.9;
+		this->time_point[i].ds2dt_bound = -9999.9;
 		this->time_point[i].discharge=-9999.9;
 	}
 

@@ -39,7 +39,8 @@ bool Hyd_River_Profile_Point::input_members(QFile *profile_file, int *point_coun
 			(*line_counter)--;
 			return false;
 		}
-		if(functions::count_number_columns(buffer)!=6){
+		//TO-DO check if this is necessarry depending on QGIS input
+		if(functions::count_number_columns(buffer)!=8 && functions::count_number_columns(buffer) != 6){
 			Error msg=this->set_error(0);
 			ostringstream info;
 			info <<"Found line: " << buffer << endl;
@@ -90,7 +91,7 @@ void Hyd_River_Profile_Point::input_members_per_database(const QSqlQueryModel *q
 //output the members
 void Hyd_River_Profile_Point::output_members(ostringstream *cout){
 		*cout << W(8)<< this->number <<W(12) <<this->x_global << W(18) <<this->y_global << W(18) <<this->z_global ;
-		*cout << W(14) <<this->x_coordinate<<W(14) <<this->y_coordinate << W(14) <<this->mat_type ;
+		*cout << W(14) <<this->x_coordinate<<W(14) <<this->y_coordinate << W(14) <<this->mat_type;
 		*cout << W(14) <<this->identity <<endl;
 }
 //Get the global x- and y-coodinates
@@ -144,8 +145,8 @@ Error Hyd_River_Profile_Point::set_error(const int err_type){
 	switch (err_type){
 		case 0://bad alloc
 			place.append("input_members(QFile *profile_file, int *point_counter, int *line_counter)");
-			reason="There are not 6 columns found in file to specify the profile point";
-			help="Check the given columns of the profile point. It must be: X  Y  Z  MatType  Distance  Ident.";
+			reason="There are not 6 (8) columns found in file to specify the profile point";
+			help="Check the given columns of the profile point. It must be: X  Y  Z  MatType (ConType) (Thickness)  Distance  Ident.";
 			type=1;
 			break;
 		default:

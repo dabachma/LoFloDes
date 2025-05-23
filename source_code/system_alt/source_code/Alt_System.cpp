@@ -1737,7 +1737,7 @@ void Alt_System::change_hyd_river_prof(void){
 				//read in the new river
 				target_sys[i].set_river_model_per_file(target_param);
 				target_sys[i].clear_boundary_conditions();
-				target_sys[i].connect_rivers(&source_sys.material_params);
+				target_sys[i].connect_rivers(&source_sys.material_params,&source_sys.conductivity_params);
 				target_sys[i].set_rv_inflow_flag();
 
 			}

@@ -83,6 +83,8 @@ void Hyd_River_Profile_Connection_Outflow::transfer_profile_members2database(con
 	query_string << _Hyd_River_Profile::profile_table->get_column_name(hyd_label::profdata_poleni_l) <<" , ";
 	query_string << _Hyd_River_Profile::profile_table->get_column_name(hyd_label::profdata_base_left) <<" , ";
 	query_string << _Hyd_River_Profile::profile_table->get_column_name(hyd_label::profdata_base_right) <<" , ";
+	query_string << _Hyd_River_Profile::profile_table->get_column_name(hyd_label::profdata_con_id) << " , ";
+	query_string << _Hyd_River_Profile::profile_table->get_column_name(hyd_label::profdata_rvbed_m) << " , ";
 
 	query_string << _Hyd_River_Profile::profile_table->get_column_name(label::areastate_id) <<" , ";
 	query_string << _Hyd_River_Profile::profile_table->get_column_name(label::measure_id) <<" , ";
@@ -108,6 +110,8 @@ void Hyd_River_Profile_Connection_Outflow::transfer_profile_members2database(con
 	query_string << 0.0 << " , " ;
 	query_string << this->index_basepoint_left<< " , " ;
 	query_string << this->index_basepoint_right<< " , " ;
+	query_string << this->conductivity_index << " , ";
+	query_string << this->thickness << " , ";
 
 	query_string << this->system_id.area_state<< " , " ;
 	query_string << this->system_id.measure_nr<< " , " ;
@@ -171,6 +175,9 @@ void Hyd_River_Profile_Connection_Outflow::input_members_per_database(const int 
 		//base points
 		this->index_basepoint_right=query_result->record(index).value((_Hyd_River_Profile::profile_table->get_column_name(hyd_label::profdata_base_right)).c_str()).toInt();
 		this->index_basepoint_left=query_result->record(index).value((_Hyd_River_Profile::profile_table->get_column_name(hyd_label::profdata_base_left)).c_str()).toInt();
+
+		this->conductivity_index= query_result->record(index).value((_Hyd_River_Profile::profile_table->get_column_name(hyd_label::profdata_con_id)).c_str()).toInt();
+		this->thickness = query_result->record(index).value((_Hyd_River_Profile::profile_table->get_column_name(hyd_label::profdata_rvbed_m)).c_str()).toDouble();
 
 		if(this->index_basepoint_right>=0){
 			this->break_flag_right=true;
@@ -744,10 +751,10 @@ double Hyd_River_Profile_Connection_Outflow::get_Q(void) {
 //________________
 //private
 //decide in the different keyvalues in the profile file
-void Hyd_River_Profile_Connection_Outflow::decide_keyvalues_file(const string key, string buffer, int *found_counter){
+void Hyd_River_Profile_Connection_Outflow::decide_keyvalues_file(const string key, string buffer, Hyd_Param_Conductivity *con_param, bool gwmodel_applied, int *found_counter){
 	
 	try{
-		_Hyd_River_Profile::decide_keyvalues_file(key, buffer, found_counter);
+		_Hyd_River_Profile::decide_keyvalues_file(key, buffer, con_param, gwmodel_applied, found_counter);
 
 	}catch(Error msg){
 		throw msg;

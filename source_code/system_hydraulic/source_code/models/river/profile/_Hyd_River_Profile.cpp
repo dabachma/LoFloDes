@@ -26,6 +26,9 @@ _Hyd_River_Profile::_Hyd_River_Profile(void){
 	this->break_flag_right=false;
 	this->index_basepoint_right=-1;
 
+	this->conductivity_index = -1;
+	this->thickness = 0.0;
+
 	this->h_max_right_base=0.0;
 	this->h_max_left_base=0.0;
 
@@ -42,6 +45,7 @@ _Hyd_River_Profile::_Hyd_River_Profile(void){
 	this->q_structure_coupling=0.0;
 	this->q_dikebreak_coupling_left=0.0;
 	this->q_dikebreak_coupling_right=0.0;
+	this->q_leakage_coupling = 0.0;
 
 	this->init_condition=0.0;
 	this->distance2upstream=0.0;
@@ -69,6 +73,9 @@ _Hyd_River_Profile::_Hyd_River_Profile(void){
 	this->right_dikebreak_coupling_volume.volume_in=0.0;
 	this->right_dikebreak_coupling_volume.volume_out=0.0;
 	this->right_dikebreak_coupling_volume.volume_total=0.0;
+	this->leakage_coupling_volume.volume_in = 0.0;
+	this->leakage_coupling_volume.volume_out = 0.0;
+	this->leakage_coupling_volume.volume_total = 0.0;
 
 	this->ptr_upstream_prof=NULL;
 	this->ptr_downstream_prof=NULL;
@@ -84,6 +91,8 @@ _Hyd_River_Profile::_Hyd_River_Profile(void){
 	//break value
 	this->left_break_params=NULL;
 	this->right_break_params=NULL;
+	
+	this->leakage_params = NULL;
 
 	this->left_bank2fpl=false;
 	this->right_bank2fpl=false;
@@ -101,18 +110,20 @@ _Hyd_River_Profile::_Hyd_River_Profile(void){
 
 	this->allocate_break_parameter_left();
 	this->allocate_break_parameter_right();
+	this->allocate_leakage_parameter();
 }
 //destructor
 _Hyd_River_Profile::~_Hyd_River_Profile(void){
 	this->delete_profile_type();
 	this->delete_break_parameter_left();
 	this->delete_break_parameter_right();
+	this->delete_leakage_parameter();
 	this->delete_bridge_data();
 }
 //________________________________
 //public
 //Input the members of the profile per file
-void _Hyd_River_Profile::input_members(QFile *profile_file, const int profile_number, string my_line, int *line_counter){
+void _Hyd_River_Profile::input_members(QFile *profile_file, const int profile_number, string my_line, int *line_counter, Hyd_Param_Conductivity *con_param, bool gwmodel_applied, int coupling_type_id){
 	//output
 	ostringstream cout;
 	cout <<"Read in Profilenumber " << profile_number << "..." <<endl;
@@ -186,7 +197,7 @@ void _Hyd_River_Profile::input_members(QFile *profile_file, const int profile_nu
 						buffer_stream.str("");
 						buffer=buffer.erase(0,pos);
 						//read in the auxdata
-						this->decide_keyvalues_file(key, buffer, &found_counter);
+						this->decide_keyvalues_file(key, buffer, con_param, gwmodel_applied, &found_counter);
 					}
 					catch(Error msg){
 						ostringstream info;
@@ -197,6 +208,17 @@ void _Hyd_River_Profile::input_members(QFile *profile_file, const int profile_nu
 				}
 			}
 		}while(profile_file->atEnd()!=true);
+
+		if (gwmodel_applied == true) {
+			if (coupling_type_id == 0) {
+				this->must_found_number++; //only one conductivity found!
+			}
+			else if (coupling_type_id == 1) {
+				this->must_found_number++; //three conductivities found!
+				this->must_found_number++;
+				this->must_found_number++;
+			}
+		}
 
 		//check if all needed values are found (they are set in constructors of each connection type)
 		if(found_counter!=this->must_found_number){
@@ -220,7 +242,7 @@ void _Hyd_River_Profile::input_members(QFile *profile_file, const int profile_nu
 	//alloc and read the infos of the profile type
 	try{
 		this->decide_alloc_profile_type(buffer_number_points);
-		this->typ_of_profile->input_members(profile_file, line_counter, this->name, this->profile_number);
+		this->typ_of_profile->input_members(profile_file, line_counter, this->name, this->profile_number, gwmodel_applied);
 	}
 	catch(Error msg){
 		ostringstream info;
@@ -344,6 +366,8 @@ int _Hyd_River_Profile::select_relevant_profiles_in_database(QSqlQueryModel *que
 	test_filter << _Hyd_River_Profile::profile_table->get_column_name(hyd_label::profdata_poleni_l) << " , ";
 	test_filter << _Hyd_River_Profile::profile_table->get_column_name(hyd_label::profdata_base_right) << " , ";
 	test_filter << _Hyd_River_Profile::profile_table->get_column_name(hyd_label::profdata_base_left) << " , ";
+	test_filter << _Hyd_River_Profile::profile_table->get_column_name(hyd_label::profdata_con_id) << " , ";
+	test_filter << _Hyd_River_Profile::profile_table->get_column_name(hyd_label::profdata_rvbed_m) << " , ";
 	test_filter << _Hyd_River_Profile::profile_table->get_column_name(hyd_label::profdata_init);
 	test_filter << " from " << _Hyd_River_Profile::profile_table->get_table_name();
 	test_filter << " where ";
@@ -407,6 +431,8 @@ int _Hyd_River_Profile::select_profiles_in_database(QSqlQueryModel *query_result
 	test_filter << _Hyd_River_Profile::profile_table->get_column_name(hyd_label::profdata_poleni_l) << " , ";
 	test_filter << _Hyd_River_Profile::profile_table->get_column_name(hyd_label::profdata_base_right) << " , ";
 	test_filter << _Hyd_River_Profile::profile_table->get_column_name(hyd_label::profdata_base_left) << " , ";
+	test_filter << _Hyd_River_Profile::profile_table->get_column_name(hyd_label::profdata_con_id) << " , ";
+	test_filter << _Hyd_River_Profile::profile_table->get_column_name(hyd_label::profdata_rvbed_m) << " , ";
 	test_filter << _Hyd_River_Profile::profile_table->get_column_name(hyd_label::profdata_init);
 	test_filter << " from " << _Hyd_River_Profile::profile_table->get_table_name();
 	test_filter << " where ";
@@ -458,6 +484,8 @@ int _Hyd_River_Profile::select_profiles_in_database(QSqlQueryModel *query_result
 	test_filter << _Hyd_River_Profile::profile_table->get_column_name(hyd_label::profdata_poleni_l) << " , ";
 	test_filter << _Hyd_River_Profile::profile_table->get_column_name(hyd_label::profdata_base_right) << " , ";
 	test_filter << _Hyd_River_Profile::profile_table->get_column_name(hyd_label::profdata_base_left) << " , ";
+	test_filter << _Hyd_River_Profile::profile_table->get_column_name(hyd_label::profdata_con_id) << " , ";
+	test_filter << _Hyd_River_Profile::profile_table->get_column_name(hyd_label::profdata_rvbed_m) << " , ";
 	test_filter << _Hyd_River_Profile::profile_table->get_column_name(hyd_label::profdata_init);
 	test_filter << " from " << _Hyd_River_Profile::profile_table->get_table_name();
 	test_filter << " where ";
@@ -517,6 +545,8 @@ int _Hyd_River_Profile::select_relevant_profiles_in_database(QSqlQueryModel *que
 	test_filter << _Hyd_River_Profile::profile_table->get_column_name(hyd_label::profdata_poleni_l) << " , ";
 	test_filter << _Hyd_River_Profile::profile_table->get_column_name(hyd_label::profdata_base_right) << " , ";
 	test_filter << _Hyd_River_Profile::profile_table->get_column_name(hyd_label::profdata_base_left) << " , ";
+	test_filter << _Hyd_River_Profile::profile_table->get_column_name(hyd_label::profdata_con_id) << " , ";
+	test_filter << _Hyd_River_Profile::profile_table->get_column_name(hyd_label::profdata_rvbed_m) << " , ";
 	test_filter << _Hyd_River_Profile::profile_table->get_column_name(hyd_label::profdata_init);
 	test_filter << " from " << _Hyd_River_Profile::profile_table->get_table_name();
 	test_filter << " where ";
@@ -580,6 +610,8 @@ int _Hyd_River_Profile::select_relevant_profile_in_database(QSqlQueryModel *quer
 	test_filter << _Hyd_River_Profile::profile_table->get_column_name(hyd_label::profdata_poleni_l) << " , ";
 	test_filter << _Hyd_River_Profile::profile_table->get_column_name(hyd_label::profdata_base_right) << " , ";
 	test_filter << _Hyd_River_Profile::profile_table->get_column_name(hyd_label::profdata_base_left) << " , ";
+	test_filter << _Hyd_River_Profile::profile_table->get_column_name(hyd_label::profdata_con_id) << " , ";
+	test_filter << _Hyd_River_Profile::profile_table->get_column_name(hyd_label::profdata_rvbed_m) << " , ";
 	test_filter << _Hyd_River_Profile::profile_table->get_column_name(hyd_label::profdata_init);
 	test_filter << " from " << _Hyd_River_Profile::profile_table->get_table_name();
 	test_filter << " where ";
@@ -640,7 +672,7 @@ void _Hyd_River_Profile::set_profile_table(QSqlDatabase *ptr_database){
 		//make specific input for this class
 		const string tab_id_name=hyd_label::tab_rvprof;
 
-		string tab_id_col[21];
+		string tab_id_col[23];
 		tab_id_col[0]=hyd_label::profdata_rvno;
 		tab_id_col[1]=hyd_label::profdata_name;
 		tab_id_col[2]=hyd_label::profdata_ldist;
@@ -662,6 +694,8 @@ void _Hyd_River_Profile::set_profile_table(QSqlDatabase *ptr_database){
 		tab_id_col[18]=label::areastate_id;
 		tab_id_col[19]=label::measure_id;
 		tab_id_col[20]=label::applied_flag;
+		tab_id_col[21] = hyd_label::profdata_con_id;
+		tab_id_col[22] = hyd_label::profdata_rvbed_m;
 
 		try{
 			_Hyd_River_Profile::profile_table= new Tables(tab_id_name, tab_id_col, sizeof(tab_id_col)/sizeof(tab_id_col[0]));
@@ -811,7 +845,7 @@ void _Hyd_River_Profile::create_profile_table(QSqlDatabase *ptr_database){
 		Sys_Common_Output::output_hyd->output_txt(&cout);
 		//make specific input for this class
 		const string tab_name=hyd_label::tab_rvprof;
-		const int num_col=21;
+		const int num_col=23;
 		_Sys_data_tab_column tab_col[num_col];
 		//init
 		for(int i=0; i< num_col; i++){
@@ -905,6 +939,14 @@ void _Hyd_River_Profile::create_profile_table(QSqlDatabase *ptr_database){
 
 		tab_col[20].name=label::link;
 		tab_col[20].type=sys_label::tab_col_type_string;
+
+		tab_col[21].name = hyd_label::profdata_con_id;
+		tab_col[21].type = sys_label::tab_col_type_int;
+		tab_col[21].default_value = "-1";
+
+		tab_col[22].name = hyd_label::profdata_rvbed_m;
+		tab_col[22].type = sys_label::tab_col_type_double;
+		tab_col[22].default_value = "1.0";
 
 		try{
 			_Hyd_River_Profile::profile_table= new Tables();
@@ -2600,7 +2642,6 @@ void _Hyd_River_Profile::switch_applied_flag_erg_table(QSqlDatabase *ptr_databas
 		msg.make_second_info(info.str());
 		throw msg;
 	}
-
 	_Hyd_River_Profile::switch_applied_flag_erg_instat_table(ptr_database, id, flag);
 }
 //Switch the applied-flag for the 1-d results in the database table for a defined system state (static)
@@ -3018,7 +3059,7 @@ void _Hyd_River_Profile::copy_boundary_condition(QSqlDatabase *ptr_database, con
 
 }
 //Initialize the profile
-void _Hyd_River_Profile::init_profile(Hyd_Param_Material *material_table, const _hyd_profile_calc_setting user_setting){
+void _Hyd_River_Profile::init_profile(Hyd_Param_Material *material_table, const _hyd_profile_calc_setting user_setting, Hyd_Param_Conductivity* con_param){
 	ostringstream cout;
 	cout <<"Generate tables of profile " << this->profile_number << " ... "<< endl;
 	Sys_Common_Output::output_hyd->output_txt(&cout, true);
@@ -3034,6 +3075,7 @@ void _Hyd_River_Profile::init_profile(Hyd_Param_Material *material_table, const 
 
 		this->typ_of_profile->calc_alloc_tables(this->delta_x_table, material_table);
 		this->calculate_river_width();
+		this->conductivity_value = con_param->get_con_value(this->conductivity_index, _hyd_con_coefficient_types::Kf_coefficient);
 	}
 		catch(Error msg){
 		ostringstream info;
@@ -3078,6 +3120,8 @@ void _Hyd_River_Profile::clone_profile(_Hyd_River_Profile *profile){
 	this->break_flag_right=profile->break_flag_right;
 	this->index_basepoint_right=profile->index_basepoint_right;
 
+	this->conductivity_index = profile->conductivity_index;
+
 	this->init_condition=profile->init_condition;
 	this->distance2upstream=profile->distance2upstream;
 	this->distance2downstream=profile->distance2downstream;
@@ -3109,6 +3153,10 @@ void _Hyd_River_Profile::clone_profile(_Hyd_River_Profile *profile){
 	if(profile->right_break_params!=NULL){
 		this->allocate_break_parameter_right();
 		*this->right_break_params=*profile->right_break_params;
+	}
+	if (profile->leakage_params != NULL) {
+		this->allocate_leakage_parameter();
+		*this->leakage_params = *profile->leakage_params;
 	}
 
 	this->left_bank2fpl=profile->left_bank2fpl;
@@ -3189,6 +3237,14 @@ bool _Hyd_River_Profile::get_overflow_flag_right(void){
 double _Hyd_River_Profile::get_overflow_poleni_right(void){
 	return 0.0;
 }
+//Get if an leakage through the left river bank into the groundwater is given REVIEW always true
+bool _Hyd_River_Profile::get_leakage_flag_left(void) {
+	return true;
+}
+//Get if an leakage through the right river bank into the groundwater is given REVIEW always true
+bool _Hyd_River_Profile::get_leakage_flag_right(void) {
+	return true;
+}
 //Get the flag if a break of the left floodprotection line is possible
 bool _Hyd_River_Profile::get_break_flag_left(void){
 	return this->break_flag_left;
@@ -3205,6 +3261,18 @@ Hyd_River_Profile_Point* _Hyd_River_Profile::get_left_basepoint(void){
 	}
 	return pointer;
 }
+//Get the conductivity index
+int _Hyd_River_Profile::get_conductivity_index(void) {
+	return this->conductivity_index;
+}
+//Get the conductivity value
+double _Hyd_River_Profile::get_conductivity_value(void) {
+	return this->conductivity_value;
+}
+//Get the thickness
+double _Hyd_River_Profile::get_thickness(void) {
+	return this->thickness;
+}
 //Get the flag if a break of the right floodprotection line is possible
 bool _Hyd_River_Profile::get_break_flag_right(void){
 	return this->break_flag_right;
@@ -3220,6 +3288,12 @@ Hyd_River_Profile_Point* _Hyd_River_Profile::get_right_basepoint(void){
 		return &(this->typ_of_profile->points[this->index_basepoint_right]);
 	}
 	return pointer;
+}
+///Get the data structure for the leakage-parameters
+_hyd_leakage_parameters* _Hyd_River_Profile::get_leakage_parameter(void) {
+	
+	return this->leakage_params;
+	
 }
 //Get the data structure for the break-parameters of the left bank
 _hyd_break_parameters* _Hyd_River_Profile::get_break_parameter_left(void){
@@ -3345,6 +3419,17 @@ void _Hyd_River_Profile::calculate_hydrological_balance(const double time_point)
 	}
 	//total
 	this->right_dikebreak_coupling_volume.volume_total=this->right_dikebreak_coupling_volume.volume_in-this->right_dikebreak_coupling_volume.volume_out;
+	//leakage coupling 1d2d
+	if (this->q_leakage_coupling < 0.0) {
+		//outflow
+		this->leakage_coupling_volume.volume_out = this->leakage_coupling_volume.volume_out + abs(this->q_leakage_coupling)*this->delta_time;
+	}
+	else if (this->q_leakage_coupling > 0.0) {
+		//inflow
+		this->leakage_coupling_volume.volume_in = this->leakage_coupling_volume.volume_in + abs(this->q_leakage_coupling)*this->delta_time;
+	}
+	//total
+	this->leakage_coupling_volume.volume_total = this->leakage_coupling_volume.volume_in - this->leakage_coupling_volume.volume_out;
 }
 //Reset all coupling discharges; use it before syncronization
 void _Hyd_River_Profile::reset_coupling_discharge(void){
@@ -3354,6 +3439,7 @@ void _Hyd_River_Profile::reset_coupling_discharge(void){
 	this->q_structure_coupling=0.0;
 	this->q_dikebreak_coupling_left=0.0;
 	this->q_dikebreak_coupling_right=0.0;
+	this->q_leakage_coupling = 0.0;
 }
 //Add a discharge value to the coupling discharge over the left bank [m³/(s)] in flow direction (coupling RV2FP)
 void _Hyd_River_Profile::add_coupling_discharge_left_bank(const double value){
@@ -3427,6 +3513,18 @@ void _Hyd_River_Profile::reset_dikebreak_coupling_discharge_right_bank(void){
 double _Hyd_River_Profile::get_dikebreak_coupling_discharge_right_bank(void){
 	return this->q_dikebreak_coupling_right;
 }
+//Add a discharge value to the coupling discharge due to leakage (coupling RV2GW)
+void _Hyd_River_Profile::add_leakage_coupling_discharge(const double value) {
+	this->q_leakage_coupling = this->q_leakage_coupling + value;
+}
+//Reset a discharge value to the coupling discharge due to leakage (coupling RV2GW)
+void _Hyd_River_Profile::reset_leakage_coupling_discharge(void) {
+	this->q_leakage_coupling = 0.0;
+}
+//Get a value of the coupling discharge due to leakage (coupling RV2GW)
+double _Hyd_River_Profile::get_leakage_coupling_discharge(void) {
+	return this->q_leakage_coupling;
+}
 //Add the hydrological balance value of the coupling condition discharges for the left bank overflow to the given pointer
 void _Hyd_River_Profile::add_hydro_balance_leftbank_coupling(_hyd_hydrological_balance *given){
 	given->volume_in=given->volume_in+this->left_bank_overflow_volume.volume_in;
@@ -3462,6 +3560,12 @@ void _Hyd_River_Profile::add_hydro_balance_dikebreak_right_coupling(_hyd_hydrolo
 	given->volume_in=given->volume_in+this->right_dikebreak_coupling_volume.volume_in;
 	given->volume_out=given->volume_out+this->right_dikebreak_coupling_volume.volume_out;
 	given->volume_total=given->volume_total+this->right_dikebreak_coupling_volume.volume_total;
+}
+//Add the hydrological balance value of the coupling condition discharges to groundwater models via leakage to the given pointer
+void _Hyd_River_Profile::add_hydro_balance_leakage_coupling(_hyd_hydrological_balance *given) {
+	given->volume_in = given->volume_in + this->leakage_coupling_volume.volume_in;
+	given->volume_out = given->volume_out + this->leakage_coupling_volume.volume_out;
+	given->volume_total = given->volume_total + this->leakage_coupling_volume.volume_total;
 }
 //Output the header for the maximum result output to console/display
 void _Hyd_River_Profile::output_header_max_results(void){
@@ -3505,14 +3609,16 @@ void _Hyd_River_Profile::output_max_results(void){
 	cout << P(1) << FORMAT_FIXED_REAL<< this->left_dikebreak_coupling_volume.volume_out << W(22);
 	cout << P(1) << FORMAT_FIXED_REAL<< this->right_dikebreak_coupling_volume.volume_in << W(22);
 	cout << P(1) << FORMAT_FIXED_REAL<< this->right_dikebreak_coupling_volume.volume_out << W(22);
+	cout << P(1) << FORMAT_FIXED_REAL << this->leakage_coupling_volume.volume_in << W(22);
+	cout << P(1) << FORMAT_FIXED_REAL << this->leakage_coupling_volume.volume_out << W(22);
 	double sum=0.0;
 	sum=this->coupling_1d_volume.volume_in+this->structure_coupling_volume.volume_in+
 		this->left_bank_overflow_volume.volume_in+this->right_bank_overflow_volume.volume_in+
-		this->left_dikebreak_coupling_volume.volume_in+this->right_dikebreak_coupling_volume.volume_in;
+		this->left_dikebreak_coupling_volume.volume_in+this->right_dikebreak_coupling_volume.volume_in+this->leakage_coupling_volume.volume_in;
 	cout << P(1) << FORMAT_FIXED_REAL<< sum << W(22);
 	sum=this->coupling_1d_volume.volume_out+this->structure_coupling_volume.volume_out+
 		this->left_bank_overflow_volume.volume_out+this->right_bank_overflow_volume.volume_out+
-		this->left_dikebreak_coupling_volume.volume_out+this->right_dikebreak_coupling_volume.volume_out;
+		this->left_dikebreak_coupling_volume.volume_out+this->right_dikebreak_coupling_volume.volume_out+this->leakage_coupling_volume.volume_out;
 	cout << P(1) << FORMAT_FIXED_REAL<< sum ;
 	cout << P(2) << FORMAT_FIXED_REAL <<this->q_value_max.maximum;
 	cout << P(0) << FORMAT_FIXED_REAL <<this->q_value_max.time_point;
@@ -3535,14 +3641,16 @@ void _Hyd_River_Profile::output_max_results2file(ofstream *file){
 	*file << P(1) << FORMAT_FIXED_REAL<< this->left_dikebreak_coupling_volume.volume_out << W(15);
 	*file << P(1) << FORMAT_FIXED_REAL<< this->right_dikebreak_coupling_volume.volume_in << W(15);
 	*file << P(1) << FORMAT_FIXED_REAL<< this->right_dikebreak_coupling_volume.volume_out << W(15);
+	*file << P(1) << FORMAT_FIXED_REAL << this->leakage_coupling_volume.volume_in << W(15);
+	*file << P(1) << FORMAT_FIXED_REAL << this->leakage_coupling_volume.volume_out << W(15);
 	double sum=0.0;
 	sum=this->coupling_1d_volume.volume_in+this->structure_coupling_volume.volume_in+
 		this->left_bank_overflow_volume.volume_in+this->right_bank_overflow_volume.volume_in+
-		this->left_dikebreak_coupling_volume.volume_in+this->right_dikebreak_coupling_volume.volume_in;
+		this->left_dikebreak_coupling_volume.volume_in+this->right_dikebreak_coupling_volume.volume_in+this->leakage_coupling_volume.volume_in;
 	*file << P(1) << FORMAT_FIXED_REAL<< sum << W(15);
 	sum=this->coupling_1d_volume.volume_out+this->structure_coupling_volume.volume_out+
 		this->left_bank_overflow_volume.volume_out+this->right_bank_overflow_volume.volume_out+
-		this->left_dikebreak_coupling_volume.volume_out+this->right_dikebreak_coupling_volume.volume_out;
+		this->left_dikebreak_coupling_volume.volume_out+this->right_dikebreak_coupling_volume.volume_out+this->leakage_coupling_volume.volume_out;
 	*file << P(1) << FORMAT_FIXED_REAL<< sum << W(15);
 	*file << P(2) << FORMAT_FIXED_REAL <<this->q_value_max.maximum << W(15);
 	*file << P(0) << FORMAT_FIXED_REAL <<this->q_value_max.time_point;
@@ -3564,14 +3672,16 @@ void _Hyd_River_Profile::output_max_results2csvfile(ofstream *file) {
 	*file << P(1) << FORMAT_FIXED_REAL << this->left_dikebreak_coupling_volume.volume_out << W(15) << ",";
 	*file << P(1) << FORMAT_FIXED_REAL << this->right_dikebreak_coupling_volume.volume_in << W(15) << ",";
 	*file << P(1) << FORMAT_FIXED_REAL << this->right_dikebreak_coupling_volume.volume_out << W(15) << ",";
+	*file << P(1) << FORMAT_FIXED_REAL << this->leakage_coupling_volume.volume_in << W(15) << ",";
+	*file << P(1) << FORMAT_FIXED_REAL << this->leakage_coupling_volume.volume_out << W(15) << ",";
 	double sum = 0.0;
 	sum = this->coupling_1d_volume.volume_in + this->structure_coupling_volume.volume_in +
 		this->left_bank_overflow_volume.volume_in + this->right_bank_overflow_volume.volume_in +
-		this->left_dikebreak_coupling_volume.volume_in + this->right_dikebreak_coupling_volume.volume_in;
+		this->left_dikebreak_coupling_volume.volume_in + this->right_dikebreak_coupling_volume.volume_in+this->leakage_coupling_volume.volume_in;
 	*file << P(1) << FORMAT_FIXED_REAL << sum << W(15) << ",";
 	sum = this->coupling_1d_volume.volume_out + this->structure_coupling_volume.volume_out +
 		this->left_bank_overflow_volume.volume_out + this->right_bank_overflow_volume.volume_out +
-		this->left_dikebreak_coupling_volume.volume_out + this->right_dikebreak_coupling_volume.volume_out;
+		this->left_dikebreak_coupling_volume.volume_out + this->right_dikebreak_coupling_volume.volume_out+this->leakage_coupling_volume.volume_out;
 	*file << P(1) << FORMAT_FIXED_REAL << sum << W(15) << ",";
 	*file << P(2) << FORMAT_FIXED_REAL << this->q_value_max.maximum << W(15) << ",";
 	*file << P(0) << FORMAT_FIXED_REAL << this->q_value_max.time_point;
@@ -3596,104 +3706,93 @@ void _Hyd_River_Profile::output_max_results(QSqlDatabase *ptr_database, const in
 
 	//set the query via a query string
 	ostringstream query_string;
-	//put it in a functions
-	this->generate_max_str2database(&query_string, rv_no, polygon_string, glob_id, break_sc);
-	//query_string << "INSERT INTO  " << _Hyd_River_Profile::erg_table->get_table_name();
-	//query_string <<" ( ";
-	//query_string << _Hyd_River_Profile::erg_table->get_column_name(label::glob_id) <<" , ";
-	//query_string << _Hyd_River_Profile::erg_table->get_column_name(hyd_label::profdata_rvno) <<" , ";
-	//query_string << _Hyd_River_Profile::erg_table->get_column_name(hyd_label::profdata_prof_id) <<" , ";
-	//query_string << _Hyd_River_Profile::erg_table->get_column_name(label::areastate_id) <<" , ";
-	//query_string << _Hyd_River_Profile::erg_table->get_column_name(label::measure_id) <<" , ";
-	//query_string << _Hyd_River_Profile::erg_table->get_column_name(hyd_label::sz_bound_id) <<" , ";
-	//query_string << _Hyd_River_Profile::erg_table->get_column_name(risk_label::sz_break_id) <<" , ";
-	////volumes
-	//query_string << _Hyd_River_Profile::erg_table->get_column_name(hyd_label::proferg_cv_rv_in) <<" , ";
-	//query_string << _Hyd_River_Profile::erg_table->get_column_name(hyd_label::proferg_cv_rv_out) <<" , ";
-	//query_string << _Hyd_River_Profile::erg_table->get_column_name(hyd_label::proferg_cv_struc_in) <<" , ";
-	//query_string << _Hyd_River_Profile::erg_table->get_column_name(hyd_label::proferg_cv_struc_out) <<" , ";
+	query_string << "INSERT INTO  " << _Hyd_River_Profile::erg_table->get_table_name();
+	query_string <<" ( ";
+	query_string << _Hyd_River_Profile::erg_table->get_column_name(label::glob_id) <<" , ";
+	query_string << _Hyd_River_Profile::erg_table->get_column_name(hyd_label::profdata_rvno) <<" , ";
+	query_string << _Hyd_River_Profile::erg_table->get_column_name(hyd_label::profdata_prof_id) <<" , ";
+	query_string << _Hyd_River_Profile::erg_table->get_column_name(label::areastate_id) <<" , ";
+	query_string << _Hyd_River_Profile::erg_table->get_column_name(label::measure_id) <<" , ";
+	query_string << _Hyd_River_Profile::erg_table->get_column_name(hyd_label::sz_bound_id) <<" , ";
+	query_string << _Hyd_River_Profile::erg_table->get_column_name(risk_label::sz_break_id) <<" , ";
+	//volumes
+	query_string << _Hyd_River_Profile::erg_table->get_column_name(hyd_label::proferg_cv_rv_in) <<" , ";
+	query_string << _Hyd_River_Profile::erg_table->get_column_name(hyd_label::proferg_cv_rv_out) <<" , ";
+	query_string << _Hyd_River_Profile::erg_table->get_column_name(hyd_label::proferg_cv_struc_in) <<" , ";
+	query_string << _Hyd_River_Profile::erg_table->get_column_name(hyd_label::proferg_cv_struc_out) <<" , ";
 
-	//query_string << _Hyd_River_Profile::erg_table->get_column_name(hyd_label::proferg_cv_l_ov_in) <<" , ";
-	//query_string << _Hyd_River_Profile::erg_table->get_column_name(hyd_label::proferg_cv_l_ov_out) <<" , ";
-	//query_string << _Hyd_River_Profile::erg_table->get_column_name(hyd_label::proferg_cv_r_ov_in) <<" , ";
-	//query_string << _Hyd_River_Profile::erg_table->get_column_name(hyd_label::proferg_cv_r_ov_out) <<" , ";
+	query_string << _Hyd_River_Profile::erg_table->get_column_name(hyd_label::proferg_cv_l_ov_in) <<" , ";
+	query_string << _Hyd_River_Profile::erg_table->get_column_name(hyd_label::proferg_cv_l_ov_out) <<" , ";
+	query_string << _Hyd_River_Profile::erg_table->get_column_name(hyd_label::proferg_cv_r_ov_in) <<" , ";
+	query_string << _Hyd_River_Profile::erg_table->get_column_name(hyd_label::proferg_cv_r_ov_out) <<" , ";
 
-	//query_string << _Hyd_River_Profile::erg_table->get_column_name(hyd_label::proferg_cv_l_db_in) <<" , ";
-	//query_string << _Hyd_River_Profile::erg_table->get_column_name(hyd_label::proferg_cv_l_db_out) <<" , ";
-	//query_string << _Hyd_River_Profile::erg_table->get_column_name(hyd_label::proferg_cv_r_db_in) <<" , ";
-	//query_string << _Hyd_River_Profile::erg_table->get_column_name(hyd_label::proferg_cv_r_db_out) <<" , ";
-	////max values
-	//query_string << _Hyd_River_Profile::erg_table->get_column_name(hyd_label::proferg_q_max) <<" , ";
-	//query_string << _Hyd_River_Profile::erg_table->get_column_name(hyd_label::proferg_hmax_lb) <<" , ";
-	//query_string << _Hyd_River_Profile::erg_table->get_column_name(hyd_label::proferg_hmax_rb) <<" , ";
-	//query_string << _Hyd_River_Profile::erg_table->get_column_name(hyd_label::proferg_hmax_lb_break) <<" , ";
-	//query_string << _Hyd_River_Profile::erg_table->get_column_name(hyd_label::proferg_hmax_rb_break) <<" , ";
-	////max values from profile type
-	//query_string << _Hyd_River_Profile::erg_table->get_column_name(hyd_label::proferg_h_max) <<" , ";
-	//query_string << _Hyd_River_Profile::erg_table->get_column_name(hyd_label::proferg_s_max) <<" , ";
-	//query_string << _Hyd_River_Profile::erg_table->get_column_name(hyd_label::proferg_t_hmax) <<" , ";
-	//query_string << _Hyd_River_Profile::erg_table->get_column_name(hyd_label::proferg_v_max) <<" , ";
-	//query_string << _Hyd_River_Profile::erg_table->get_column_name(hyd_label::proferg_width_max) << " , ";
-	//query_string << _Hyd_River_Profile::erg_table->get_column_name(hyd_label::proferg_dur_wet) <<" , ";
-	//query_string << _Hyd_River_Profile::erg_table->get_column_name(hyd_label::proferg_dur_dry) <<" , ";
-	//query_string << _Hyd_River_Profile::erg_table->get_column_name(hyd_label::proferg_polygon) <<" ) ";
+	query_string << _Hyd_River_Profile::erg_table->get_column_name(hyd_label::proferg_cv_l_db_in) <<" , ";
+	query_string << _Hyd_River_Profile::erg_table->get_column_name(hyd_label::proferg_cv_l_db_out) <<" , ";
+	query_string << _Hyd_River_Profile::erg_table->get_column_name(hyd_label::proferg_cv_r_db_in) <<" , ";
+	query_string << _Hyd_River_Profile::erg_table->get_column_name(hyd_label::proferg_cv_r_db_out) <<" , ";
+	//max values
+	query_string << _Hyd_River_Profile::erg_table->get_column_name(hyd_label::proferg_q_max) <<" , ";
+	query_string << _Hyd_River_Profile::erg_table->get_column_name(hyd_label::proferg_hmax_lb) <<" , ";
+	query_string << _Hyd_River_Profile::erg_table->get_column_name(hyd_label::proferg_hmax_rb) <<" , ";
+	query_string << _Hyd_River_Profile::erg_table->get_column_name(hyd_label::proferg_hmax_lb_break) <<" , ";
+	query_string << _Hyd_River_Profile::erg_table->get_column_name(hyd_label::proferg_hmax_rb_break) <<" , ";
+	//max values from profile type
+	query_string << _Hyd_River_Profile::erg_table->get_column_name(hyd_label::proferg_h_max) <<" , ";
+	query_string << _Hyd_River_Profile::erg_table->get_column_name(hyd_label::proferg_s_max) <<" , ";
+	query_string << _Hyd_River_Profile::erg_table->get_column_name(hyd_label::proferg_t_hmax) <<" , ";
+	query_string << _Hyd_River_Profile::erg_table->get_column_name(hyd_label::proferg_v_max) <<" , ";
+	query_string << _Hyd_River_Profile::erg_table->get_column_name(hyd_label::proferg_width_max) << " , ";
+	query_string << _Hyd_River_Profile::erg_table->get_column_name(hyd_label::proferg_dur_wet) <<" , ";
+	query_string << _Hyd_River_Profile::erg_table->get_column_name(hyd_label::proferg_dur_dry) <<" , ";
+	query_string << _Hyd_River_Profile::erg_table->get_column_name(hyd_label::proferg_polygon) <<" ) ";
 
-	//query_string << " VALUES ( ";
-	//query_string << *glob_id << " , " ;
-	//query_string << rv_no << " , " ;
-	//query_string << this->profile_number << " , " ;
-	//query_string << this->system_id.area_state << " , " ;
-	//query_string << this->system_id.measure_nr << " , " ;
-	//query_string << this->hyd_sz.get_id() << " , " ;
-	//query_string << "'" << break_sc << "' , " ;
-	////volumes
-	//query_string << this->coupling_1d_volume.volume_in << " , " ;
-	//query_string << this->coupling_1d_volume.volume_out << " , " ;
-	//query_string << this->structure_coupling_volume.volume_in << " , " ;
-	//query_string << this->structure_coupling_volume.volume_out << " , " ;
+	query_string << " VALUES ( ";
+	query_string << *glob_id << " , " ;
+	query_string << rv_no << " , " ;
+	query_string << this->profile_number << " , " ;
+	query_string << this->system_id.area_state << " , " ;
+	query_string << this->system_id.measure_nr << " , " ;
+	query_string << this->hyd_sz.get_id() << " , " ;
+	query_string << "'" << break_sc << "' , " ;
+	//volumes
+	query_string << this->coupling_1d_volume.volume_in << " , " ;
+	query_string << this->coupling_1d_volume.volume_out << " , " ;
+	query_string << this->structure_coupling_volume.volume_in << " , " ;
+	query_string << this->structure_coupling_volume.volume_out << " , " ;
 
-	//query_string << this->left_bank_overflow_volume.volume_in << " , " ;
-	//query_string << this->left_bank_overflow_volume.volume_out << " , " ;
-	//query_string << this->right_bank_overflow_volume.volume_in << " , " ;
-	//query_string << this->right_bank_overflow_volume.volume_out << " , " ;
+	query_string << this->left_bank_overflow_volume.volume_in << " , " ;
+	query_string << this->left_bank_overflow_volume.volume_out << " , " ;
+	query_string << this->right_bank_overflow_volume.volume_in << " , " ;
+	query_string << this->right_bank_overflow_volume.volume_out << " , " ;
 
-	//query_string << this->left_dikebreak_coupling_volume.volume_in << " , " ;
-	//query_string << this->left_dikebreak_coupling_volume.volume_out << " , " ;
-	//query_string << this->right_dikebreak_coupling_volume.volume_in << " , " ;
-	//query_string << this->right_dikebreak_coupling_volume.volume_out << " , " ;
-	////max values
-	//query_string << this->q_value_max.maximum << " , " ;
-	//query_string << this->h_max_left_base << " , " ;
-	//query_string << this->h_max_right_base << " , " ;
-	//query_string << this->max_h_2break_left<< " , " ;
-	//query_string << this->max_h_2break_right<< " , " ;
-	////max values from profile type
-	//query_string << this->typ_of_profile->set_maximum_value2string();
-	//query_string << polygon_string <<" ) ";
+	query_string << this->left_dikebreak_coupling_volume.volume_in << " , " ;
+	query_string << this->left_dikebreak_coupling_volume.volume_out << " , " ;
+	query_string << this->right_dikebreak_coupling_volume.volume_in << " , " ;
+	query_string << this->right_dikebreak_coupling_volume.volume_out << " , " ;
+
+	//query_string << this->leakage_coupling_volume.volume_in << " , ";
+	//query_string << this->leakage_coupling_volume.volume_out << " , ";
+	//max values
+	query_string << this->q_value_max.maximum << " , " ;
+	query_string << this->h_max_left_base << " , " ;
+	query_string << this->h_max_right_base << " , " ;
+	query_string << this->max_h_2break_left<< " , " ;
+	query_string << this->max_h_2break_right<< " , " ;
+	//max values from profile type
+	query_string << this->typ_of_profile->set_maximum_value2string();
+	query_string << polygon_string <<" ) ";
 
 	//submit it to the datbase
 	Data_Base::database_request(&model, query_string.str(), ptr_database);
 
 	if(model.lastError().isValid()){
-		//try new glob id
-		//renew it
-		*glob_id = _Hyd_River_Profile::erg_table->maximum_int_of_column(_Hyd_River_Profile::erg_table->get_column_name(label::glob_id), ptr_database)+1;
-		query_string.clear();
-		this->generate_max_str2database(&query_string, rv_no, polygon_string, glob_id, break_sc);
-		model.clear();
-		//second try
-		Data_Base::database_request(&model, query_string.str(), ptr_database);
-		if (model.lastError().isValid()) {
-			Warning msg = this->set_warning(3);
-			ostringstream info;
-			info << "Table Name                : " << _Hyd_River_Profile::erg_table->get_table_name() << endl;
-			info << "Table error info          : " << model.lastError().text().toStdString() << endl;
-			info << "Profile number            : " << this->profile_number << endl;
-			info << " Two glob ids were checked! " << endl;
-			msg.make_second_info(info.str());
-			msg.output_msg(2);
-		}
-		
+		Warning msg=this->set_warning(3);
+		ostringstream info;
+		info << "Table Name                : " << _Hyd_River_Profile::erg_table->get_table_name() << endl;
+		info << "Table error info          : " << model.lastError().text().toStdString() << endl;
+		info << "Profile number            : " << this->profile_number << endl;
+		msg.make_second_info(info.str());
+		msg.output_msg(2);
 	}
 	*glob_id=(*glob_id)+1;
 }
@@ -3794,6 +3893,7 @@ void _Hyd_River_Profile::output_result_members_per_timestep_header(void){
 	cout << "v" << label::m_per_sec<<W(10);
 	cout << "fr" << label::no_unit <<W(10);
 	cout << "width" << label::m<< W(10);
+	cout << "q_rv_gw_coupling" << label::qm_per_sec << W(10);
 	cout << "q" << label::qm_per_sec;
 	cout << endl;
 	Sys_Common_Output::output_hyd->output_txt(&cout,true);
@@ -3835,6 +3935,7 @@ void _Hyd_River_Profile::reset_hydrobalance_maxvalues(void){
 	this->q_structure_coupling=0.0;
 	this->q_dikebreak_coupling_left=0.0;
 	this->q_dikebreak_coupling_right=0.0;
+	this->q_leakage_coupling = 0.0;
 	//volumes
 	this->left_bank_overflow_volume.volume_in=0.0;
 	this->left_bank_overflow_volume.volume_out=0.0;
@@ -3854,6 +3955,9 @@ void _Hyd_River_Profile::reset_hydrobalance_maxvalues(void){
 	this->right_dikebreak_coupling_volume.volume_in=0.0;
 	this->right_dikebreak_coupling_volume.volume_out=0.0;
 	this->right_dikebreak_coupling_volume.volume_total=0.0;
+	this->leakage_coupling_volume.volume_in = 0.0;
+	this->leakage_coupling_volume.volume_out = 0.0;
+	this->leakage_coupling_volume.volume_total = 0.0;
 	this->q_value_max.maximum=0.0;
 	this->q_value_max.time_point=0.0;
 
@@ -4186,12 +4290,41 @@ int _Hyd_River_Profile::get_fpl_section_id_right(void){
 int _Hyd_River_Profile::get_prof_glob_id(void){
 	return this->glob_prof_id;
 }
+
 //Append a string to the profile name
 void _Hyd_River_Profile::append_str2name(const string append){
 	this->name.append(append);
 }
 //_________________________________
 //protected
+///Allocate the data structure for the leakage-parameters 
+void _Hyd_River_Profile::allocate_leakage_parameter(void) {
+	if (this->leakage_params == NULL) {
+		try {
+			this->leakage_params = new _hyd_leakage_parameters;
+		}
+		catch (bad_alloc& t) {
+			Error msg = this->set_error(19);
+			ostringstream info;
+			info << "Info bad alloc: " << t.what() << endl;
+			msg.make_second_info(info.str());
+			throw msg;
+		}
+		this->leakage_params->K1_index = 0;
+		this->leakage_params->K2_index = 0;
+		this->leakage_params->K3_index = 0;
+		this->leakage_params->K1_value = 0;
+		this->leakage_params->K2_value = 0;
+		this->leakage_params->K3_value = 0;
+	}
+}
+///Delete the leakage-parameters 
+void _Hyd_River_Profile::delete_leakage_parameter(void) {
+	if (this->leakage_params != NULL) {
+		delete this->leakage_params;
+		this->leakage_params = NULL;
+	}
+}
 //Allocate the data structure for the break-parameters of the left bank
 void _Hyd_River_Profile::allocate_break_parameter_left(void){
 	if(this->left_break_params==NULL){
@@ -4259,7 +4392,7 @@ void _Hyd_River_Profile::allocate_bridge_data(void){
 	}
 }
 //decide in the different keyvalues in the profile file
-void _Hyd_River_Profile::decide_keyvalues_file(const string key, string buffer, int *found_counter){
+void _Hyd_River_Profile::decide_keyvalues_file(const string key, string buffer, Hyd_Param_Conductivity *con_param, bool gwmodel_applied, int *found_counter){
 	stringstream stream;
 	//general key words
 	if(key==hyd_label::InitCondition){
@@ -4323,6 +4456,12 @@ void _Hyd_River_Profile::decide_keyvalues_file(const string key, string buffer, 
 			this->must_found_number++;
 		}
 	}
+	else if (gwmodel_applied == true && key == hyd_label::Thickness) {
+		this->get_keyvalues_file(&stream, buffer);
+		stream >> this->thickness;
+		(*found_counter)++;
+		this->must_found_number++;
+	}
 	else if(key==hyd_label::BridgeBodySize && this->type==_hyd_profile_types::BRIDGE_TYPE){
 		this->allocate_bridge_data();
 		this->get_keyvalues_file(&stream, buffer);
@@ -4335,6 +4474,43 @@ void _Hyd_River_Profile::decide_keyvalues_file(const string key, string buffer, 
 		stream >> this->bridge_specific_value->local_bridge_height;
 		(*found_counter)++;
 	}
+	//Darcy Approach
+	if (gwmodel_applied == true) {
+		if (key == hyd_label::ConductivityIndex) {
+			this->get_keyvalues_file(&stream, buffer);
+			stream >> this->conductivity_index;
+			this->conductivity_value = con_param->get_con_value(this->conductivity_index, _hyd_con_coefficient_types::Kf_coefficient);
+			(*found_counter)++;
+			//this->must_found_number++;
+		}
+		else if (key == hyd_label::ConductivityIndex_K1) {
+			
+			this->allocate_leakage_parameter();
+			
+			this->get_keyvalues_file(&stream, buffer);
+			stream >> this->leakage_params->K1_index;
+			this->leakage_params->K1_value = con_param->get_con_value(this->leakage_params->K1_index, _hyd_con_coefficient_types::Kf_coefficient);
+			(*found_counter)++;
+			//this->must_found_number++;
+
+		}
+		else if (key == hyd_label::ConductivityIndex_K2) {
+			this->get_keyvalues_file(&stream, buffer);
+			stream >> this->leakage_params->K2_index;
+			this->leakage_params->K2_value = con_param->get_con_value(this->leakage_params->K2_index, _hyd_con_coefficient_types::Kf_coefficient);
+			(*found_counter)++;
+			//this->must_found_number++;
+		}
+		else if (key == hyd_label::ConductivityIndex_K3) {
+			this->get_keyvalues_file(&stream, buffer);
+			stream >> this->leakage_params->K3_index;
+			this->leakage_params->K3_value = con_param->get_con_value(this->leakage_params->K3_index, _hyd_con_coefficient_types::Kf_coefficient);
+			(*found_counter)++;
+			//this->must_found_number++;
+		}
+		
+	}
+	
 
 	if(stream.fail()==true){
 		Error msg=this->set_error(3);

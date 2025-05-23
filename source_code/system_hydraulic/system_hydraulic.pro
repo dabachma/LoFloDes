@@ -89,6 +89,8 @@ HEADERS += source_code/Hyd_Multiple_Hydraulic_Systems.h \
            source_code/system/Hyd_Parse_Glob.h \
            source_code/system/Hyd_Observation_Point.h\
            source_code/system/Hyd_Observation_Point_Manager.h\
+		   source_code/system/Hyd_Param_Conductivity.h \
+		   source_code/system/Hyd_Param_Porosity.h \
            source_code/models/floodplain/Hyd_Model_Floodplain.h \
            source_code/models/floodplain/Hyd_Param_FP.h \
            source_code/models/floodplain/Hyd_Parse_FP.h \
@@ -158,6 +160,34 @@ HEADERS += source_code/Hyd_Multiple_Hydraulic_Systems.h \
            source_code/models/coupling/Hyd_Parse_Coupling_Diversion.h \
            source_code/models/coupling/Hyd_Parse_Coupling_RV2FP_Structure.h \
            source_code/models/coupling/Hyd_Parse_Coupling_RV2FP_Dikebreak.h \
+		   source_code/models/coupling/Hyd_Coupling_RV2GW.h \
+		   source_code/models/coupling/Hyd_Coupling_Point_RV2GW.h \
+		   source_code/models/coupling/Hyd_Coupling_RV2GW_Merged.h \
+		   source_code/models/coupling/Hyd_Coupling_Point_RV2GW_List.h \
+		   source_code/models/groundwater/_Hyd_Coupling_Point_List_GW.h \
+		   source_code/models/groundwater/_Hyd_Element_Groundwater_Type.h \
+		   source_code/models/groundwater/Hyd_Coupling_GW2GW.h \
+		   source_code/models/groundwater/Hyd_Coupling_Point_GW2GW.h \
+		   source_code/models/groundwater/Hyd_Coupling_Point_GW2GW_List.h \
+		   source_code/models/groundwater/Hyd_Element_Bound_GW_Members.h \
+		   source_code/models/groundwater/Hyd_Element_Coup_GW_Members.h \
+		   source_code/models/groundwater/Hyd_Element_Groundwater.h \
+		   source_code/models/groundwater/Hyd_Element_Groundwater_Type_Line.h \
+		   source_code/models/groundwater/Hyd_Element_Groundwater_Type_Noflow.h \
+		   source_code/models/groundwater/Hyd_Element_Groundwater_Type_Standard.h \
+		   source_code/models/groundwater/Hyd_Groundwater_Line_Point.h \
+		   source_code/models/groundwater/Hyd_Groundwater_Line_Point_List.h \
+		   source_code/models/groundwater/Hyd_Groundwater_Polygon.h \
+		   source_code/models/groundwater/Hyd_Groundwater_Polysegment.h \
+		   source_code/models/groundwater/Hyd_Groundwater_Raster.h \
+		   source_code/models/groundwater/Hyd_Groundwaterraster_Point.h \
+		   source_code/models/groundwater/Hyd_Groundwaterraster_Point_List.h \
+		   source_code/models/groundwater/Hyd_Groundwaterraster_Polygon.h \
+		   source_code/models/groundwater/Hyd_Groundwaterraster_Segment.h \
+		   source_code/models/groundwater/Hyd_Instationary_Boundary_GW.h \
+		   source_code/models/groundwater/Hyd_Model_Groundwater.h \
+		   source_code/models/groundwater/Hyd_Param_GW.h \
+		   source_code/models/groundwater/Hyd_Parse_GW.h \
            source_code/szenario/Hyd_Boundary_Szenario.h \
            source_code/szenario/Hyd_Boundary_Szenario_Management.h \
            source_code/szenario/Hyd_Boundary_Scenario_List.h \
@@ -179,11 +209,10 @@ HEADERS += source_code/Hyd_Multiple_Hydraulic_Systems.h \
            source_code/gui/HydGui_Rv_Profile_Break_Params_Wid.h \
            source_code/gui/HydGui_Rv_Profile_Overflow_Params_Wid.h\
            source_code/gui/HydGui_Profil2Dgm_Converter_Dia.h\
+		   source_code/gui/HydGui_Groundwater_Member_Wid.h \
            source_code/models/coupling/Hyd_Coupling_FP2CO_Dikebreak.h\
            source_code/models/coupling/_Hyd_Coupling_Dikebreak.h\
-           source_code/models/coupling/Hyd_Parse_Coupling_FP2CO_Dikebreak.h\
-		   source_code/models/groundwater\Hyd_Model_Groundwater.h
-                     
+           source_code/models/coupling/Hyd_Parse_Coupling_FP2CO_Dikebreak.h\                  
 FORMS+=    source_code/gui/HydGui_System_Filechooser_Dia.ui \
 				   source_code/gui/HydGui_Boundary_Scenario_Dia.ui \
 				   source_code/gui/HydGui_Floodplain_Member_Wid.ui \
@@ -210,6 +239,8 @@ SOURCES += source_code/Hyd_Multiple_Hydraulic_Systems.cpp \
            source_code/system/Hyd_Parse_Glob.cpp \
            source_code/system/Hyd_Observation_Point.cpp\
            source_code/system/Hyd_Observation_Point_Manager.cpp\
+		   source_code/system/Hyd_Param_Conductivity.cpp \
+		   source_code/system/Hyd_Param_Porosity.cpp \
            source_code/models/floodplain/Hyd_Model_Floodplain.cpp \
            source_code/models/floodplain/Hyd_Param_FP.cpp \
            source_code/models/floodplain/Hyd_Parse_FP.cpp \
@@ -279,6 +310,34 @@ SOURCES += source_code/Hyd_Multiple_Hydraulic_Systems.cpp \
            source_code/models/coupling/Hyd_Parse_Coupling_Diversion.cpp \
            source_code/models/coupling/Hyd_Parse_Coupling_RV2FP_Structure.cpp \
            source_code/models/coupling/Hyd_Parse_Coupling_RV2FP_Dikebreak.cpp \
+		   source_code/models/coupling/Hyd_Coupling_RV2GW.cpp \
+		   source_code/models/coupling/Hyd_Coupling_Point_RV2GW.cpp \
+		   source_code/models/coupling/Hyd_Coupling_RV2GW_Merged.cpp \
+		   source_code/models/coupling/Hyd_Coupling_Point_RV2GW_List.cpp \
+		   source_code/models/groundwater/_Hyd_Coupling_Point_List_GW.cpp \
+		   source_code/models/groundwater/_Hyd_Element_Groundwater_Type.cpp \
+		   source_code/models/groundwater/Hyd_Coupling_GW2GW.cpp \
+		   source_code/models/groundwater/Hyd_Coupling_Point_GW2GW.cpp \
+		   source_code/models/groundwater/Hyd_Coupling_Point_GW2GW_List.cpp \
+		   source_code/models/groundwater/Hyd_Element_Bound_GW_Members.cpp \
+		   source_code/models/groundwater/Hyd_Element_Coup_GW_Members.cpp \
+		   source_code/models/groundwater/Hyd_Element_Groundwater.cpp \
+		   source_code/models/groundwater/Hyd_Element_Groundwater_Type_Line.cpp \
+		   source_code/models/groundwater/Hyd_Element_Groundwater_Type_Noflow.cpp \
+		   source_code/models/groundwater/Hyd_Element_Groundwater_Type_Standard.cpp \
+		   source_code/models/groundwater/Hyd_Groundwater_Line_Point.cpp \
+		   source_code/models/groundwater/Hyd_Groundwater_Line_Point_List.cpp \
+		   source_code/models/groundwater/Hyd_Groundwater_Polygon.cpp \
+		   source_code/models/groundwater/Hyd_Groundwater_Polysegment.cpp \
+		   source_code/models/groundwater/Hyd_Groundwater_Raster.cpp \
+		   source_code/models/groundwater/Hyd_Groundwaterraster_Point.cpp \
+		   source_code/models/groundwater/Hyd_Groundwaterraster_Point_List.cpp \
+		   source_code/models/groundwater/Hyd_Groundwaterraster_Polygon.cpp \
+		   source_code/models/groundwater/Hyd_Groundwaterraster_Segment.cpp \
+		   source_code/models/groundwater/Hyd_Instationary_Boundary_GW.cpp \
+		   source_code/models/groundwater/Hyd_Model_Groundwater.cpp \
+		   source_code/models/groundwater/Hyd_Param_GW.cpp \
+		   source_code/models/groundwater/Hyd_Parse_GW.cpp \
            source_code/szenario/Hyd_Boundary_Szenario.cpp \
            source_code/szenario/Hyd_Boundary_Szenario_Management.cpp \
            source_code/szenario/Hyd_Boundary_Scenario_List.cpp \
@@ -296,6 +355,7 @@ SOURCES += source_code/Hyd_Multiple_Hydraulic_Systems.cpp \
            source_code/gui/HydGui_Diversion_Channel_Wid.cpp \
            source_code/gui/HydGui_River_Geometrics_Table.cpp \
            source_code/gui/HydGui_Rv_Profile_Boundary_Lateral_Params_Wid.cpp \
+		   source_code/gui/HydGUI_Groundwater_Member_Wid.cpp \
         	 source_code/gui/HydGui_Rv_Profile_Boundary_Point_Params_Wid.cpp \
         	 source_code/gui/HydGui_Rv_Profile_Break_Params_Wid.cpp \
         	 source_code/gui/HydGui_Rv_Profile_Overflow_Params_Wid.cpp\
@@ -303,7 +363,7 @@ SOURCES += source_code/Hyd_Multiple_Hydraulic_Systems.cpp \
         	 source_code/models/coupling/Hyd_Coupling_FP2CO_Dikebreak.cpp\
         	 source_code/models/coupling/_Hyd_Coupling_Dikebreak.cpp\
         	 source_code/models/coupling/Hyd_Parse_Coupling_FP2CO_Dikebreak.cpp\
-			 source_code/models/groundwater\Hyd_Model_Groundwater.cpp
+
 
 #win32:CONFIG(release, debug|release): LIBS += -L$$PWD/../../debug_solv/release/ -lsolver
 #else:win32:CONFIG(debug, debug|release): LIBS += -L$$PWD/../../debug_solv/debug/ -lsolver

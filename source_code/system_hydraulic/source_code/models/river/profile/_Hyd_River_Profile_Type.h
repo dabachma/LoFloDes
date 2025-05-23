@@ -42,7 +42,6 @@ struct _hyd_profile_calc_setting{
 	bool use_interface;
 
 };
-
 //forward declaration
 class _Hyd_River_Profile;
 
@@ -92,7 +91,7 @@ public:
 	///Set a profile specific value (needed for the bridge type)
 	virtual void set_profile_specific_value(const _hyd_bridge_values data);
 	///Input the members per file of the profile type
-	void input_members(QFile *profile_file, int *line_counter, const string name, const int number);
+	void input_members(QFile *profile_file, int *line_counter, const string name, const int number, bool gwmodel_applied);
 	///Input the river profile point data from a selection of a database table
 	void input_members(const QSqlQueryModel *query_results, const string name, const int number);
 
@@ -169,6 +168,9 @@ public:
 	virtual double get_c_mid_channel(void)=0;
 	///Get the convenyance factor
 	virtual double get_c_value(void)=0;
+
+	///Get the wetted perimeter
+	virtual double get_wetted_perimeter(void) = 0;
 
 	///Output the members of profile type
 	virtual void output_members(ostringstream *cout);
@@ -373,6 +375,9 @@ protected:
 
 	///Line of waterlevel for the profile intersection with the waterlevel => table values
 	Geo_Straight_Line *waterlevel_line;
+
+	///Wetted perimeter of the profile for RV2GW Coupling; only important for standard type
+	double wetted_perimeter;
 
 	///User flags for the calculation
 	_hyd_profile_calc_setting user_setting;

@@ -245,6 +245,13 @@ int Hyd_Multiple_Hydraulic_Systems::ask_boundary_scenarios_per_dialog(QSqlDataba
 
 
 	}
+	if(this->sz_bound_manager.ask_boundary_scenarios_per_dialog(ptr_database, buff.str(), parent)==0){
+		return 0;
+	}
+	else{
+		this->number_systems=this->sz_bound_manager.counter_number_selected_scenarios();
+		return this->number_systems;
+	}
 }
 //Set per list, which of the availabe hydraulic boundary scenarios should be handled and return the number
 int Hyd_Multiple_Hydraulic_Systems::set_boundary_scenarios_per_list(QSqlDatabase *ptr_database, QList<int> list_id) {
@@ -556,10 +563,12 @@ void Hyd_Multiple_Hydraulic_Systems::delete_hydraulic_boundary_scenarios(const i
 		_Hyd_River_Profile::delete_results_by_scenario(&this->qsqldatabase,id);
 		_Hyd_River_Profile::delete_instat_results_by_scenario(&this->qsqldatabase, id);
 		Hyd_Element_Floodplain::delete_boundary_cond_by_scenario(&this->qsqldatabase,id);
+		Hyd_Element_Groundwater::delete_boundary_cond_by_scenario(&this->qsqldatabase, id);
 		Hyd_Instationary_Boundary::delete_boundary_curve_by_scenario(&this->qsqldatabase,id);
 	}
 	Hyd_Element_Floodplain::delete_results_by_scenario(&this->qsqldatabase,id); 
 	Hyd_Boundary_Szenario_Management::delete_scenario_by_id(&this->qsqldatabase,id, this->system_id);
+	Hyd_Element_Groundwater::delete_boundary_cond_by_scenario(&this->qsqldatabase, id);
 }
 //_____________
 //public slots

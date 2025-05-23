@@ -69,6 +69,9 @@ _Hyd_Coupling_Point::~_Hyd_Coupling_Point(void){
 void _Hyd_Coupling_Point::set_point_index(const int index){
 	this->point_index=index;
 }
+
+
+
 //Get the point index
 int _Hyd_Coupling_Point::get_point_index(void){
 	return this->point_index;
@@ -153,6 +156,11 @@ void _Hyd_Coupling_Point::reset_smoothing(void){
 double _Hyd_Coupling_Point::get_predicted_h_one(void){
 	return this->predicted_h_one;
 }
+
+//Get the current discharge 
+double _Hyd_Coupling_Point::get_current_q(void) {
+	return this->current_q;
+}
 //Copy operator
 _Hyd_Coupling_Point& _Hyd_Coupling_Point::operator=(const _Hyd_Coupling_Point& object){
 	Geo_Point::operator =(object);
@@ -192,6 +200,7 @@ void _Hyd_Coupling_Point::calculate_maximum_values(const double time_point, cons
 		max_values->time_point=time_point;
 	}
 }
+
 //Calculate the hydrological balance of this coupling
 void _Hyd_Coupling_Point::calculate_hydrological_balance(const double q_current, _hyd_hydrological_balance *balance_value){
 	

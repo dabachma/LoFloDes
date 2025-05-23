@@ -51,7 +51,9 @@ enum _hyd_model_type{
     ///Hydraulic model: floodplain model, 2d (Hyd_Model_Floodplain)
     FLOODPLAIN_MODEL,
     ///Hydraulic model: coast model, boundary model (Hyd_Coast_Model)
-    COAST_MODEL
+    COAST_MODEL,
+	///Hydraulic model: groundwater model, 2d (Hyd_Model_Groundwater)
+	GROUNDWATER_MODEL
 };
 
 ///Class for the instationary boundary curves of the hydraulic system (Hyd_System_Hydraulic) \ingroup hyd

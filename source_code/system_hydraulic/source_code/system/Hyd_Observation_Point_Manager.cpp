@@ -12,6 +12,7 @@ Hyd_Observation_Point_Manager::Hyd_Observation_Point_Manager(void){
 
 	this->number_obs_rv=0;
 	this->number_obs_fp=0;
+	this->number_obs_gw = 0;
 
 	this->counter_used=0;
 
@@ -37,7 +38,7 @@ void Hyd_Observation_Point_Manager::create_table(QSqlDatabase *ptr_database){
 		Sys_Common_Output::output_hyd->output_txt(&cout);
 		//make specific input for this class
 		const string tab_name=hyd_label::tab_obs_point;
-		const int num_col=5;
+		const int num_col=7;
 		_Sys_data_tab_column tab_col[num_col];
 		//init
 		for(int i=0; i< num_col; i++){
@@ -67,6 +68,13 @@ void Hyd_Observation_Point_Manager::create_table(QSqlDatabase *ptr_database){
 		tab_col[4].name=hyd_label::obs_point;
 		tab_col[4].type=sys_label::tab_col_type_point;
 
+		tab_col[5].name = hyd_label::obs_point_model;
+		tab_col[5].type = sys_label::tab_col_type_string;
+
+		tab_col[6].name = hyd_label::obs_join_element_id;
+		tab_col[6].type = sys_label::tab_col_type_int;
+		tab_col[6].default_value = "0";
+
 		try{
 			Hyd_Observation_Point_Manager::obs_point_table= new Tables();
 			if(Hyd_Observation_Point_Manager::obs_point_table->create_non_existing_tables(tab_name, tab_col, num_col,ptr_database, _sys_table_type::hyd)==false){
@@ -93,12 +101,14 @@ void Hyd_Observation_Point_Manager::set_table(QSqlDatabase *ptr_database, const 
 	if(Hyd_Observation_Point_Manager::obs_point_table==NULL){
 		//make specific input for this class
 		const string tab_id_name=hyd_label::tab_obs_point;
-		string tab_id_col[5];
+		string tab_id_col[7];
 		tab_id_col[0]=hyd_label::obs_point_id;
 		tab_id_col[1]=hyd_label::obs_point_x;
 		tab_id_col[2]=hyd_label::obs_point_y;
 		tab_id_col[3]=hyd_label::obs_point_name;
 		tab_id_col[4]=hyd_label::obs_point;
+		tab_id_col[5] = hyd_label::obs_point_model;
+		tab_id_col[6] = hyd_label::obs_join_element_id;
 
 
 		try{
@@ -215,7 +225,8 @@ void Hyd_Observation_Point_Manager::input_obs_point(const string file){
 	my_stream << myline;
 	string closed_buff;
 	string name_buff;
-	my_stream >> this->number_obs_point; 
+	my_stream >> this->number_obs_point;
+	
 	if(my_stream.fail()==true){
 		ostringstream info;
 		info << "Wrong input sequenze  : " << my_stream.str() << endl;
@@ -226,6 +237,8 @@ void Hyd_Observation_Point_Manager::input_obs_point(const string file){
 		msg.make_second_info(info.str());
 		throw msg;
 	}
+	
+
 	my_stream.clear();
 	my_stream.str("");
 
@@ -234,6 +247,7 @@ void Hyd_Observation_Point_Manager::input_obs_point(const string file){
 	int col=0;
 	double x_buffer=0.0;
 	double y_buffer=0.0;
+	string model;
 	string name;
 	Geo_Point_List list_buffer;
 
@@ -242,6 +256,7 @@ void Hyd_Observation_Point_Manager::input_obs_point(const string file){
 	//read in the bound points
 	do{
 		name=label::not_set;
+		model = label::not_set;
 		//delete the comments
 		getline(ifile, myline,'\n');
 		line_counter++;
@@ -264,7 +279,7 @@ void Hyd_Observation_Point_Manager::input_obs_point(const string file){
 				my_stream >> x_buffer >> y_buffer;
 			}
 			else if(col>=3){
-				my_stream >> x_buffer >> y_buffer >> name;
+				my_stream >> model >> x_buffer >> y_buffer >> name;
 			}
 					
 			if(my_stream.fail()==true){
@@ -281,6 +296,7 @@ void Hyd_Observation_Point_Manager::input_obs_point(const string file){
 			counter++;
 			point_buff.set_point_coordinate(x_buffer, y_buffer);
 			point_buff.set_point_name(name);
+			point_buff.set_point_name2(model);
 			list_buffer.set_new_point(&point_buff);
 
 		}
@@ -373,12 +389,15 @@ void Hyd_Observation_Point_Manager::input_obs_point(QSqlDatabase *ptr_database, 
 	double x_buff=0.0;
 	double y_buff=0.0;
 	string name;
+	string model;
 
 	for(int i=0; i< this->number_obs_point; i++){
 		x_buff=buffer.record(i).value((Hyd_Observation_Point_Manager::obs_point_table->get_column_name(hyd_label::obs_point_x)).c_str()).toDouble();
 		y_buff=buffer.record(i).value((Hyd_Observation_Point_Manager::obs_point_table->get_column_name(hyd_label::obs_point_y)).c_str()).toDouble();
 		this->obs_point[i].set_point_coordinate(x_buff, y_buff);
 		name=buffer.record(i).value((Hyd_Observation_Point_Manager::obs_point_table->get_column_name(hyd_label::obs_point_name)).c_str()).toString().toStdString();
+		model=buffer.record(i).value((Hyd_Observation_Point_Manager::obs_point_table->get_column_name(hyd_label::obs_point_model)).c_str()).toString().toStdString();
+		this->obs_point[i].transform_string2flag(model);
 		this->obs_point[i].set_point_name(name);
 	}
 
@@ -427,13 +446,15 @@ void Hyd_Observation_Point_Manager::transfer_obs_points2database(QSqlDatabase *p
 	query_header << Hyd_Observation_Point_Manager::obs_point_table->get_column_name(hyd_label::obs_point_x) <<" , ";
 	query_header << Hyd_Observation_Point_Manager::obs_point_table->get_column_name(hyd_label::obs_point_y) <<" , ";
 	query_header << Hyd_Observation_Point_Manager::obs_point_table->get_column_name(hyd_label::obs_point_name) <<" , ";
+	query_header << Hyd_Observation_Point_Manager::obs_point_table->get_column_name(hyd_label::obs_point_model) << " , ";
+	query_header << Hyd_Observation_Point_Manager::obs_point_table->get_column_name(hyd_label::obs_join_element_id) << " , ";
 	query_header << Hyd_Observation_Point_Manager::obs_point_table->get_column_name(hyd_label::obs_point) <<" ) ";
 
 
 
 	query_header << " VALUES ";
 	ostringstream query_data;
-	
+	string model;
 	for(int i=0; i< this->number_obs_point; i++){
 
 		query_data << " ( ";
@@ -443,6 +464,9 @@ void Hyd_Observation_Point_Manager::transfer_obs_points2database(QSqlDatabase *p
 		query_data << this->obs_point[i].get_ycoordinate() <<" , ";
 		
 		query_data <<"'"<< this->obs_point[i].get_point_name() <<"' , ";
+		query_data << "'" << this->obs_point[i].transform_flag2string() << "' , ";
+		query_data  << this->obs_point[i].get_index_elem_prof() << " , ";
+
 		query_data.clear(); 
 		query_data <<Geo_Point::get_point2sql_string(this->obs_point[i].get_xcoordinate(), this->obs_point[i].get_ycoordinate());
 		query_data <<" ) " << " ,";
@@ -466,7 +490,7 @@ void Hyd_Observation_Point_Manager::transfer_obs_points2database(QSqlDatabase *p
 
 }
 //Initialize the observation points
-void Hyd_Observation_Point_Manager::init_obs_points(const int num_rv, Hyd_Model_River *river, const int num_fp, Hyd_Model_Floodplain *floodplain, const int no_output, const int no_internal){
+void Hyd_Observation_Point_Manager::init_obs_points(const int num_gw, Hyd_Model_Groundwater *gw,const int num_rv, Hyd_Model_River *river, const int num_fp, Hyd_Model_Floodplain *floodplain, const int no_output, const int no_internal){
 	//set prefix for output
 	ostringstream prefix;
 	prefix << "OBS> ";
@@ -476,35 +500,75 @@ void Hyd_Observation_Point_Manager::init_obs_points(const int num_rv, Hyd_Model_
 	cout << "Initialize the observation points..."<< endl;
 	Sys_Common_Output::output_hyd->output_txt(&cout);
 
-	bool found_flag=false;
+	bool found_flag = false;
 
-	for(int j=0; j<this->number_obs_point; j++){
+	for (int j = 0; j < this->number_obs_point; j++) {
 		Hyd_Multiple_Hydraulic_Systems::check_stop_thread_flag();
-		found_flag=false;
+		found_flag = false;
+		
 		//check the river models
-		for(int i=0; i<num_rv; i++){
-			found_flag=this->obs_point[j].init_obs_point_river(&(river[i]),i);
-			if(found_flag==true){
-				break;
-			}
+		if (this->obs_point[j].get_model_rv_flag() == true) {
+			for (int i = 0; i < num_rv; i++) {
+				found_flag = this->obs_point[j].init_obs_point_river(&(river[i]), i);
+				if (found_flag == true) {
+					break;
+				}
 
+			}
 		}
-		if(found_flag==false){
+		
+		//check the floodplainmodels
+		else if (this->obs_point[j].get_model_floodplain_flag() == true) {
 			//check the floodplain models
-			for(int i=0; i<num_fp; i++){
-				found_flag=this->obs_point[j].init_obs_point_floodplain(&(floodplain[i]),i);
-				if(found_flag==true){
+			for (int i = 0; i < num_fp; i++) {
+				found_flag = this->obs_point[j].init_obs_point_floodplain(&(floodplain[i]), i);
+				if (found_flag == true) {
 					break;
 				}
 			}
 		}
+		else if (this->obs_point[j].get_model_gw_flag() == true) {
+			for (int i = 0; i < num_gw; i++) {
+				found_flag = this->obs_point[j].init_obs_point_groundwater(&(gw[i]), i);
+				if (found_flag == true) {
+					break;
+				}
+			}
+			
+		}
 
-		if(found_flag==true){
+		if (found_flag == true) {
 			this->obs_point[j].set_number_time_point(no_output, no_internal);
 		}
 	}
 
-	this->count_number_rv_fp_obs_point();
+	//for(int j=0; j<this->number_obs_point; j++){
+	//	Hyd_Multiple_Hydraulic_Systems::check_stop_thread_flag();
+	//	found_flag=false;
+	//	//check the river models
+	//	for(int i=0; i<num_rv; i++){
+	//		found_flag=this->obs_point[j].init_obs_point_river(&(river[i]),i);
+	//		if(found_flag==true){
+	//			break;
+	//		}
+
+	//	}
+	//	if(found_flag==false){
+	//		//check the floodplain models
+	//		for(int i=0; i<num_fp; i++){
+	//			found_flag=this->obs_point[j].init_obs_point_floodplain(&(floodplain[i]),i);
+	//			if(found_flag==true){
+	//				break;
+	//			}
+	//		}
+	//	}
+	//	
+	//	if(found_flag==true){
+	//		this->obs_point[j].set_number_time_point(no_output, no_internal);
+	//	}
+	//}
+
+	this->count_number_rv_fp_gw_obs_point();
 
 	//check the points
 	for(int i=0; i< this->number_obs_point; i++){
@@ -554,7 +618,7 @@ void Hyd_Observation_Point_Manager::init_temp_obs_points(const int num_rv, HydTe
 		}
 	}
 
-	this->count_number_rv_fp_obs_point();
+	this->count_number_rv_fp_gw_obs_point();
 
 	//check the points
 	for (int i = 0; i < this->number_obs_point; i++) {
@@ -586,11 +650,15 @@ void Hyd_Observation_Point_Manager::output_setted_members(void){
 	Sys_Common_Output::output_hyd->output_txt(&cout);
 	cout << "GENERAL"<<endl ;
 	cout << "Number of observation points (total)      : " << this->number_obs_point<<endl ;
+	
 	if(this->number_obs_rv>0){
 		cout << "Number of observation points (River)      : " << this->number_obs_rv<<endl ;
 	}
 	if(this->number_obs_fp>0){
 		cout << "Number of observation points (Floodplain) : " << this->number_obs_fp<<endl ;
+	}
+	if (this->number_obs_gw>0){
+		cout << "Number of observation points (Groundwater) : " << this->number_obs_gw << endl;
 	}
 	Sys_Common_Output::output_hyd->output_txt(&cout);
 	if(this->number_obs_point>0){
@@ -650,7 +718,7 @@ void Hyd_Observation_Point_Manager::syncron_temp_obs_points(const double time_po
 	}
 }
 //Output the data of the observation points to tecplot file
-void Hyd_Observation_Point_Manager::output_obs_points2tecplot_file(const string filename_rv, const string filename_fp){
+void Hyd_Observation_Point_Manager::output_obs_points2tecplot_file(const string filename_rv, const string filename_fp, const string filename_gw){
 
 	ostringstream prefix;
 	prefix << "OBS> ";
@@ -666,11 +734,14 @@ void Hyd_Observation_Point_Manager::output_obs_points2tecplot_file(const string 
 	if(this->number_obs_fp>0){
 		this->output_obs_point_fp2file(filename_fp);
 	}
+	if (this->number_obs_gw > 0) {
+		this->output_obs_point_gw2file(filename_gw);
+	}
 
 	Sys_Common_Output::output_hyd->rewind_userprefix();
 }
 //Output the data of the observation points to ParaView / cvs file
-void Hyd_Observation_Point_Manager::output_obs_points2paraview_file(const string filename_rv, const string filename_fp) {
+void Hyd_Observation_Point_Manager::output_obs_points2paraview_file(const string filename_rv, const string filename_fp, const string filename_gw) {
 
 	ostringstream prefix;
 	prefix << "OBS> ";
@@ -686,7 +757,11 @@ void Hyd_Observation_Point_Manager::output_obs_points2paraview_file(const string
 	if (this->number_obs_fp > 0) {
 		this->output_obs_point_fp2csvfile(filename_fp);
 	}
-
+	if (this->number_obs_gw > 0) {
+		this->output_obs_point_gw2csvfile(filename_gw);
+	}
+	
+	
 	Sys_Common_Output::output_hyd->rewind_userprefix();
 }
 //Output the data of the temperature observation points to ParaView / cvs file
@@ -714,7 +789,7 @@ void Hyd_Observation_Point_Manager::clear_obs_points(void){
 	this->counter_used=0;
 }
 //Clone the observation points
-void Hyd_Observation_Point_Manager::clone_obs_points(Hyd_Observation_Point_Manager *src,  Hyd_Model_River *river,  Hyd_Model_Floodplain *floodplain){
+void Hyd_Observation_Point_Manager::clone_obs_points(Hyd_Observation_Point_Manager *src,  Hyd_Model_River *river,  Hyd_Model_Floodplain *floodplain, Hyd_Model_Groundwater *gw){
 
 	ostringstream prefix;
 	prefix << "OBS> ";
@@ -724,18 +799,25 @@ void Hyd_Observation_Point_Manager::clone_obs_points(Hyd_Observation_Point_Manag
 	cout << "Clone the observation points..."<< endl;
 	Sys_Common_Output::output_hyd->output_txt(&cout);
 
+	
+
 
 	try{
 		this->number_obs_point=src->number_obs_point;
 		this->number_obs_rv=src->number_obs_rv;
 		this->number_obs_fp=src->number_obs_fp;
+		this->number_obs_gw = src->number_obs_gw;
 		this->counter_used=src->counter_used;
 
 		this->allocate_obs_point();
-		for(int i=0; i< this->number_obs_point; i++){
-			this->obs_point[i].clone_obs_points(&(src->obs_point[i]),river, floodplain);
-		}
 
+		
+		for (int i = 0; i < this->number_obs_point; i++) {
+			this->obs_point[i].clone_obs_points(&(src->obs_point[i]), river, floodplain,gw);
+
+		}
+		
+		
 
 
 
@@ -752,6 +834,7 @@ void Hyd_Observation_Point_Manager::total_reset(void){
 	this->number_obs_point=0;
 	this->number_obs_rv=0;
 	this->number_obs_fp=0;
+	this->number_obs_gw = 0;
 	this->counter_used=0;
 }
 //__________________
@@ -774,6 +857,7 @@ void Hyd_Observation_Point_Manager::delete_obs_point(void){
 	}
 	this->number_obs_rv=0;
 	this->number_obs_fp=0;
+	this->number_obs_gw = 0;
 }
 //Select and count the number of relevant polysegment points in a database table (static)
 int Hyd_Observation_Point_Manager::select_relevant_points_database(QSqlQueryModel *results, QSqlDatabase *ptr_database){
@@ -789,7 +873,9 @@ int Hyd_Observation_Point_Manager::select_relevant_points_database(QSqlQueryMode
 	test_filter<< "Select ";	
 	test_filter << Hyd_Observation_Point_Manager::obs_point_table->get_column_name(hyd_label::obs_point_x) << " , " ;
 	test_filter << Hyd_Observation_Point_Manager::obs_point_table->get_column_name(hyd_label::obs_point_y) << " , " ;
-	test_filter << Hyd_Observation_Point_Manager::obs_point_table->get_column_name(hyd_label::obs_point_name) << "  ";
+	test_filter << Hyd_Observation_Point_Manager::obs_point_table->get_column_name(hyd_label::obs_point_name) << " , "; 
+	test_filter << Hyd_Observation_Point_Manager::obs_point_table->get_column_name(hyd_label::obs_point_model) << " , ";
+	test_filter << Hyd_Observation_Point_Manager::obs_point_table->get_column_name(hyd_label::obs_join_element_id) << "  ";
 	
 	test_filter << " from " << Hyd_Observation_Point_Manager::obs_point_table->get_table_name();
 	test_filter << " order by " << Hyd_Observation_Point_Manager::obs_point_table->get_column_name(hyd_label::obs_point_id).c_str();
@@ -811,13 +897,16 @@ int Hyd_Observation_Point_Manager::select_relevant_points_database(QSqlQueryMode
 
 	return number;
 }
-//Count number river- and floodplain obeservation points
-void Hyd_Observation_Point_Manager::count_number_rv_fp_obs_point(void){
+//Count number river-, floodplain and groundwater obeservation points
+void Hyd_Observation_Point_Manager::count_number_rv_fp_gw_obs_point(void){
 	for(int i=0; i< this->number_obs_point; i++){
-		if(this->obs_point[i].get_model_flag()==true){
+		if(this->obs_point[i].get_model_floodplain_flag()==true){
 			this->number_obs_fp++;
 		}
-		else{
+		else if (this->obs_point[i].get_model_gw_flag() == true) {
+			this->number_obs_gw++;
+		}
+		else if (this->obs_point[i].get_model_rv_flag() == true){
 			this->number_obs_rv++;
 		}
 	}
@@ -850,7 +939,7 @@ void Hyd_Observation_Point_Manager::output_obs_point_rv2file(const string file){
 	output<< "\" " <<  endl << endl;
 
 	for(int i=0; i< this->number_obs_point; i++){
-		if(this->obs_point[i].get_model_flag()==false){
+		if (this->obs_point[i].get_model_rv_flag() == true) {
 			this->obs_point[i].output_obs_point2file(&output, this->counter_used);
 		}
 	}
@@ -886,7 +975,45 @@ void Hyd_Observation_Point_Manager::output_obs_point_fp2file(const string file){
 	output<< "\" " <<  endl << endl;
 
 	for(int i=0; i< this->number_obs_point; i++){
-		if(this->obs_point[i].get_model_flag()==true){
+		if (this->obs_point[i].get_model_floodplain_flag() == true) {
+			this->obs_point[i].output_obs_point2file(&output, this->counter_used);
+		}
+	}
+
+
+	output.close();
+
+}
+//Output the observation points of groundwater models to file
+void Hyd_Observation_Point_Manager::output_obs_point_gw2file(const string file) {
+
+	ofstream output;
+	output.open(file.c_str());
+	//check if it is open
+	if (output.is_open() == false) {
+		Error msg = this->set_error(5);
+		ostringstream info;
+		info << "File name " << file << endl;
+		msg.make_second_info(info.str());
+		throw msg;
+	}
+
+	//output the file header
+	output << "TITLE = " << "\" " << " Observation points Groundwater models " << " \"" << endl;
+	output << "VARIABLES = " << endl;
+	output << "\" " << " Time " << label::sec;
+	output << "\" \"" << " h " << label::m;
+	output << "\" \"" << " s " << label::m;
+	//output << "\" \"" << " v " << label::m_per_sec;
+	//output << "\" \"" << " v_x " << label::m_per_sec;
+	//output << "\" \"" << " v_y " << label::m_per_sec;
+	output << "\" \"" << " ds_dt " << label::m_per_min;
+	output << "\" \"" << " ds_dt_coupling " << label::m_per_sec;
+	output << "\" \"" << " ds_dt_boundary " << label::m_per_sec;
+	output << "\" " << endl << endl;
+
+	for (int i = 0; i < this->number_obs_point; i++) {
+		if (this->obs_point[i].get_model_gw_flag() == true) {
 			this->obs_point[i].output_obs_point2file(&output, this->counter_used);
 		}
 	}
@@ -900,7 +1027,7 @@ void Hyd_Observation_Point_Manager::output_obs_point_rv2csvfile(const string fil
 	
 	for (int i = 0; i < this->number_obs_point; i++) {
 		string buff_name = file;
-		if (this->obs_point[i].get_model_flag() == false) {
+		if (this->obs_point[i].get_model_rv_flag() == true) {
 			ofstream output;
 			buff_name += "_";
 			buff_name += this->obs_point[i].get_point_name();
@@ -935,7 +1062,7 @@ void Hyd_Observation_Point_Manager::output_obs_point_fp2csvfile(const string fil
 	
 	for (int i = 0; i < this->number_obs_point; i++) {
 		string buff_name = file;
-		if (this->obs_point[i].get_model_flag() == true) {
+		if (this->obs_point[i].get_model_floodplain_flag() == true) {
 			ofstream output;
 			buff_name += "_";
 			buff_name += this->obs_point[i].get_point_name();
@@ -967,6 +1094,45 @@ void Hyd_Observation_Point_Manager::output_obs_point_fp2csvfile(const string fil
 		}
 	}
 }
+//Output the observation points of groundwater models to csvfile
+void Hyd_Observation_Point_Manager::output_obs_point_gw2csvfile(const string file) {
+
+	for (int i = 0; i < this->number_obs_point; i++) {
+		string buff_name = file;
+		if (this->obs_point[i].get_model_gw_flag() == true) {
+			ofstream output;
+			buff_name += "_";
+			buff_name += this->obs_point[i].get_point_name();
+			buff_name += hyd_label::csv;
+			output.open(buff_name.c_str());
+			//check if it is open
+			if (output.is_open() == false) {
+				Error msg = this->set_error(6);
+				ostringstream info;
+				info << "File name " << buff_name << endl;
+				msg.make_second_info(info.str());
+				throw msg;
+			}
+
+			//output the file header
+			output << " Time " << label::sec << ",";
+			output << " h " << label::m << ",";
+			output << " s " << label::m << ",";
+			//output << " v " << label::m_per_sec << ",";
+			//output << " v_x " << label::m_per_sec << ",";
+			//output << " v_y " << label::m_per_sec << ",";
+			output << " ds_dt " << label::m_per_min << ",";
+			output << " ds_dt_coupling " << label::m_per_sec << ",";
+			output << " ds_dt_boundary " << label::m_per_sec;
+			output << endl;
+
+
+			this->obs_point[i].output_obs_point2csvfile(&output, this->counter_used);
+			output.close();
+		}
+	}
+}
+
 //Output the temperature observation points of river models to csv file
 void Hyd_Observation_Point_Manager::output_temp_obs_point_rv2csvfile(const string file) {
 	for (int i = 0; i < this->number_obs_point; i++) {
@@ -1002,6 +1168,9 @@ void Hyd_Observation_Point_Manager::output_temp_obs_point_rv2csvfile(const strin
 	}
 
 }
+
+
+
 //set the error
 Error Hyd_Observation_Point_Manager::set_error(const int err_type){
 	string place="Hyd_Observation_Point_Manager::";
@@ -1048,6 +1217,12 @@ Error Hyd_Observation_Point_Manager::set_error(const int err_type){
 			reason="Can not open file";
 			help="Check the file";
 			type=5;
+			break;
+		case 6://can not open file
+			place.append("output_obs_point_gw2file(const string file)");
+			reason = "Can not open file";
+			help = "Check the file";
+			type = 5;
 			break;
 		default:
 			place.append("set_error(const int err_type)");

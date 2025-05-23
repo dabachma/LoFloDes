@@ -7,11 +7,14 @@ Hyd_Parse_Glob::Hyd_Parse_Glob(void){
 		
 	this->found_no_river=false;
 	this->found_no_floodplain=false;
+	this->found_no_groundwater = false;
 	this->found_no_int_timesteps=false;
 	this->found_no_timesteps=false;
 	this->found_timestep=false;
 	this->found_starttime=false;
 	this->found_material_file=false;
+	this->found_conductivity_file = false;
+	this->found_porosity_file = false;
 
 	//count the memory
 	Sys_Memory_Count::self()->add_mem(sizeof(Hyd_Parse_Glob), _sys_system_modules::HYD_SYS);
@@ -238,6 +241,9 @@ void Hyd_Parse_Glob::parse_global_params(void){
 				case eNOFRV:
 					this->parse_river_number(Key, Command);
 					break;
+				case eNOFGW:
+					this->parse_groundwater_number(Key, Command);
+					break;
 				case eNOFDC:
 					this->parse_diversion_channel_number(Key, Command);
 					break;
@@ -270,6 +276,12 @@ void Hyd_Parse_Glob::parse_global_params(void){
 					break;
 				case eMATERIALFILE:	
 					this->parse_material_file(Key, Command);
+					break;
+				case eCONDUCTIVITYFILE:
+					this->parse_conductivity_file(Key, Command);
+					break;
+				case ePOROSITYFILE:
+					this->parse_porosity_file(Key, Command);
 					break;
 				case eOBSPOINTFILE:
 					this->parse_obs_point_file(Key, Command);
@@ -388,6 +400,30 @@ void Hyd_Parse_Glob::parse_river_number(_hyd_keyword_file Key, word Command){
 		ostringstream info;
 		info << "Wrong input sequenze " << buffer.str() << endl;
 		Error msg=this->set_error(16);
+		msg.make_second_info(info.str());
+		throw msg;
+	}
+}
+//parse groundwater number
+void Hyd_Parse_Glob::parse_groundwater_number(_hyd_keyword_file Key, word Command) {
+	// There is not a following keyword.
+	if (strlen(Command) <= 0) {
+		this->GetLine(Command);
+	}
+	Key = ParseNextKeyword(Command);
+	stringstream buffer;
+	buffer << Command;
+	if (Key == eFAIL) {
+		buffer >> this->Globals.GlobNofGW;
+		this->found_no_groundwater = true;
+		if (this->Globals.GlobNofGW > 0) {
+			this->Globals.set_gw_model_applied(true);
+		}
+	}
+	if (buffer.fail() == true) {
+		ostringstream info;
+		info << "Wrong input sequenze " << buffer.str() << endl;
+		Error msg = this->set_error(16); //Review
 		msg.make_second_info(info.str());
 		throw msg;
 	}
@@ -748,11 +784,54 @@ void Hyd_Parse_Glob::parse_obs_point_file(_hyd_keyword_file Key, word Command){
 
 }
 //Chek if the requiered paramaters were found
+//parse file name where the kf values are set
+void Hyd_Parse_Glob::parse_conductivity_file(_hyd_keyword_file Key, word Command) {
+	// There is not a following keyword.
+	if (strlen(Command) <= 0) {
+		this->GetLine(Command);
+	}
+
+	Key = ParseNextKeyword(Command);
+
+	if (Key == eFAIL) {
+		char buffer[512];
+		this->RemoveDelimiters(Command, buffer);
+		this->UseLinuxSlash(buffer);
+		Globals.conductivity_file = buffer;
+		this->found_conductivity_file = true;
+	}
+}
+//parse file name where the p values are set
+void Hyd_Parse_Glob::parse_porosity_file(_hyd_keyword_file Key, word Command) {
+	// There is not a following keyword.
+	if (strlen(Command) <= 0) {
+		this->GetLine(Command);
+	}
+
+	Key = ParseNextKeyword(Command);
+
+	if (Key == eFAIL) {
+		char buffer[512];
+		this->RemoveDelimiters(Command, buffer);
+		this->UseLinuxSlash(buffer);
+		Globals.porosity_file = buffer;
+		this->found_porosity_file = true;
+	}
+}
+//Check if the requiered paramaters were found
 void Hyd_Parse_Glob::check_parameters_found(void){
 
 	if(this->found_material_file==false){
 		Error msg=this->set_error(6);
 		throw msg;
+	}
+	if (this->found_conductivity_file == false && (this->Globals.get_number_groundwater_model() != 0)) {
+		Error msg = this->set_error(26);
+		throw msg;
+	}
+	if (this->found_porosity_file == false && (this->Globals.get_number_groundwater_model() != 0)) {
+		Error msg = this->set_error(27);
+		throw msg; //Review
 	}
 	if(this->found_no_river==false){
 		Error msg=this->set_error(7);
@@ -760,6 +839,10 @@ void Hyd_Parse_Glob::check_parameters_found(void){
 	}
 	if(this->found_no_floodplain==false){
 		Error msg=this->set_error(8);
+		throw msg;
+	}
+	if (this->found_no_groundwater == false) {
+		Error msg = this->set_error(28);
 		throw msg;
 	}
 	if(this->found_starttime==false){
@@ -1012,6 +1095,27 @@ Error Hyd_Parse_Glob::set_error(const int err_type){
 			info << "Filename: " << this->input_file_name <<endl;
 			info << "Error occurs near line: "<< this->line_counter << endl;
 			type=1;
+			break;
+		case 26://conductivityfile-name not found
+			place.append("check_parameters_found(void)");
+			reason = "Did not find the conductivityfile-name";
+			help = "Check the conductivityfile-name setting in the inputfile";
+			info << "Filename: " << this->input_file_name << endl;
+			type = 1;
+			break;
+		case 27://porosityfile-name not found
+			place.append("check_parameters_found(void)");
+			reason = "Did not find the porosityfile-name";
+			help = "Check the porosityfile-name setting in the inputfile";
+			info << "Filename: " << this->input_file_name << endl;
+			type = 1;
+			break;
+		case 28://number of groundwater models not found
+			place.append("check_parameters_found(void)");
+			reason = "Did not find the number of groundwater models";
+			help = "Check the number of groundwatermodels setting in the inputfile";
+			info << "Filename: " << this->input_file_name << endl;
+			type = 1;
 			break;
 		default:
 			place.append("set_error(const int err_type)");

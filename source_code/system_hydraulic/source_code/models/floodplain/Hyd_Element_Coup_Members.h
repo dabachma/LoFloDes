@@ -19,6 +19,7 @@ class Hyd_Element_Coup_Members
 {
 ///Class where the members are required
 friend class Hyd_Element_Floodplain_Type_Standard;
+//friend class Hyd_Element_Groundwater_Type_Standard;
 
 public:
 	///Default constructor

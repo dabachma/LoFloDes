@@ -21,6 +21,13 @@
 
 	\see Hyd_Model_River
 */
+///This type specifies for the approach for calculating interaction between groundwater and river
+enum _hyd_gw2rv_calculation_type {
+	///Darcy_approach/linear Approach
+	Darcy,
+	///Rushton_approach/Non-Linear Approach
+	Rushton,
+};
 class Hyd_Param_RV
 {
 	///File parser for the members of Hyd_Param_RV
@@ -59,12 +66,17 @@ public:
 	///Check the members
 	void check_members(void);
 
+	///get flag for output all couplingpoints
+	bool get_output_couplings(void);
+
 	///Get the filename for the rivermodel as 2d (geometrie) for file output
 	string get_filename_geometrie2file_2d(const string type);
 	///Get the filename for the rivermodel results file as 2d for file output
 	string get_filename_result2file_2d(const string type);
 	///Get the filename for the rivermodel results file as 1d for file output
 	string get_filename_result2file_1d(const string type);
+	//Get the filename for the rv2gw coupling model results file as 1d for file
+	string get_filename_rv2gwcoupling_file_1d(void);
 	///Get the filename for the rivermodel maximum result to file as 1d file output
 	string get_filename_result2file_1d_maxvalues(const string type);
 	///Get the filename for the rivermodel maximum result to file as 2d file output
@@ -86,7 +98,14 @@ public:
 	///Set number of instationary boudary curves
 	void set_number_instant_bound(const int no);
 
-
+	///Set leakage coupling approach type
+	void set_coupling_approach(_hyd_gw2rv_calculation_type type);
+	///Get leakage coupling approach type
+	_hyd_gw2rv_calculation_type get_gw2rv_coupling_calculation_type(void);
+	///Transform text to enum _hyd_bound_type_gw
+	void transform_txt2_couplingapproach(string txt);
+	///Transform enum _hyd_bound_type_gw to text
+	string transform_couplingapproach2txt(const _hyd_gw2rv_calculation_type type);
 
 	///Copy operator
 	Hyd_Param_RV& operator= (const Hyd_Param_RV& par);
@@ -108,9 +127,10 @@ private:
 	const double default_rel_tol;
 
 
-
-
-
+	///Setted calculation approach for gw2rv coupling
+	_hyd_gw2rv_calculation_type gw2rv_coupling;
+	///flag for output all couplingspoints
+	bool output_couplings;
 	///User settings for specifc calculation flags
 	_hyd_profile_calc_setting user_setting;
 

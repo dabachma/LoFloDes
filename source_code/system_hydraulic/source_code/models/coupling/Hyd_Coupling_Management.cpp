@@ -7,6 +7,9 @@ Hyd_Coupling_Management::Hyd_Coupling_Management(void){
 	this->total_number=0;
 	this->number_rv2co=0;
 	this->number_fp2fp=0;
+	this->number_gw2gw = 0;
+	this->number_rv2gw = 0;
+	this->number_merged_rv2gw = 0;
 	this->number_rv2fp=0;
 	this->number_merged_rv2fp=0;
 	this->number_fp2co=0;
@@ -28,11 +31,14 @@ Hyd_Coupling_Management::Hyd_Coupling_Management(void){
 
 
 	this->coupling_rv2co=NULL;
+	this->coupling_rv2gw = NULL;
+	this->coupling_merged_rv2gw = NULL;
 	this->coupling_rv2fp=NULL;
 	this->coupling_merged_rv2fp=NULL;
 	this->coupling_fp2co=NULL;
 	this->coupling_merged_fp2co=NULL;
 	this->coupling_fp2fp=NULL;
+	this->coupling_gw2gw = NULL;
 	this->coupling_rv2rv=NULL;
 	this->coupling_1d_diversion=NULL;
 	this->coupling_rv2fp_structure=NULL;
@@ -55,8 +61,10 @@ Hyd_Coupling_Management::Hyd_Coupling_Management(void){
 Hyd_Coupling_Management::~Hyd_Coupling_Management(void){
 	this->delete_coupling_class_rv2co();
 	this->delete_coupling_class_rv2fp();
+	this->delete_coupling_class_rv2gw();
 	this->delete_coupling_class_fp2co();
 	this->delete_coupling_class_fp2fp();
+	this->delete_coupling_class_gw2gw();
 	this->delete_coupling_class_rv2rv();
 	this->delete_coupling_class_rv2rv_diversion();
 	this->delete_coupling_class_rv2fp_structure();
@@ -128,6 +136,17 @@ void Hyd_Coupling_Management::output_setted_members(QSqlDatabase *ptr_database){
 		}
 	Sys_Common_Output::output_hyd->reset_prefix_was_outputed();
 	}
+
+	//river to groundwater
+	if (this->number_merged_rv2gw > 0) {
+		for (int i = 0; i < this->number_merged_rv2gw; i++) {
+			Hyd_Coupling_RV2GW_Merged::output_header_coupled_indices(&cout);
+			this->coupling_merged_rv2gw[i].output_index_coupled_models(&cout, i);
+			this->coupling_merged_rv2gw[i].output_setted_coupling_points();
+
+		}
+		Sys_Common_Output::output_hyd->reset_prefix_was_outputed();
+	}
 	
 	//river to coast
 	if(this->number_rv2co>0){
@@ -153,6 +172,16 @@ void Hyd_Coupling_Management::output_setted_members(QSqlDatabase *ptr_database){
 			Hyd_Coupling_FP2FP::output_header_coupled_indices(&cout);
 			this->coupling_fp2fp[i].output_index_coupled_models(&cout,i);
 			this->coupling_fp2fp[i].output_setted_coupling_points();
+		}
+		Sys_Common_Output::output_hyd->reset_prefix_was_outputed();
+	}
+
+	//groundwater to groundwater
+	if (this->number_gw2gw > 0) {
+		for (int i = 0; i < this->number_gw2gw; i++) {
+			Hyd_Coupling_GW2GW::output_header_coupled_indices(&cout);
+			this->coupling_gw2gw[i].output_index_coupled_models(&cout, i);
+			this->coupling_gw2gw[i].output_setted_coupling_points();
 		}
 		Sys_Common_Output::output_hyd->reset_prefix_was_outputed();
 	}
@@ -361,6 +390,14 @@ void Hyd_Coupling_Management::add_fp2fp(const int number){
 int Hyd_Coupling_Management::get_fp2fp(void){
 	return this->number_fp2fp;
 }
+//Add number of groundwater to groundwater coupling
+void Hyd_Coupling_Management::add_gw2gw(const int number) {
+	this->number_gw2gw = this->number_gw2gw + number;
+}
+//Get the number of groundwater to groundwater coupling
+int Hyd_Coupling_Management::get_gw2gw(void) {
+	return this->number_gw2gw;
+}
 //Add number of river to floodplain coupling
 void Hyd_Coupling_Management::add_rv2fp(const int number){
 	this->number_rv2fp=this->number_rv2fp+number;
@@ -368,6 +405,14 @@ void Hyd_Coupling_Management::add_rv2fp(const int number){
 //Get the number of river to floodplain coupling
 int Hyd_Coupling_Management::get_rv2fp(void){
 	return this->number_rv2fp;
+}
+//Add number of river to groundwater coupling
+void Hyd_Coupling_Management::add_rv2gw(const int number) {
+	this->number_rv2gw = this->number_rv2gw + number;
+}
+//Get the number of river to groundwater coupling
+int Hyd_Coupling_Management::get_rv2gw(void) {
+	return this->number_rv2gw;
 }
 //Add number of river to river coupling
 void Hyd_Coupling_Management::add_rv2rv(const int number){
@@ -791,6 +836,22 @@ void Hyd_Coupling_Management::allocate_coupling_class_rv2fp(void){
 		}
 	}
 }
+//Allocate the coupling classes for river to groundwater coupling
+void Hyd_Coupling_Management::allocate_coupling_class_rv2gw(void) {
+	this->delete_coupling_class_rv2gw();
+	if (this->coupling_rv2gw == NULL) {
+		try {
+			this->coupling_rv2gw = new Hyd_Coupling_RV2GW[this->number_rv2gw];
+		}
+		catch (bad_alloc &t) {
+			Error msg = this->set_error(0);
+			ostringstream info;
+			info << t.what() << endl;
+			msg.make_second_info(info.str());
+			throw msg;
+		}
+	}
+}
 //Allocate the coupling classes for floodplain to coast coupling
 void Hyd_Coupling_Management::allocate_coupling_class_fp2co(void){
 	this->delete_coupling_class_fp2co();
@@ -816,6 +877,23 @@ void Hyd_Coupling_Management::allocate_coupling_class_fp2fp(void){
 		}
 		catch(bad_alloc &t){
 			Error msg=this->set_error(0);
+			ostringstream info;
+			info << t.what() << endl;
+			msg.make_second_info(info.str());
+			throw msg;
+		}
+	}
+
+}
+//Allocate the coupling classes for groundwater to groundwater coupling
+void Hyd_Coupling_Management::allocate_coupling_class_gw2gw(void) {
+	this->delete_coupling_class_gw2gw();
+	if (this->coupling_gw2gw == NULL) {
+		try {
+			this->coupling_gw2gw = new Hyd_Coupling_GW2GW[this->number_gw2gw];
+		}
+		catch (bad_alloc &t) {
+			Error msg = this->set_error(0);
 			ostringstream info;
 			info << t.what() << endl;
 			msg.make_second_info(info.str());
@@ -919,6 +997,47 @@ void Hyd_Coupling_Management::init_couplings(void){
 		}
 	}
 
+	//river to groundwater
+	if (this->number_rv2gw > 0) {
+		cout << "Automatic coupling between river- and groundwatermodel..." << endl;
+		Sys_Common_Output::output_hyd->output_txt(&cout);
+		for (int i = 0; i < this->number_rv2gw; i++) {
+			Hyd_Multiple_Hydraulic_Systems::check_stop_thread_flag();
+			this->coupling_rv2gw[i].init_coupling();
+		}
+
+		cout << "Merge river- and groundwatermodel couplings..." << endl;
+		Sys_Common_Output::output_hyd->output_txt(&cout);
+		//merge the coupling classes rv to groundwaters
+		this->init_coupling_class_rv2gw_merged();
+		cout << "Merging river- and groundwatermodel couplings is finished!" << endl;
+		Sys_Common_Output::output_hyd->output_txt(&cout);
+		//insert special points to the list of RV2GW_coupling points (e.g. river junctions etc.) 
+		/*TODO Review if necessarry
+		try {
+			this->insert_river_junctions2RV2GWlist();
+		}
+		catch (Error msg) {
+			ostringstream info;
+			info << "Insert river junction coupling points (RV2FP)" << endl;
+			msg.make_second_info(info.str());
+			throw msg;
+		}
+		
+		*/
+		try {
+			//add additional points
+			this->insert_add_coupling_point2RV2GWlist();
+		}
+		catch (Error msg) {
+			ostringstream info;
+			info << "Add the additional coupling points (RV2GW)" << endl;
+			msg.make_second_info(info.str());
+			throw msg;
+		}
+		
+	}
+
 	//floodplain to coast
 	if(this->number_fp2co>0){
 		cout << "Automatic coupling between floodplainmodels and coastmodel..." << endl ;
@@ -977,6 +1096,15 @@ void Hyd_Coupling_Management::init_couplings(void){
 		for(int i=0; i< this->number_fp2fp; i++){
 			Hyd_Multiple_Hydraulic_Systems::check_stop_thread_flag();
 			this->coupling_fp2fp[i].init_coupling();
+		}
+	}
+	//groundwater to groundwater
+	if (this->number_gw2gw > 0) {
+		cout << "Automatic coupling between groundwatermodels..." << endl;
+		Sys_Common_Output::output_hyd->output_txt(&cout);
+		for (int i = 0; i < this->number_gw2gw; i++) {
+			Hyd_Multiple_Hydraulic_Systems::check_stop_thread_flag();
+			this->coupling_gw2gw[i].init_coupling();
 		}
 	}
 	//setted coupling river to floodplain via a hydraulic structure (must be after the automatic coupling of floodplain to river model)
@@ -1076,7 +1204,10 @@ void Hyd_Coupling_Management::synchronise_couplings(const double timepoint, cons
 		this->coupling_merged_rv2fp[i].synchronise_models(timepoint,this->delta_t, time_check, internal_counter);
 	}
 	
-
+	//river to groundwater
+	for (int i = 0; i < this->number_merged_rv2gw; i++) {
+		this->coupling_merged_rv2gw[i].synchronise_models(timepoint, this->delta_t, time_check, internal_counter);
+	}
 
 	//river to floodplain via a hydraulic structure
 	for(int i=0; i< this->number_rv2fp_structure; i++){
@@ -1091,6 +1222,11 @@ void Hyd_Coupling_Management::synchronise_couplings(const double timepoint, cons
 	//floodplain to floodplain
 	for(int i=0; i< this->number_fp2fp; i++){
 		this->coupling_fp2fp[i].synchronise_models(timepoint, this->delta_t, time_check, internal_counter);
+	}
+
+	//groundwater to groundwater
+	for (int i = 0; i < this->number_gw2gw; i++) {
+		this->coupling_gw2gw[i].synchronise_models(timepoint, this->delta_t, time_check, internal_counter);
 	}
 
 	//coast to floodplain via a dikebreak
@@ -1127,6 +1263,7 @@ void Hyd_Coupling_Management::output_coupling_calculation_steps2file(const doubl
 			this->coupling_fp2co_dikebreak_fpl[i].output_results2file_tecplot(timepoint);
 		}
 	}
+	
 	if (this->ptr_output_flags->paraview_1d_required == true) {
 		//river to floodplain
 		for (int i = 0; i < this->number_rv2fp_dikebreak; i++) {
@@ -1173,6 +1310,14 @@ void Hyd_Coupling_Management::reset_couplings(void){
 		this->coupling_merged_rv2fp[i].list_right.reset_points();
 	}
 
+	//river to groundwater
+	for (int i = 0; i < this->number_merged_rv2gw; i++) {
+		/*
+		this->coupling_merged_rv2gw[i].list_left.reset_points();
+		this->coupling_merged_rv2gw[i].list_right.reset_points();
+		*/
+		this->coupling_merged_rv2gw[i].list_mid.reset_points();
+	}
 
 	//river to floodplain via a hydraulic structure
 	for(int i=0; i< this->number_rv2fp_structure; i++){
@@ -1200,6 +1345,11 @@ void Hyd_Coupling_Management::reset_couplings(void){
 		this->coupling_fp2fp[i].list.reset_points();
 	}
 
+	//groundwater to groundwater
+	for (int i = 0; i < this->number_gw2gw; i++) {
+		this->coupling_gw2gw[i].list.reset_points();
+	}
+
 	this->old_time_point=0.0;
 	this->delta_t=0.0;
 
@@ -1208,8 +1358,10 @@ void Hyd_Coupling_Management::reset_couplings(void){
 void Hyd_Coupling_Management::total_reset(void){
 	this->delete_coupling_class_rv2co();
 	this->delete_coupling_class_rv2fp();
+	this->delete_coupling_class_rv2gw();
 	this->delete_coupling_class_fp2co();
 	this->delete_coupling_class_fp2fp();
+	this->delete_coupling_class_gw2gw();
 	this->delete_coupling_class_rv2rv();
 	this->delete_coupling_class_rv2rv_diversion();
 	this->delete_coupling_class_rv2fp_structure();
@@ -1217,13 +1369,17 @@ void Hyd_Coupling_Management::total_reset(void){
 	this->delete_coupling_class_fp2co_dikebreak();
 	this->delete_coupling_class_fp2co_merged();
 	this->delete_coupling_class_rv2fp_merged();
+	this->delete_coupling_class_rv2gw_merged();
 	this->delete_coupling_class_rv2fp_dikebreak_fpl();
 	this->delete_coupling_class_fp2co_dikebreak_fpl();
 	this->total_number=0;
 	this->number_rv2co=0;
 	this->number_fp2fp=0;
+	this->number_gw2gw = 0;
 	this->number_rv2fp=0;
 	this->number_merged_rv2fp=0;
+	this->number_rv2gw = 0;
+	this->number_merged_rv2gw = 0;
 	this->number_fp2co=0;
 	this->number_merged_fp2co=0;
 	this->number_rv2rv=0;
@@ -1265,6 +1421,16 @@ void Hyd_Coupling_Management::clone_couplings(Hyd_Coupling_Management *coupling,
 			this->coupling_fp2fp[i].clone_couplings(&coupling->coupling_fp2fp[i], system);
 		}
 	}
+	this->number_gw2gw = coupling->number_gw2gw;
+	if (this->number_gw2gw > 0) {
+		this->allocate_coupling_class_gw2gw();
+		cout << "Clone " << this->number_gw2gw << " groundwater to groundwater coupling(s)..." << endl;
+		Sys_Common_Output::output_hyd->output_txt(&cout);
+		for (int i = 0; i < this->number_gw2gw; i++) {
+			Hyd_Multiple_Hydraulic_Systems::check_stop_thread_flag();
+			this->coupling_gw2gw[i].clone_couplings(&coupling->coupling_gw2gw[i], system);
+		}
+	}
 	this->number_rv2fp=coupling->number_rv2fp;
 	this->number_merged_rv2fp=coupling->number_merged_rv2fp;
 	if(this->number_merged_rv2fp>0){
@@ -1274,6 +1440,17 @@ void Hyd_Coupling_Management::clone_couplings(Hyd_Coupling_Management *coupling,
 		for(int i=0; i< this->number_merged_rv2fp; i++){
 			Hyd_Multiple_Hydraulic_Systems::check_stop_thread_flag();
 			this->coupling_merged_rv2fp[i].clone_couplings(&coupling->coupling_merged_rv2fp[i], system);
+		}
+	}
+	this->number_rv2gw = coupling->number_rv2gw;
+	this->number_merged_rv2gw = coupling->number_merged_rv2gw;
+	if (this->number_merged_rv2gw > 0) {
+		this->allocate_coupling_class_rv2gw_merged();
+		cout << "Clone " << this->number_merged_rv2gw << " river to floodplain merged coupling(s)..." << endl;
+		Sys_Common_Output::output_hyd->output_txt(&cout);
+		for (int i = 0; i < this->number_merged_rv2gw; i++) {
+			Hyd_Multiple_Hydraulic_Systems::check_stop_thread_flag();
+			this->coupling_merged_rv2gw[i].clone_couplings(&coupling->coupling_merged_rv2gw[i], system);
 		}
 	}
 	this->number_fp2co=coupling->number_fp2co;
@@ -1363,6 +1540,12 @@ void Hyd_Coupling_Management::init_output_files(void){
 
 
 	}
+	for (int i = 0; i < this->number_rv2gw; i++) {
+		Hyd_Multiple_Hydraulic_Systems::check_stop_thread_flag();
+		if (this->ptr_output_flags->paraview_1d_required == true) {
+			this->coupling_rv2gw[i].init_output2file_csv();
+		}
+	}
 
 	for(int i=0; i< this->number_fp2co_dikebreak; i++){
 		Hyd_Multiple_Hydraulic_Systems::check_stop_thread_flag();
@@ -1400,6 +1583,28 @@ void Hyd_Coupling_Management::insert_river_junctions2RV2FPlist(void){
 		}
 	}
 }
+//Insert special points to the merged RV2GW point list (e.g. river junctions, diversion channels)
+/*TODO check if necessarry
+void Hyd_Coupling_Management::insert_river_junctions2RV2GWlist(void) {
+	//diversion channels
+	for (int i = 0; i < this->number_rv2rv_diversion; i++) {
+		for (int j = 0; j < this->number_merged_rv2gw; j++) {
+			this->coupling_1d_diversion[i].insert_junction_inflow_point2RV2GWlist(&(this->coupling_merged_rv2gw[j].list_left), this->coupling_merged_rv2gw[j].get_river_index());
+			this->coupling_1d_diversion[i].insert_junction_inflow_point2RV2GWlist(&(this->coupling_merged_rv2gw[j].list_right), this->coupling_merged_rv2gw[j].get_river_index());
+			this->coupling_1d_diversion[i].insert_junction_outflow_point2RV2GWlist(&(this->coupling_merged_rv2gw[j].list_left), this->coupling_merged_rv2gw[j].get_river_index());
+			this->coupling_1d_diversion[i].insert_junction_outflow_point2RV2GWlist(&(this->coupling_merged_rv2gw[j].list_right), this->coupling_merged_rv2gw[j].get_river_index());
+		}
+	}
+
+	//river to river
+	for (int i = 0; i < this->number_rv2rv; i++) {
+		for (int j = 0; j < this->number_merged_rv2gw; j++) {
+			this->coupling_rv2rv[i].insert_junction_inflow_point2RV2GWlist(&(this->coupling_merged_rv2gw[j].list_left), this->coupling_merged_rv2gw[j].get_river_index());
+			this->coupling_rv2rv[i].insert_junction_inflow_point2RV2GWlist(&(this->coupling_merged_rv2gw[j].list_right), this->coupling_merged_rv2gw[j].get_river_index());
+		}
+	}
+}
+*/
 //Insert special points to the merged RV2FP point list (e.g. dikebreak)
 void Hyd_Coupling_Management::insert_breaks2RV2FPlist(void){
 	if(this->number_merged_rv2fp>0){
@@ -1421,6 +1626,24 @@ void Hyd_Coupling_Management::insert_add_coupling_point2RV2FPlist(void){
 		catch(Error msg){
 			ostringstream info;
 			info << "Merging list : " << j <<endl;
+			msg.make_second_info(info.str());
+			throw msg;
+		}
+	}
+}
+//Insert additional coupling points for a finer coupling discretisation to the merged RV2GW point list
+void Hyd_Coupling_Management::insert_add_coupling_point2RV2GWlist(void) {
+
+	for (int j = 0; j < this->number_merged_rv2gw; j++) {
+		try {
+			/*
+			this->coupling_merged_rv2gw[j].list_left.add_additional_coupling_points();
+			this->coupling_merged_rv2gw[j].list_right.add_additional_coupling_points();
+*/
+		}
+		catch (Error msg) {
+			ostringstream info;
+			info << "Merging list : " << j << endl;
 			msg.make_second_info(info.str());
 			throw msg;
 		}
@@ -1471,6 +1694,21 @@ void Hyd_Coupling_Management::check_RV2FPpoints_beyond_rivers(void){
 		}
 	}
 }
+//Check if there there are RV2GW point in the lists, which are coupled beyond river; there a coupling is not possible; do it after the merged lists are completly setted
+void Hyd_Coupling_Management::check_RV2GWpoints_beyond_rivers(void) {
+
+	for (int i = 0; i < this->number_merged_rv2gw; i++) {
+		//make a check for itself
+		this->coupling_merged_rv2gw[i].check_coupling2_other_river_side();
+		//check with other rivers
+		for (int j = 0; j < this->number_merged_rv2gw; j++) {
+			if (j != i) {
+				this->coupling_merged_rv2gw[i].check_coupling2_other_river_side(&this->coupling_merged_rv2gw[j]);
+			}
+
+		}
+	}
+}
 //Reset coupling discharges between the model (use it before syncronisation)
 void Hyd_Coupling_Management::reset_coupling_discharges(void){
 	//river to river
@@ -1484,6 +1722,10 @@ void Hyd_Coupling_Management::reset_coupling_discharges(void){
 	//river to floodplain
 	for(int i=0; i< this->number_merged_rv2fp; i++){
 		this->coupling_merged_rv2fp[i].reset_coupling_discharges();
+	}
+	//river to groundwater
+	for (int i = 0; i < this->number_merged_rv2gw; i++) {
+		this->coupling_merged_rv2gw[i].reset_coupling_discharges();
 	}
 	//river to floodplain via a hydraulic structure
 	for(int i=0; i< this->number_rv2fp_structure; i++){
@@ -1504,6 +1746,10 @@ void Hyd_Coupling_Management::reset_coupling_discharges(void){
 	//floodplain to floodplain
 	for(int i=0; i< this->number_fp2fp; i++){
 		this->coupling_fp2fp[i].list.reset_coupling_discharge();
+	}
+	//groundwater to groundwater
+	for (int i = 0; i < this->number_gw2gw; i++) {
+		this->coupling_gw2gw[i].list.reset_coupling_discharge();
 	}
 	//river to floodplain via a dikebreak set by the fpl-system
 	for(int i=0; i< this->number_rv2fp_dikebreak_fpl; i++){
@@ -1529,6 +1775,14 @@ void Hyd_Coupling_Management::delete_coupling_class_rv2fp(void){
 	}
 
 }
+//Delete the coupling classes for river to groundwater coupling
+void Hyd_Coupling_Management::delete_coupling_class_rv2gw(void) {
+	if (this->coupling_rv2gw != NULL) {
+		delete[]this->coupling_rv2gw;
+		this->coupling_rv2gw = NULL;
+	}
+
+}
 //Delete the coupling classes for floodplain to coast coupling
 void Hyd_Coupling_Management::delete_coupling_class_fp2co(void){
 	if(this->coupling_fp2co!=NULL){
@@ -1541,6 +1795,13 @@ void Hyd_Coupling_Management::delete_coupling_class_fp2fp(void){
 	if(this->coupling_fp2fp!=NULL){
 		delete []this->coupling_fp2fp;
 		this->coupling_fp2fp=NULL;
+	}
+}
+//Delete the coupling classes for groundwater to groundwater coupling
+void Hyd_Coupling_Management::delete_coupling_class_gw2gw(void) {
+	if (this->coupling_gw2gw != NULL) {
+		delete []this->coupling_gw2gw;
+		this->coupling_gw2gw = NULL;
 	}
 }
 //Delete the coupling classes for river to river coupling
@@ -1619,6 +1880,70 @@ void Hyd_Coupling_Management::init_coupling_class_rv2fp_merged(void){
 
 	}
 }
+
+//Init the coupling classes for river to multiple groundwaters (merged)
+void Hyd_Coupling_Management::init_coupling_class_rv2gw_merged(void) {
+	if (this->number_rv2gw > 0) {
+		int *counter = NULL;
+		//count the number of needed merged objects
+		try {
+			counter = new int[this->number_rv2gw];
+		}
+		catch (bad_alloc &t) {
+			Error msg = this->set_error(0);
+			ostringstream info;
+			info << t.what() << endl;
+			msg.make_second_info(info.str());
+			throw msg;
+		}
+		//init it 
+		for (int i = 0; i < this->number_rv2gw; i++) {
+			counter[i] = -1;
+		}
+		//set the indices to the counter
+		int counter_models = 0;
+		for (int i = 0; i < this->number_rv2gw; i++) {
+			int index = this->coupling_rv2gw[i].get_river_index();
+			for (int j = 0; j < this->number_rv2gw; j++) {
+				Hyd_Multiple_Hydraulic_Systems::check_stop_thread_flag();
+				if (counter[j] >= 0 && counter[j] == index) {
+					break;
+				}
+				else if (counter[j] < 0 && counter[j] != index) {
+					counter[j] = index;
+					counter_models++;
+					break;
+				}
+			}
+		}
+		//set the number to the merged class
+		this->number_merged_rv2gw = counter_models;
+		try {
+			this->allocate_coupling_class_rv2gw_merged();
+		}
+		catch (Error msg) {
+			throw msg;
+		}
+		ostringstream cout;
+		//set the river models pointer to the merging class
+
+		for (int i = 0; i < this->number_merged_rv2gw; i++) {
+			for (int j = 0; j < this->number_rv2gw; j++) {
+				cout << "Merging river " << i << " to groundwater coupling " << j << "..." << endl;
+				Sys_Common_Output::output_hyd->output_txt(&cout);
+				Hyd_Multiple_Hydraulic_Systems::check_stop_thread_flag();
+				this->coupling_merged_rv2gw[i].set_ptr_coupling_with_merging(&(this->coupling_rv2gw[j]));
+			}
+		}
+
+		//delete it
+		if (counter != NULL) {
+			delete[]counter;
+			counter = NULL;
+		}
+
+	}
+}
 //Init the coupling classes for multiple floodplains to one coast model (merged)
 void Hyd_Coupling_Management::init_coupling_class_fp2co_merged(void){
 	if(this->number_fp2co>0){
@@ -1654,6 +1979,25 @@ void Hyd_Coupling_Management::allocate_coupling_class_rv2fp_merged(void){
 		}
 	}
 }
+//Allocate the coupling classes for river to multiple groundwaters (merged)
+void Hyd_Coupling_Management::allocate_coupling_class_rv2gw_merged(void) {
+	this->delete_coupling_class_rv2gw_merged();
+	if (this->number_merged_rv2gw == 0) {
+		return;
+	}
+	if (this->coupling_merged_rv2gw == NULL) {
+		try {
+			this->coupling_merged_rv2gw = new Hyd_Coupling_RV2GW_Merged[this->number_merged_rv2gw];
+		}
+		catch (bad_alloc &t) {
+			Error msg = this->set_error(0);
+			ostringstream info;
+			info << t.what() << endl;
+			msg.make_second_info(info.str());
+			throw msg;
+		}
+	}
+}
 //Allocate the coupling classes for multiple floodplains to one coast model (merged)
 void Hyd_Coupling_Management::allocate_coupling_class_fp2co_merged(void){
 	this->delete_coupling_class_fp2co_merged();
@@ -1678,6 +2022,13 @@ void Hyd_Coupling_Management::delete_coupling_class_rv2fp_merged(void){
 	if(this->coupling_merged_rv2fp!=NULL){
 		delete []this->coupling_merged_rv2fp;
 		this->coupling_merged_rv2fp=NULL;
+	}
+}
+//Delete the coupling classes for river to multiple groundwaters (merged)
+void Hyd_Coupling_Management::delete_coupling_class_rv2gw_merged(void) {
+	if (this->coupling_merged_rv2gw != NULL) {
+		delete[]this->coupling_merged_rv2gw;
+		this->coupling_merged_rv2gw = NULL;
 	}
 }
 //Delete the coupling classes for multiple floodplains to one coast model (merged)
@@ -1859,6 +2210,7 @@ void Hyd_Coupling_Management::output_coupling_statistic(void){
 		cout << "SET COUPLINGS " << endl;
 		cout << " Number of rv2rv                   :"<<W(15)<< this->number_rv2rv<< endl;
 		cout << " Number of rv2rv as diversion      :"<<W(15)<< this->number_rv2rv_diversion<< endl;
+		cout << " Number of merged rv2gw            :" << W(15) << this->number_merged_rv2gw << W(3) << "(" << this->number_rv2gw << ")" << endl;
 		cout << " Number of merged rv2fp            :"<<W(15)<< this->number_merged_rv2fp<<W(3) <<"("<<this->number_rv2fp<<")"<< endl;
 		cout << " Number of rv2fp as structure      :"<<W(15)<< this->number_rv2fp_structure<< endl;
 		cout << " Number of rv2fp direct out        :"<<W(15)<< this->number_rv2fp_direct_out<< endl;
@@ -1866,6 +2218,7 @@ void Hyd_Coupling_Management::output_coupling_statistic(void){
 		cout << " Number of rv2fp as dikebreak      :"<<W(15)<< this->number_rv2fp_dikebreak<< endl;
 		cout << " Number of rv2co                   :"<<W(15)<< this->number_rv2co<< endl;
 		cout << " Number of merged fp2fp            :"<<W(15)<< this->number_fp2fp<< endl;
+		cout << " Number of merged gw2gw            :" << W(15) << this->number_gw2gw << endl;
 		cout << " Number of merged fp2co            :"<<W(15)<< this->number_merged_fp2co<<W(3) <<"("<<this->number_fp2co<<")"<< endl;
 		cout << " Number of fp2co as dikebreak      :"<<W(15)<< this->number_fp2co_dikebreak << endl;
 		cout << " Total number                      :"<<W(15)<< this->total_number<< endl;
@@ -1894,6 +2247,8 @@ void Hyd_Coupling_Management::calculate_total_number_coupling(void){
 	this->total_number=this->number_merged_fp2co+
 		this->number_rv2co+this->number_merged_rv2fp+this->number_rv2rv+
 		this->number_fp2fp+
+		this->number_merged_rv2fp+
+		this->number_gw2gw +
 		this->number_rv2rv_diversion+this->number_rv2fp_structure+
 		this->number_fp2co_dikebreak+this->number_rv2fp_dikebreak+
 		this->number_rv2fp_direct_out+this->number_rv2fp_direct_in;

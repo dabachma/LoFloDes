@@ -45,11 +45,18 @@ public:
 	///Default destructor
 	virtual ~_Hyd_Coupling_Point(void);
 
+
+
 	//methods
 	///Set the point index
 	void set_point_index(const int index);
 	///Get the point index
 	int get_point_index(void);
+
+	///Set the point2rv index
+	void set_point2rv_index(Hyd_Groundwater_Polysegment* polysegment);
+	///Get the point2rv index
+	int get_point2rv_index(void);
 
 	///Set distance to the upward point with a given point (upward:=i+1)
 	void set_distance_up(_Hyd_Coupling_Point *up_point);
@@ -87,7 +94,8 @@ public:
 	///Get the predicted waterlevel one (FP!)
 	double get_predicted_h_one(void);
 
-
+	///Get the current discharge;
+	double get_current_q(void);
 	///Copy operator
 	_Hyd_Coupling_Point& operator=(const _Hyd_Coupling_Point& object);
 
@@ -99,6 +107,10 @@ protected:
 	//members
 	///Pointindex
 	int point_index;
+
+	///point2rv_index
+	int point2rv_index;
+
 	///Distance to the upwards point along the line (upward:=i+1)
 	double distance_up;
 	//Distance to the downwards point along the line (downward:=i-1)
@@ -144,6 +156,8 @@ protected:
 
 	///Minimal area
 	double min_area;
+
+
 
 
 

@@ -809,6 +809,8 @@ bool Tables::check_names(QSqlDatabase *ptr_database){
 	}
 	//the table is not found
 	if(!this->table_name.found_flag){
+		
+		
 		Error msg=set_error(4);
 		throw msg;
 	}
@@ -816,7 +818,7 @@ bool Tables::check_names(QSqlDatabase *ptr_database){
 return ok_flag;
 }
 //Check, if the columns of the table, specified by the column names, exist in the database 
-bool Tables::check_column_names(const QSqlRecord column_name){
+bool Tables::check_column_names(const QSqlRecord column_name) {
 	int counter=0;
 	int find_counter=0;
 	bool column_ok=false;

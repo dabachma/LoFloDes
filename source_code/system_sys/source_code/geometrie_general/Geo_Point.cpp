@@ -7,6 +7,7 @@ Geo_Point::Geo_Point(void){
 	this->x_coordinate=0.0;
 	this->y_coordinate=0.0;
 	this->number=0;
+
 	
 	//common
 	//count the memory
@@ -17,6 +18,7 @@ Geo_Point::Geo_Point(void){
 //copy constructor
 Geo_Point::Geo_Point(const Geo_Point& object){
 	this->name=object.name;
+	this->name2=object.name2;
 	this->x_coordinate=object.x_coordinate;
 	this->y_coordinate=object.y_coordinate;
 	this->number=object.number;
@@ -39,6 +41,7 @@ Geo_Point::Geo_Point(const string name){
 	this->x_coordinate=0.0;
 	this->y_coordinate=0.0;
 	this->name=name;
+	this->name = name2;
 	this->number=0;
 	//count the memory
 	Sys_Memory_Count::self()->add_mem(sizeof(Geo_Point), _sys_system_modules::GEOSYS_SYS);
@@ -56,9 +59,17 @@ Geo_Point::~Geo_Point(void){
 void Geo_Point::set_point_name(const string name){
 	this->name=name;
 }
+//set the name2 of the point
+void Geo_Point::set_point_name2(const string name) {
+	this->name2 = name;
+}
 //get the point name
 string Geo_Point::get_point_name(void){
 	return this->name;
+}
+//get the point name2
+string Geo_Point::get_point_name2(void) {
+	return this->name2;
 }
 //Get the pointer to the point name
 string* Geo_Point::get_ptr_point_name(void){
@@ -319,6 +330,7 @@ Geo_Point& Geo_Point::operator=(const Geo_Point& object){
 	this->x_coordinate=object.x_coordinate;
 	this->y_coordinate=object.y_coordinate;
 	this->number=object.number;
+	this->name2 = object.name2;
 	return *this;
 }
 //Check same point

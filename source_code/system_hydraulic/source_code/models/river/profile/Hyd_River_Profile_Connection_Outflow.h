@@ -178,7 +178,7 @@ private:
 	//methods
 
 	///Decide in the different keyvalues in the profile file
-	void decide_keyvalues_file(const string key, string buffer, int *found_counter);
+	void decide_keyvalues_file(const string key, string buffer, Hyd_Param_Conductivity *con_param, bool gwmodel_applied, int *found_counter);
 	///Decide which boundary conditions are choosen for a waterlevel condition (boundary value is given in [m])
 	void decide_boundary_waterlevel_conditions(const double nr_value);
 	///Check the connection profile type outflow

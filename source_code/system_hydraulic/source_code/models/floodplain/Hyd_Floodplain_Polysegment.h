@@ -48,6 +48,9 @@ struct _hyd_idealisation_parameter;
 */
 class Hyd_Floodplain_Polysegment : public Geo_Polysegment, public _Sys_Common_System
 {
+	//for the purpose of conversion
+	friend class Hyd_Groundwater_Polysegment;
+
 public:
 	///Default constructor
 	Hyd_Floodplain_Polysegment(void);

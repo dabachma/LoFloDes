@@ -121,6 +121,10 @@ void Hyd_River_Profile_Type_Standard::output_tables(void){
 	this->h_table.output_table(&cout);
 	
 }
+//Get the wetted perimeter
+double Hyd_River_Profile_Type_Standard::get_wetted_perimeter(void) {
+	return this->wetted_perimeter;
+}
 //Get the convenyance factor for the mid channel
 double Hyd_River_Profile_Type_Standard::get_c_mid_channel(void){
 	return this->c_mid_value;
@@ -1226,7 +1230,8 @@ double Hyd_River_Profile_Type_Standard::calculate_width2table(const int no_inter
 
 
 }
-//calculate hydraulic_radius
+//calculate hydraulic_radius 
+//Comment Bastian: To me this actually calculates the wetted perimeter, this also does not calculate anything to a table
 double Hyd_River_Profile_Type_Standard::calculate_hydraulic_radius2table(const int no_intersect_segments, Hyd_Profile_Segment *intersect_segments){
 	double lu=0.0;
 	for(int i=0; i<no_intersect_segments; i++){
@@ -1239,6 +1244,7 @@ double Hyd_River_Profile_Type_Standard::calculate_conveyance2table(const int no_
 	double conveyance=0.0;
 	//calculate the wetted perimeter
 	double lu = this->calculate_hydraulic_radius2table(no_intersect_segments, intersect_segments);
+	this->wetted_perimeter = lu;
 	//calculate the mean of manning value (formula after Einstein)
 	double mean_n=0.0;
 	for(int i=0; i<no_intersect_segments; i++){

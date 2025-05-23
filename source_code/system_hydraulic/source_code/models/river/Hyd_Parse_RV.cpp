@@ -252,6 +252,7 @@ void Hyd_Parse_RV::parse_2d_result_file(_hyd_keyword_file Key, word Command){
 		msg.output_msg(2);
 	}
 }
+
 //Parse for the calculation limits
 void Hyd_Parse_RV::parse_calculation_limits(_hyd_keyword_file Key, word Command){
 	// Next keyword is STANDARD or SET
@@ -284,6 +285,16 @@ void Hyd_Parse_RV::parse_calculation_limits(_hyd_keyword_file Key, word Command)
 			}
 			else if (Key == eRTOL){
 				buffer>>this->rv_params.rel_tolerance;
+			}
+			else if (Key == eC_APPROACH) {
+				string buff1;
+				buffer >> buff1;
+				this->rv_params.transform_txt2_couplingapproach(buff1);
+			}
+			else if (Key == eOutput_Coupling) {
+				string buff1;
+				buffer >> buff1;
+				this->rv_params.output_couplings = _Hyd_Parse_IO::transform_string2boolean(buff1);
 			}
 			else if(Key == ePROF_INTERFACE){
 				string buff1;

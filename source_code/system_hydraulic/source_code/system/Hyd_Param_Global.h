@@ -4,6 +4,8 @@
 	\author produced by the Institute of Hydraulic Engineering (IWW), RWTH Aachen University
 	\version 0.0.1                                                              
 	\date 2009 
+	\modified by Bastian Winkels
+	\date 2022
 */
 #ifndef HYD_PARAM_GLOBAL_H
 #define HYD_PARAM_GLOBAL_H
@@ -28,9 +30,6 @@ enum _hyd_gs_scheme_type {
 	///Classical Gram-Schmidt orthogonalization scheme of the matrix to solve in the cvode-solver
 	eCLASSICAL_GS = 2 
 };
-
-
-
 
 ///Structure where the geometrical information of the floodplain are stored \ingroup hyd
 struct _hyd_output_flags {
@@ -135,10 +134,14 @@ public:
 	int get_total_number_setted_couplings(void);
 	///Get the number of floodplain models in the system
 	int get_number_floodplain_model(void);
+	///Get the number of groundwater models in the system
+	int get_number_groundwater_model(void);
 	///Get the number of river models in the system
 	int get_number_river_model(void);
 	///Get the flag if the coast model is applied in the system
 	bool get_coast_model_applied(void);
+	///Get the flag if the gw model is applied in the system
+	bool get_gw_model_applied(void);
 
 	///Get the output flags which output is required
 	_hyd_output_flags get_output_flags(void);
@@ -147,8 +150,12 @@ public:
 	void set_number_river_models(const int number);
 	///Set the number of floodplain-models
 	void set_number_floodplain_models(const int number);
+	///Set the number of groundwater_models
+	void set_number_groundwater_models(const int number);
 	///Set if the coast-model is applied
 	void set_coast_model_applied(const bool applied);
+	///Set if the gw-model is applied
+	void set_gw_model_applied(const bool applied);
 	///Set the number of diversion-channels
 	void set_number_diversion_channels(const int number);
 	///Set the number of the coupling between river- and floodplain-models via a dikebreak/wallbreak
@@ -183,11 +190,14 @@ private:
 
 	///Number of floodplain models
 	int GlobNofFP;
+	///Number of groundwater models
+	int GlobNofGW;
 	///Number of river models
 	int GlobNofRV;
 	///Flag if a coast model is appleid
 	bool coastmodel_applied;
-
+	///Flag if a groundwater model is applied
+	bool gwmodel_applied;
 	///Flag if temperature model applied
 	bool tempmodel_applied;
 
@@ -204,6 +214,10 @@ private:
 	string material_file;
 	///Filename of the observation point file
 	string obs_point_file;
+	///Filename of the conductivity file
+	string conductivity_file;
+	///Filename of the porosity file
+	string porosity_file;
 
 	///Name of the path of the global file
 	string global_path;
@@ -226,8 +240,12 @@ private:
 
 	///Syncronisation settings: maximum of waterlevel change per syncronisation timestep in a floodplain element (boundary condition, coupling)
 	double max_h_change_fp;
+	///Syncronisation settings: maximum of groundwaterlevel change per syncronisation timestep in a groundwater element (boundary condition, coupling)
+	double max_h_change_gw;
 	///Default value for the syncronisation settings: maximum of waterlevel change per syncronisation timestep in a floodplain element (boundary condition, coupling)
 	const double default_max_h_change_fp;
+	///Default value for the syncronisation settings: maximum of groundwaterlevel change per syncronisation timestep in a groundwater element (boundary condition, coupling)
+	const double default_max_h_change_gw;
 	///Syncronisation settings: maximum of waterlevel change per syncronisation timestep in a river element (boundary condition, coupling)
 	double max_h_change_rv;
 	///Default value for the syncronisation settings: maximum of waterlevel change per syncronisation timestep in a river element (boundary condition, coupling)

@@ -638,7 +638,7 @@ void Sys_Project::save_project_paramater(void){
 		ofile.flush();
 		txt.str("");
 
-		ofile << table_info;
+		ofile << table_info; 
 		ofile.flush();
 		//close file
 		ofile.close();

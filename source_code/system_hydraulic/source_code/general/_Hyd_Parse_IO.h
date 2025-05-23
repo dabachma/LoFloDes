@@ -31,6 +31,10 @@ enum _hyd_keyword_file{
 	eBEGINFPMODEL,
 	///Marker for the floodplain model settings (end)
 	eENDFPMODEL,
+	///Marker for the groundwater model settings (begin)
+	eBEGINGWMODEL,
+	///Marker for the groundwater model settings (end)
+	eENDGWMODEL,
 	///Marker for the river model settings (begin)
 	eBEGINRVMODEL, 
 	///Marker for the river model settings (end)
@@ -78,6 +82,8 @@ enum _hyd_keyword_file{
 	eNOFITS,
 	///Marker for the number of floodplain models (2d)
 	eNOFFP,
+	///Marker for the number of groundwater models (2d)
+	eNOFGW,
 	///Marker for the number of river model (1d)
 	eNOFRV,
 	///Marker for the flag for a applied coast model (true/false)
@@ -138,6 +144,12 @@ enum _hyd_keyword_file{
 	///Marker for the path and name of the global material file
 	eMATERIALFILE, 
 
+	///Marker for the path and name of the global porosity file
+	ePOROSITYFILE,
+
+	///Marker for the path and name of the global conductivity file
+	eCONDUCTIVITYFILE,
+
 	///Marker for the path and name of the observation point file
 	eOBSPOINTFILE,
 
@@ -154,6 +166,12 @@ enum _hyd_keyword_file{
 	eNO_NOFLOWPOLYS,
 	///Marker for the path and name of the dikeline-polysegment file
 	eDIKELINEFILE,
+
+	///Marker for the path and name of the gw-line-polysegment file
+	eLINEFILE,
+	///Marker for the number of the gw-line-polysegments in the file
+	eNO_POLYLINES,
+
 	///Marker for the number of the dikeline-polysegment in file
 	eNODIKEPOLYLINES,
 
@@ -177,6 +195,8 @@ enum _hyd_keyword_file{
 	eNOINFOVALUE,
 	///Marker for the path and name of the file with the floodplain elements data
 	eFLOODPLAINFILE,
+	///Marker for the path and name of the file with the groundwater elements data
+	eGROUNDWATERFILE,
 	///Marker for the limits for the 1d/2d calculation (main keyword)
 	eLIMITS,
     ///Marker for the temperature model (main keyword)
@@ -221,6 +241,10 @@ enum _hyd_keyword_file{
 	eNOFPROF,
 	///Marker for the path and name of the 1d-output file
 	e1DOUTPUT,
+	///Marker for the coupling approach
+	eC_APPROACH,
+	///Marker for output all couplingspoints
+	eOutput_Coupling,
 
 	///Marker for the path and name of the coast-line file
 	eCOASTLINEFILE,

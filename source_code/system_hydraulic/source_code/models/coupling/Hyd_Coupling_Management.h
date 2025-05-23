@@ -12,9 +12,12 @@
 #include"Hyd_Coupling_RV2CO.h"
 #include "Hyd_Coupling_RV2FP.h"
 #include "Hyd_Coupling_RV2FP_Merged.h"
+#include "Hyd_Coupling_RV2GW.h"
+#include "Hyd_Coupling_RV2GW_Merged.h"
 #include "Hyd_Coupling_FP2CO.h"
 #include "Hyd_Coupling_FP2CO_Merged.h"
 #include "Hyd_Coupling_FP2FP.h"
+#include "groundwater/Hyd_Coupling_GW2GW.h"
 #include "Hyd_Coupling_RV2RV.h"
 #include "Hyd_Coupling_RV2RV_Diversion.h"
 #include "Hyd_Coupling_RV2FP_Structure.h"
@@ -26,7 +29,7 @@
 
 class Hyd_Hydraulic_System;
 
-///Managing-class for all possible coupling types between the models of the hydraulic system (floodplain (FP), river (RV), coast (CO)) \ingroup hyd
+///Managing-class for all possible coupling types between the models of the hydraulic system (floodplain (FP), river (RV), coast (CO), groundwater (GW)) \ingroup hyd
 /**
 This class manages the coupling between the models of the hydraulic system (Hyd_Hydraulic_System). It is one part of the hydraulic system.
 The couplings representing the interaction between the models by a flow (discharge) from one model into another model. These flows are calculated at each
@@ -35,8 +38,10 @@ Here the couplings are initialized, merged, and calculated at the syncronisation
 Possible couplings are:
 - river to river (1d-1d; RV2RV)
 - floodplain to floodplain (2d-2d; FP2FP)
+- groundwater to groundwater (2d-2d; GW2GW)
 - river to floodplain, direct or lateral via a overflow and a dikebreak (1d-2d; RV2FP)
 - river to coast (1d-co; RV2CO)
+- river to groundwater (1d-2d; RV2GW)
 - floodplain to coast (2d-co; FP2CO)
 
 There are some special coupling types:
@@ -44,7 +49,7 @@ There are some special coupling types:
 - river to floodplain lateral by a given coupling structure (1d-2d-structure)
 
 \see Hyd_Coupling_FP2FP, Hyd_Coupling_FP2CO, Hyd_Coupling_RV2RV, Hyd_Coupling_RV2RV_Diversion, Hyd_Coupling_RV2CO, Hyd_Coupling_RV2FP,
-Hyd_Coupling_RV2FP_Structure, Hyd_Coupling_RV2FP_Dikebreak
+Hyd_Coupling_RV2FP_Structure, Hyd_Coupling_RV2FP_Dikebreak, Hyd_Coupling_RV2GW
 */
 class Hyd_Coupling_Management : public _Sys_Common_System
 {
@@ -59,14 +64,21 @@ public:
 	Hyd_Coupling_RV2CO *coupling_rv2co;
 	///Coupling of river- to floodplain-model
 	Hyd_Coupling_RV2FP *coupling_rv2fp;
+	
 	///Coupling of river- to multiple floodplain-models (merged)
 	Hyd_Coupling_RV2FP_Merged *coupling_merged_rv2fp;
+	///Coupling of river- to groundwater-model
+	Hyd_Coupling_RV2GW *coupling_rv2gw;
+	///Coupling of river- to multiple groundwater-models (merged)
+	Hyd_Coupling_RV2GW_Merged *coupling_merged_rv2gw;
 	///Coupling of floodplain- to coast-model
 	Hyd_Coupling_FP2CO *coupling_fp2co;
 	///Coupling of coast-model to multiple floodplain-models (merged)
 	Hyd_Coupling_FP2CO_Merged *coupling_merged_fp2co;
 	///Coupling of floodplain- to floodplain-model
 	Hyd_Coupling_FP2FP *coupling_fp2fp;
+	///Coupling of groundwater- to groundwater-model
+	Hyd_Coupling_GW2GW *coupling_gw2gw;
 	///Coupling of river- to river-model
 	Hyd_Coupling_RV2RV *coupling_rv2rv;
 	///Coupling of river- to river model via a diversion
@@ -115,10 +127,20 @@ public:
 	///Get the number of floodplain to floodplain coupling
 	int get_fp2fp(void);
 
+	///Add number of groundwater to groundwater coupling
+	void add_gw2gw(const int number);
+	///Get the number of groundwater to groundwater coupling
+	int get_gw2gw(void);
+
 	///Add number of river to floodplain coupling
 	void add_rv2fp(const int number);
 	///Get the number of river to floodplain coupling
 	int get_rv2fp(void);
+
+	///Add number of river to groundwater coupling
+	void add_rv2gw(const int number);
+	///Get the number of river to groundwater coupling
+	int get_rv2gw(void);
 
 	///Add number of river to river coupling
 	void add_rv2rv(const int number);
@@ -211,10 +233,14 @@ public:
 	void allocate_coupling_class_rv2co(void);
 	///Allocate the coupling classes for river to floodplain coupling
 	void allocate_coupling_class_rv2fp(void);
+	///Allocate the coupling classes for river to groundwater coupling
+	void allocate_coupling_class_rv2gw(void);
 	///Allocate the coupling classes for floodplain to coast coupling
 	void allocate_coupling_class_fp2co(void);
 	///Allocate the coupling classes for floodplain to floodplain coupling
 	void allocate_coupling_class_fp2fp(void);
+	///Allocate the coupling classes for groundwater to groundwater coupling
+	void allocate_coupling_class_gw2gw(void);
 	///Allocate the coupling classes for river to river coupling
 	void allocate_coupling_class_rv2rv(void);
 
@@ -256,6 +282,10 @@ private:
 	int number_rv2fp;
 	///Number of merged floodplain to river couplings
 	int number_merged_rv2fp;
+	///Number of groundwater to river couplings
+	int number_rv2gw;
+	///Number of merged groundwater to river couplings
+	int number_merged_rv2gw;
 	///Number of floodplain to coast couplings
 	int number_fp2co;
 	///Number of merged floodplain to coast couplings
@@ -278,6 +308,8 @@ private:
 	int number_rv2fp_dikebreak_fpl;
 	///Number of dikebreak coupling floodplain to coast model, which are automatically set via the fpl-system
 	int number_fp2co_dikebreak_fpl;
+	///Number of groundwater to groundwater couplings
+	int number_gw2gw;
 
 	///Total number of couplings
 	int total_number_coupling;
@@ -299,6 +331,8 @@ private:
 	void insert_breaks2RV2FPlist(void);
 	///Insert additional coupling points for a finer coupling discretisation to the merged RV2FP point list
 	void insert_add_coupling_point2RV2FPlist(void);
+	///Insert additional coupling points for a finer coupling discretisation to the merged RV2GW point list
+	void insert_add_coupling_point2RV2GWlist(void);
 	//Insert special points to the merged FP2CO point list (e.g. river junctions)
 	void insert_river_junctions2FP2COlist(void);
 	///Insert special points to the merged FP2CO point list (e.g. dikebreak)
@@ -309,6 +343,9 @@ private:
 	///Check if there there are RV2FP point in the lists, which are coupled beyond river; there a coupling is not possible; do it after the merged lists are completly set
 	void check_RV2FPpoints_beyond_rivers(void);
 
+	///Check if there there are RV2GW point in the lists, which are coupled beyond river; there a coupling is not possible; do it after the merged lists are completly set
+	void check_RV2GWpoints_beyond_rivers(void);
+
 	///Reset coupling discharges between the model (use it before syncronisation)
 	void reset_coupling_discharges(void);
 
@@ -316,22 +353,32 @@ private:
 	void delete_coupling_class_rv2co(void);
 	///Delete the coupling classes for river to floodplain coupling
 	void delete_coupling_class_rv2fp(void);
+	///Delete the coupling classes for river to groundwater coupling
+	void delete_coupling_class_rv2gw(void);
 	///Delete the coupling classes for floodplain to coast coupling
 	void delete_coupling_class_fp2co(void);
 	///Delete the coupling classes for floodplain to floodplain coupling
 	void delete_coupling_class_fp2fp(void);
+	///Delete the coupling classes for groundwater to groundwater coupling
+	void delete_coupling_class_gw2gw(void);
 	///Delete the coupling classes for river to river coupling
 	void delete_coupling_class_rv2rv(void);
 
+	///Init the coupling classes for river to multiple groundwaters (merged)
+	void init_coupling_class_rv2gw_merged(void);
 	///Init the coupling classes for river to multiple floodplains (merged)
 	void init_coupling_class_rv2fp_merged(void);
 	///Init the coupling classes for multiple floodplains to one coast model (merged)
 	void init_coupling_class_fp2co_merged(void);
 
+	///Allocate the coupling classes for river to multiple groundwaters (merged)
+	void allocate_coupling_class_rv2gw_merged(void);
 	///Allocate the coupling classes for river to multiple floodplains (merged)
 	void allocate_coupling_class_rv2fp_merged(void);
 	///Allocate the coupling classes for multiple floodplains to one coast model (merged)
 	void allocate_coupling_class_fp2co_merged(void);
+	///Delete the coupling classes for river to multiple groundwaters (merged)
+	void delete_coupling_class_rv2gw_merged(void);
 	///Delete the coupling classes for river to multiple floodplains (merged)
 	void delete_coupling_class_rv2fp_merged(void);
 	///Delete the coupling classes for multiple floodplains to one coast model (merged)

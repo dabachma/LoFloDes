@@ -12,6 +12,7 @@
 #include "Geo_Point.h"
 #include "Hyd_Element_Floodplain.h"
 #include "_Hyd_River_Profile.h"
+#include "groundwater/Hyd_Element_Groundwater.h"
 #include "HydTemp_Model.h"
 
 ///Data container for information per time step, which are stored in one observation point \ingroup hyd
@@ -34,6 +35,9 @@ struct _hyd_observation_time_point{
 
 	///Waterlevel change per time [m/min] due to coupling of a floodplain element
 	double ds2dt_coupling;
+
+	///Waterlevel change per time [m/min] due to boundary condition
+	double ds2dt_bound;
 
 	///Current discharge by river profile
 	double discharge;
@@ -60,6 +64,8 @@ public:
 	void set_number_time_point(const int no_output, const int no_internal);
 	///Synchronise observation time
 	void synchron_obs_point(const double time);
+	/*///Synchronise observation time for groundwater modelling
+	void synchron_gw_obs_point(const double time);*/
 
 	///Synchronise observation time for temperature modelling
 	void synchron_temp_obs_point(const double time);
@@ -74,10 +80,19 @@ public:
 	bool init_obs_point_river(Hyd_Model_River *model, const int index);
 	///Initialize the observation points for river models
 	bool init_obs_point_floodplain(Hyd_Model_Floodplain *model, const int index);
+	///Initialize the observation points for groundwater models
+	bool init_obs_point_groundwater(Hyd_Model_Groundwater* model, const int index);
 
 	///Initialize the observation points for temperature models
 	bool init_temp_obs_point_river(HydTemp_Model *model, const int index);
-
+	///Get the flag wenn the observation point is im floodplain model located
+	bool get_model_floodplain_flag(void);
+	//Get the flag wenn the observation point is im ground model located
+	bool get_model_gw_flag(void);
+	//Get the flag wenn the observation point is im river model located
+	bool get_model_rv_flag(void);
+	
+	//alt
 	///Get the flag in which model (river/floodplain) the observation point is located
 	bool get_model_flag(void);
 
@@ -85,10 +100,11 @@ public:
 	void output_obs_point2file(ofstream *output, const int counter_used);
 	///Ouput the observation point to file as csv output
 	void output_obs_point2csvfile(ofstream *output, const int counter_used);
+	/*///Ouput the groundwater observation point to file as csv output
+	void output_gw_obs_point2csvfile(ofstream* output, const int counter_used);*/
 
 	///Ouput the temperature observation point to file as csv output
 	void output_temp_obs_point2csvfile(ofstream *output, const int counter_used);
-
 	///Output setted members
 	void output_setted_members(ostringstream *cout, const int index);
 
@@ -96,8 +112,15 @@ public:
 	void clear_obs_point(void);
 
 	///Clone the observation points; the pointer are not cloned
-	void clone_obs_points(Hyd_Observation_Point *src, Hyd_Model_River *river,  Hyd_Model_Floodplain *floodplain);
+	void clone_obs_points(Hyd_Observation_Point *src, Hyd_Model_River *river,  Hyd_Model_Floodplain *floodplain, Hyd_Model_Groundwater* gw);
+	/////Clone the gw observation points; the pointer are not cloned
+	//void clone_gw_obs_points(Hyd_Observation_Point* src, Hyd_Model_Groundwater *gw);
+	
+	///transform the string to flood_flag/rv_flag/gw_flag
+	void transform_string2flag(string txt);
 
+	///transform flood_flag/rv_flag/gw_flag to string
+	string transform_flag2string(void);
 
 private:
 
@@ -116,11 +139,19 @@ private:
 	Hyd_Element_Floodplain *element;
 	///Appendant river profile
 	_Hyd_River_Profile *profile;
+	///Appendant gw profil
+	Hyd_Element_Groundwater* gw_profile;
 	///Appendant temperature profile
 	HydTemp_Profile *temp_profile;
 
-	///Flag, if the observation point is in a floodplain or in a river model
+	///Flag, if the observation point is in a floodplain 
 	bool floodplain_flag;
+	///Flag, if the observation point is in groundwater model
+	bool gw_flag;
+	///Flag, if the observation point is in river model
+	bool rv_flag;
+
+
 	///Index of the model (river model or floodplain model)
 	int index_model;
 	///Index of the element/profile

@@ -21,6 +21,9 @@ Hyd_Param_RV::Hyd_Param_RV(void):default_rel_tol(1.0e-7),default_abs_tol(1.0e-8)
 	this->user_setting.explict_v_is_used=false;
 	this->user_setting.use_interface=false;
 
+	this->gw2rv_coupling = _hyd_gw2rv_calculation_type::Darcy;
+
+	this->output_couplings = false;
 	
 
 	//count the memory
@@ -44,6 +47,10 @@ Hyd_Param_RV::Hyd_Param_RV(const Hyd_Param_RV& par):default_rel_tol(1.0e-7),defa
 	this->rel_tolerance=par.rel_tolerance;
 
 	this->user_setting=par.user_setting;
+
+	this->gw2rv_coupling = par.gw2rv_coupling;
+
+	this->output_couplings = par.output_couplings;
 
 
 
@@ -125,6 +132,7 @@ void Hyd_Param_RV::output_members(void){
 	cout << "SOLVER/CALCULATION" << endl;
 	cout << " Absolute solver tolerance    : " << W(7) << P(2)<< FORMAT_SCIENTIFIC_REAL << this->abs_tolerance <<endl;
 	cout << " Relative solver tolerance    : " << W(7) << P(2)<< FORMAT_SCIENTIFIC_REAL<< this->rel_tolerance  <<endl;
+	cout << " Leakage coupling approach    : " << this->transform_couplingapproach2txt(this->gw2rv_coupling)<< endl;
 	cout << " Use velocity-head explicit   : " << functions::convert_boolean2string(this->user_setting.explict_v_is_used) <<endl;
 	cout << " Use interface (mid to bank)  : " << functions::convert_boolean2string(this->user_setting.use_interface)  <<endl;
 
@@ -208,6 +216,19 @@ string Hyd_Param_RV::get_filename_result2file_1d(const string type){
 	}
 	return buffer;
 }
+//Get the filename for the rv2gw coupling model results file as 1d for file
+string Hyd_Param_RV::get_filename_rv2gwcoupling_file_1d(void) {
+	string buffer;
+	string type = "coupling";
+	buffer = this->tecplot_outfile_name_1d;
+	if (buffer != label::not_set) {
+		stringstream suffix;
+		suffix << "RV2GW_";
+		buffer = functions::make_complete_output_path(buffer, type, suffix.str());
+	}
+	
+	return buffer;
+}
 //Get the filename for the rivermodel maximum result to file as 1d for file
 string Hyd_Param_RV::get_filename_result2file_1d_maxvalues(const string type){
 	string buffer;
@@ -284,9 +305,67 @@ Hyd_Param_RV& Hyd_Param_RV::operator= (const Hyd_Param_RV& par){
 	this->rel_tolerance=par.rel_tolerance;
 	this->user_setting=par.user_setting;
 
+	this->gw2rv_coupling=par.gw2rv_coupling ;
+
+	this->output_couplings = par.output_couplings;
+
 
 
 	return *this;
+}
+
+///Get leakage coupling approach type
+_hyd_gw2rv_calculation_type Hyd_Param_RV::get_gw2rv_coupling_calculation_type(void) {
+	return this->gw2rv_coupling;
+}
+///Transform text to enum _hyd_bound_type_gw
+void Hyd_Param_RV::transform_txt2_couplingapproach(string txt) {
+	_hyd_gw2rv_calculation_type buffer;
+
+	_Hyd_Parse_IO::string2lower(&txt);
+	_Hyd_Parse_IO::erase_leading_whitespace_tabs(&txt);
+	_Hyd_Parse_IO::erase_end_whitespace_tabs(&txt);
+
+	if (txt == hyd_label::Darcy) {
+		this->gw2rv_coupling = _hyd_gw2rv_calculation_type::Darcy;
+
+	}
+	else if (txt == hyd_label::Rushton) {
+		this->gw2rv_coupling = _hyd_gw2rv_calculation_type::Rushton;
+
+	}
+	else {
+		Error msg;
+		string place = "Hyd_Param_RV::";
+		place.append("transform_txt2_couplingapproach(string txt)");
+		string reason = "GW2RV Coupling approach type is not known";
+		string help = "Check the given coupling approach type";
+		ostringstream info;
+		info << "Given type    :" << txt << endl;
+		info << "Possible types: " << endl;
+		info << " " << hyd_label::Darcy << endl;
+		info << " " << hyd_label::Rushton << endl;
+		msg.set_msg(place, reason, help, 1, false);
+		msg.make_second_info(info.str());
+		throw msg;
+
+	}
+	
+	
+}
+///Transform enum _hyd_bound_type_gw to text
+string Hyd_Param_RV::transform_couplingapproach2txt(const _hyd_gw2rv_calculation_type type) {
+	string buffer;
+	if (type == _hyd_gw2rv_calculation_type::Darcy) {
+		buffer += "Darcy_Approach";
+	}
+	else if (type == _hyd_gw2rv_calculation_type::Rushton) {
+		buffer += "Rushton_Approach";
+	}
+	else {
+		buffer = label::not_set;
+	}
+	return buffer;
 }
 //________________
 //private
@@ -319,6 +398,10 @@ void Hyd_Param_RV::complete_filenames_with_path(string global_path){
 		buff.clear();
 
 	}
+}
+///get flag for output all couplingpoints
+bool Hyd_Param_RV::get_output_couplings(void) {
+	return this->output_couplings;
 }
 //Set the warning
 Warning Hyd_Param_RV::set_warning(const int warn_type){

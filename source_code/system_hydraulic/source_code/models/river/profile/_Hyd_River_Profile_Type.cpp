@@ -22,6 +22,7 @@ _Hyd_River_Profile_Type::_Hyd_River_Profile_Type(void): increment_max_height(2.0
 
 
 	this->profile_width=0.0;
+	this->wetted_perimeter = 0.0;
 
 	//result variables per time step
 	this->h_value=0.0;
@@ -99,7 +100,7 @@ void _Hyd_River_Profile_Type::set_profile_specific_value(const _hyd_bridge_value
 	buff=data;
 }
 //input the mebers per file
-void _Hyd_River_Profile_Type::input_members(QFile *profile_file, int *line_counter, const string name, const int number){
+void _Hyd_River_Profile_Type::input_members(QFile *profile_file, int *line_counter, const string name, const int number, bool gwmodel_applied){
 
 	int point_counter=0;
 	try{
@@ -708,7 +709,7 @@ void _Hyd_River_Profile_Type::output_members(ostringstream *cout){
 	*cout << " The points are... " << endl;
 	*cout << W(8) << "No." << W(12)<<"x(glob)" << label::m<< W(12) <<"y(glob)" << label::m;
 	*cout << W(12) <<"z(glob)" << label::m <<W(10) <<"x(loc)" <<label::m;
-	*cout <<W(10) <<"z(loc)" <<label::m <<W(10) <<"mattype" <<label::no_unit<< W(10) <<"ident"<<label::no_unit<< endl;
+	*cout <<W(10) <<"z(loc)" <<label::m <<W(10) <<"mattype" << label::no_unit << W(10) << "contype" <<label::no_unit<< W(10) << "thickness" << label::m<< W(10)<<"ident"<<label::no_unit<< endl;
 	for(int i=0 ; i< this->number_points ;i++){
 		this->points[i].output_members(cout);
 	}
@@ -1354,13 +1355,58 @@ void _Hyd_River_Profile_Type::calculate_global_midpoint_x_y(void){
 		this->mid_point_global_x_y.set_point_coordinate(this->global_x_zmin, this->global_y_zmin);
 		this->mid_point_global_x_y.set_point_name(hyd_label::profile_midpoint_x_y);
 	}
+	//double x_min = 0;
+	//double y_min = 0;
+	//double x_min_1 = 0;
+	//double x_min_2 = 0;
+	//double y_min_1 = 0;
+	//double y_min_2 = 0;
+	//if (this->number_points > 0) {
+	//	int count = 0;
+	//	for (int i = 0; i < this->number_points; i++) {
+	//		if (this->points[i].z_global == this->global_z_min) {
+	//			count = count + 1;
+	//		}
+	//	}
+	//	if (count == 1) {
+	//		this->mid_point_global_x_y.set_point_coordinate(this->global_x_zmin, this->global_y_zmin);
+	//		this->mid_point_global_x_y.set_point_name(hyd_label::profile_midpoint_x_y);
+	//	}
+	//	else if (count > 1) {
+	//		for (int i = 0; i < this->number_points; i++) {
+	//			if (this->points[i].z_global == this->global_z_min) {
+	//				double x_min_1 = this->points[i].x_global;
+	//				double y_min_1 = this->points[i].y_global;
+	//				break;
+	//			}
+	//		}
+
+	//		for (int i = this->number_points - 1; i > -1; i--) {
+	//			if (this->points[i].z_global == this->global_z_min) {
+	//				double x_min_2 = this->points[i].x_global;
+	//				double y_min_2 = this->points[i].y_global;
+	//				break;
+	//			}
+	//		}
+
+	//		x_min = (x_min_1 + x_min_2) / 2;
+	//		y_min = (y_min_1 + y_min_2) / 2;
+	//		this->mid_point_global_x_y.set_point_coordinate(x_min, y_min);
+	//		this->mid_point_global_x_y.set_point_name(hyd_label::profile_midpoint_x_y);
+
+	//	}
+	//}
 }
 	///Calculate the global minpoint
 void _Hyd_River_Profile_Type::calculate_global_minpoint_x_y(void){
 
 	if(this->number_points>0){
-		this->min_point_global_x_y.set_point_coordinate(this->global_x_zmin,this->global_y_zmin);
+
+		this->min_point_global_x_y.set_point_coordinate(this->global_x_zmin, this->global_y_zmin);
 		this->min_point_global_x_y.set_point_name(hyd_label::profile_minpoint_x_y);
+
+
+		
 	}
 }
 //set the error

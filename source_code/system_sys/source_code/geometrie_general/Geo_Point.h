@@ -36,8 +36,12 @@ public:
 	//methods
 	///Set the name of the point
 	void set_point_name(const string name);
+	///Set the name2 of the point
+	void set_point_name2(const string name);
 	///Get the point name
 	string get_point_name(void);
+	///Get the point name2
+	string get_point_name2(void);
 	///Get the pointer to the point name
 	string* get_ptr_point_name(void);
 	///Set the coordinates of the point
@@ -129,6 +133,8 @@ protected:
 	double y_coordinate;
 	///Point name
 	string name;
+	///Point name2
+	string name2;
 	///Point number
 	int number;
 

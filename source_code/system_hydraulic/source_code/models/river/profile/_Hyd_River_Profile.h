@@ -20,6 +20,7 @@
 //info class about the hydraulic boundary szenario data
 #include "Hyd_Boundary_Szenario.h"
 #include "_Hyd_Model.h"
+#include "Hyd_Param_Conductivity.h"
 
 //enum
 ///Enumerater to specify the type of the river profile \ingroup hyd
@@ -42,6 +43,23 @@ enum _hyd_connection_types{
 };
 
 //struct
+
+struct _hyd_leakage_parameters {
+	///Conductivity index referencing kf_value for K1
+	int K1_index;
+	///Conductivity kf-value for K1
+	double K1_value;
+
+	///Conductivity index referencing kf_value for K2
+	int K2_index;
+	///Conductivity kf-value for K2
+	double K2_value;
+
+	///Conductivity index referencing kf_value for K3
+	int K3_index;
+	///Conductivity kf-value for K3
+	double K3_value;
+};
 ///Structure for the break-parameters of the floodprotection line along the river \ingroup hyd
 struct _hyd_break_parameters{
 	///Resistance of the line (dikes:=critical velocity; walls/mobile walls:=resistance factor)
@@ -103,7 +121,7 @@ public:
 	//methods
 
 	///Input the members of the profile per file
-	void input_members(QFile *profile_file, const int profile_number, string my_line, int *line_counter);
+	void input_members(QFile *profile_file, const int profile_number, string my_line, int *line_counter, Hyd_Param_Conductivity *con_param, bool gwmodel_applied, int coupling_type_id);
 	///Transfer the river profile data to a database
 	virtual void transfer_profile_members2database(const int glob_prof_id, QSqlQuery *model, QSqlDatabase *ptr_database, const int rv_number)=0;
 	///Transfer the river profile boundary data of an hydraulc boundary scenario to a database
@@ -217,7 +235,6 @@ public:
 	///Select the data in the database table for the instationary results of the river profiles specified by the system state and the scenario-ids
 	static int select_data_in_instat_erg_table(QSqlQueryModel *query, QSqlDatabase *ptr_database, const _sys_system_id id, const int bound_sz, const string break_sz, const int rv_no, const bool like_flag = false);
 
-
 	///Delete all data in the database of all tables for the river profile data
 	static void delete_data_in_table(QSqlDatabase *ptr_database);
 	///Close and delete the database of all tables for the river profile data
@@ -252,7 +269,7 @@ public:
 	static void copy_boundary_condition(QSqlDatabase *ptr_database, const _sys_system_id base, const int src, const int targ);
 
 	///Initialize the profile like calculation of the tables of the values h, a, c etc.
-	void init_profile(Hyd_Param_Material *material_table, const _hyd_profile_calc_setting user_setting);
+	void init_profile(Hyd_Param_Material *material_table, const _hyd_profile_calc_setting user_setting, Hyd_Param_Conductivity* con_param);
 
 	///Set the initial condition to the profiles
 	virtual void set_init_condition(void);
@@ -294,6 +311,13 @@ public:
 	///Get the poleni-factor for an overflow over the right river bank into the floodplain
 	virtual double get_overflow_poleni_right(void);
 
+	///Get if an leakage through the left river bank into the groundwater is given REVIEW
+	virtual bool get_leakage_flag_left(void);
+	
+	///Get if a leakage through the right river bank into the groundwater is given REVIEW
+	virtual bool get_leakage_flag_right(void);
+
+
 	///Get the flag if a break of the left floodprotection line is possible
 	bool get_break_flag_left(void);
 	///Get the index of the left basepoint
@@ -307,10 +331,22 @@ public:
 	///Get a pointer to the right basepoint
 	Hyd_River_Profile_Point* get_right_basepoint(void);
 
+	///Get the conductivity index
+	int get_conductivity_index(void);
+	///Get the conductivity value
+	double get_conductivity_value(void);
+
+	///Get the thickness of the riverbed
+	double get_thickness(void);
+
 	///Get the data structure for the break-parameters of the left bank
 	_hyd_break_parameters* get_break_parameter_left(void);
 	///Get the data structure for the break-parameters of the right bank
 	_hyd_break_parameters* get_break_parameter_right(void);
+
+	///Get the data structure for the leakage-parameters
+	_hyd_leakage_parameters* get_leakage_parameter(void);
+
 
 	///Get the absolute height related to the left base point
 	double get_height_left_bank_abs(void);
@@ -373,6 +409,12 @@ public:
 	void reset_dikebreak_coupling_discharge_right_bank(void);
 	///Get a value of the coupling discharge due to a dikebreak at the right bank (coupling RV2FP via dikebreak)
 	double get_dikebreak_coupling_discharge_right_bank(void);
+	///Add a discharge value to the coupling discharge due to leakage (coupling RV2GW)
+	void add_leakage_coupling_discharge(const double value);
+	///Reset a discharge value to the coupling discharge due to leakage (coupling RV2GW)
+	void reset_leakage_coupling_discharge(void);
+	///Get a value of the coupling discharge due to leakage (coupling RV2GW)
+	double get_leakage_coupling_discharge(void);
 
 	///Add the hydrological balance value of the coupling condition discharges for the left bank overflow to the given pointer
 	void add_hydro_balance_leftbank_coupling(_hyd_hydrological_balance *given);
@@ -386,6 +428,8 @@ public:
 	void add_hydro_balance_dikebreak_left_coupling(_hyd_hydrological_balance *given);
 	///Add the hydrological balance value of the coupling condition discharges to floodplain models via a dikebreak at the right bank to the given pointer
 	void add_hydro_balance_dikebreak_right_coupling(_hyd_hydrological_balance *given);
+	///Add the hydrological balance value of the coupling condition discharges to groundwater models via leakage to the given pointer
+	void add_hydro_balance_leakage_coupling(_hyd_hydrological_balance *given);
 
 	///Output the members
 	virtual void output_members(void)=0;
@@ -521,6 +565,9 @@ protected:
 	///Pointer to the parameters of a break development at the right bank; it is not required for an outflow profile
 	_hyd_break_parameters *right_break_params;
 
+	///Pointer to the leakage_parameters
+	_hyd_leakage_parameters *leakage_params;
+
 	///Flag if a break (e.g. dikebreak) of the river section at the left bank is possible; it is set to true when a base point left is set
 	bool break_flag_left;
 	///Number of the left base point for a break (e.g. dikebreak) of the river section at the left bank
@@ -533,6 +580,14 @@ protected:
 	double h_max_right_base;
 	///Maximum waterlevel above the left base point; the time point is corresponding to the time point of the maximum waterlevel of the profile (_Hyd_River_Profile_Type)
 	double h_max_left_base;
+
+	///Conductivity index referencing kf_value
+	int conductivity_index;
+	///Conductivity kf-value
+	double conductivity_value;
+
+	///Thickness of the river bed
+	double thickness;
 
 	///Section Id of a FPL-section of the left bank
 	int fpl_sec_id_left;
@@ -557,6 +612,14 @@ protected:
 	///Poleni factor for a coupling via overflow over the right bank in flow direction (coupling RV2FP)
 	double poleni_factor_right_overflow;
 
+	///Flag for a coupling via leakage through the left bank in flow direction (coupling RV2GW) REVIEW
+	bool leakage_left_flag;
+
+
+	///Flag for a coupling via leakage through the right bank in flow direction (coupling RV2GW) REVIEW
+	bool leakage_right_flag;
+
+
 	///They are read in (per file/database table) in this class -if the profile type is a bridge type- and transferred to the Hyd_River_Profile_Type_Bridge
 	_hyd_bridge_values *bridge_specific_value;
 
@@ -578,13 +641,15 @@ protected:
 	///Actual discharge due to overflow to the floodplain over the right bank [m³/(s)] in flow direction (coupling RV2FP)
 	double q_right_bank;
 	///Actual discharge due to a coupling to another river model 1-coupling
-	double q_1d_coupling;
+	double q_1d_coupling; 
 	///Actual discharge due to a coupling to floodplain model via a hydraulic structure
 	double q_structure_coupling;
 	///Actual discharge due to a coupling to floodplain model via a dikebreak at the left bank
 	double q_dikebreak_coupling_left;
 	///Actual discharge due to a coupling to floodplain model via a dikebreak at the right bank
 	double q_dikebreak_coupling_right;
+	///Actual discharge due to a coupling to groundwater model due to leakage
+	double q_leakage_coupling;
 
 	///Defines the values for a hydrological balance for the lateral boundary condition
 	_hyd_hydrological_balance lateral_boundary_volume;
@@ -602,6 +667,8 @@ protected:
 	_hyd_hydrological_balance left_dikebreak_coupling_volume;
 	///Defines the values for a hydrological balance for the coupling to a floodplain model via a dikebreak at the right bank
 	_hyd_hydrological_balance right_dikebreak_coupling_volume;
+	///Defines the values for a hydrological balance for the coupling to a groundwater model via leakage
+	_hyd_hydrological_balance leakage_coupling_volume;
 
 	///Number of members which have to be found in the file
 	int must_found_number;
@@ -626,6 +693,11 @@ protected:
 	///Delete the break-parameters of the right bank; it is not required for an outflow profile
 	void delete_break_parameter_right(void);
 
+	///Allocate the data structure for the leakage-parameters 
+	void allocate_leakage_parameter(void);
+	///Delete the leakage-parameters 
+	void delete_leakage_parameter(void);
+
 	///Allocate the bridge specific data for input
 	void allocate_bridge_data(void);
 	///Decide and allocate the profile type
@@ -635,7 +707,7 @@ protected:
 	///Extract the keyvalues from a given stream
 	void get_keyvalues_file(stringstream *stream, string buffer);
 	///Decide which key value is read and give the read-in value to the corresponding member
-	virtual void decide_keyvalues_file(const string key, string buffer, int *found_counter);
+	virtual void decide_keyvalues_file(const string key, string buffer, Hyd_Param_Conductivity *con_param, bool gw_model_applied, int *found_counter);
 
 	///Input the river profile point data from a database table
 	void input_profile_points_per_database(QSqlDatabase *ptr_database, const int glob_prof_id);
@@ -657,9 +729,6 @@ protected:
 
 	///Get boundary condition is applied
 	virtual bool boundary_is_applied(void)=0;
-
-
-
 
 private:
 	//methods

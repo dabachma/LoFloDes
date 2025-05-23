@@ -14,8 +14,10 @@
 //system hyd 
 #include "_Hyd_Coupling_Point.h"
 #include "Hyd_Floodplain_Polysegment.h"
+#include "groundwater/Hyd_Groundwater_Polysegment.h"
 #include "Hyd_Model_Floodplain.h"
 #include "Hyd_Model_River.h"
+#include "groundwater/Hyd_Model_Groundwater.h"
 
 ///Base class for the list, where the couplingpoints between the models are gathered \ingroup hyd
 /**

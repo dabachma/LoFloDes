@@ -17,7 +17,7 @@
 #include "_Hyd_Parse_IO.h"
 #include "Hyd_Element_Floodplain.h"
 
-///Geometrical class for the polygons in a floodplain model (Hyd_Model_Floodplain), like noflow polygons \ingroup hyd
+///Geometrical class for the polygons in floodplain models (Hyd_Model_Floodplain) and river models (Hyd_Model_River), like noflow polygons \ingroup hyd
 /**
 
 */

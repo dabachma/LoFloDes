@@ -209,7 +209,7 @@ protected:
 
 	//methods
 	///Decide which key value is read and give the read-in value to the corresponding member
-	void decide_keyvalues_file(const string key, string buffer, int *found_counter);
+	void decide_keyvalues_file(const string key, string buffer, Hyd_Param_Conductivity *con_param, bool gwmodel_applied, int *found_counter);
 	///Decide which boundary conditions (statinary/instationary) are choosen for pointwise inflow (discharge is devided by the distance between the profiles [m³/s])
 	void decide_boundary_point_conditions(const double nr_value);
 	///Decide which boundary conditions are choosen for lateral inflow (discharge is given per m river length [(m³/s)/m])

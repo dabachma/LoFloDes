@@ -26,6 +26,9 @@ the break parameters etc.
 */
 class Hyd_Floodplain_Dikeline_Point : public Geo_Point,public _Sys_Common_System
 {
+	//for conversion
+	friend class Hyd_Groundwater_Line_Point;
+
 public:
 	///Default constructor
 	Hyd_Floodplain_Dikeline_Point(void);

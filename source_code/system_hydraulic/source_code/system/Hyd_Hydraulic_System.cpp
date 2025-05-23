@@ -12,6 +12,7 @@ Hyd_Hydraulic_System::Hyd_Hydraulic_System(void){
 	this->my_rvmodels=NULL;
 	this->my_fpmodels=NULL;
 	this->my_comodel=NULL;
+	this->my_gwmodels = NULL;
 	this->my_temp_model = NULL;
 	this->output_time=0.0;
 	this->internal_time=0.0;
@@ -65,7 +66,7 @@ Hyd_Hydraulic_System::Hyd_Hydraulic_System(void){
 	this->coupling_managment.set_ptr2outputflags(&this->global_parameters.output_flags);
 
 	//count the memory
-	Sys_Memory_Count::self()->add_mem(sizeof(Hyd_Hydraulic_System)-sizeof(Hyd_Param_Global)-sizeof(Hyd_Param_Material)-sizeof(Hyd_Coupling_Management), _sys_system_modules::HYD_SYS);
+	Sys_Memory_Count::self()->add_mem(sizeof(Hyd_Hydraulic_System)-sizeof(Hyd_Param_Global)-sizeof(Hyd_Param_Material)-sizeof(Hyd_Param_Conductivity)-sizeof(Hyd_Param_Porosity) -sizeof(Hyd_Coupling_Management), _sys_system_modules::HYD_SYS);
 }
 //destructor
 Hyd_Hydraulic_System::~Hyd_Hydraulic_System(void){
@@ -81,6 +82,10 @@ Hyd_Hydraulic_System::~Hyd_Hydraulic_System(void){
 		delete this->my_comodel;
 		this->my_comodel=NULL;
 	}
+	if (this->my_gwmodels != NULL) {
+		delete []this->my_gwmodels;
+		this->my_gwmodels = NULL;
+	}
 
 	if (this->my_temp_model != NULL) {
 		delete[]this->my_temp_model;
@@ -88,7 +93,7 @@ Hyd_Hydraulic_System::~Hyd_Hydraulic_System(void){
 	}
 
 	//count the memory
-	Sys_Memory_Count::self()->minus_mem(sizeof(Hyd_Hydraulic_System)-sizeof(Hyd_Param_Global)-sizeof(Hyd_Param_Material)-sizeof(Hyd_Coupling_Management), _sys_system_modules::HYD_SYS);
+	Sys_Memory_Count::self()->minus_mem(sizeof(Hyd_Hydraulic_System)-sizeof(Hyd_Param_Global)-sizeof(Hyd_Param_Material)-sizeof(Hyd_Param_Conductivity)-sizeof(Hyd_Param_Porosity)-sizeof(Hyd_Coupling_Management), _sys_system_modules::HYD_SYS);
 
 	//development static output file
 	//test.close();
@@ -104,6 +109,7 @@ string Hyd_Hydraulic_System::ask_global_file_name(void){
 
 	return global_file;
 }
+
 //set the hydraulic system per file, also the subsystems
 void Hyd_Hydraulic_System::set_system_per_file(const string global_file){
 	//set prefix for output
@@ -121,6 +127,23 @@ void Hyd_Hydraulic_System::set_system_per_file(const string global_file){
 		//input the material parameters
 		this->material_params.set_filename(this->global_parameters.material_file);
 		this->material_params.read_values_per_file();
+
+		// REVIEW
+		if (this->global_parameters.GlobNofRV!=0) {
+			//input the material parameters
+			this->material_params.set_filename(this->global_parameters.material_file);
+			this->material_params.read_values_per_file();
+		}
+
+		//input the conductivity params
+		this->conductivity_params.set_filename(this->global_parameters.conductivity_file);
+		this->conductivity_params.read_values_per_file();
+
+		//input the porosity params
+		this->porosity_params.set_filename(this->global_parameters.porosity_file);
+		this->porosity_params.read_values_per_file();
+
+		//input for heat conductivity params
 
 		//input the observation points
 		this->obs_point_managment.input_obs_point(this->global_parameters.obs_point_file);
@@ -153,10 +176,18 @@ void Hyd_Hydraulic_System::set_system_per_file(const string global_file){
 
 		//allocate it
 		this->allocate_floodplain_models();
-		//init and set river model models with parser
+		//init and set floodplain model models with parser
 		this->input_floodplains_models(global_file);
 		//check the approximate memory requirement for the fp-models
 		this->calculate_approx_memory_fpmodels();
+		Hyd_Multiple_Hydraulic_Systems::check_stop_thread_flag();
+
+		//allocate it
+		this->allocate_groundwater_models();
+		//init and set groundwater model models with parser
+		this->input_groundwater_models(global_file);
+		//check the approximate memory requirement for the gw-models
+		this->calculate_approx_memory_gwmodels();
 		Hyd_Multiple_Hydraulic_Systems::check_stop_thread_flag();
 
 		//allocate it
@@ -215,6 +246,10 @@ void Hyd_Hydraulic_System::set_system_per_database(const bool modul_extern_start
 
 		//input the material parameters
 		this->material_params.matparams_per_database(&this->database);
+		//input the conductivity parameters
+		this->conductivity_params.conparams_per_database(&this->database);
+		//input the porosity parameters
+		this->porosity_params.porparams_per_database(&this->database);
 		Hyd_Multiple_Hydraulic_Systems::check_stop_thread_flag();
 		//input observation points
 		this->obs_point_managment.input_obs_point(&this->database);
@@ -279,6 +314,17 @@ void Hyd_Hydraulic_System::set_system_per_database(const bool modul_extern_start
 		this->allocate_floodplain_models();
 		//input the river models per database
 		this->input_floodplains_models(&results, &this->database, false);
+		Hyd_Multiple_Hydraulic_Systems::check_stop_thread_flag();
+
+		//groundwater models
+		this->global_parameters.GlobNofGW = Hyd_Model_Groundwater::select_relevant_model_database(&results);
+		//allocate gw-models
+		this->allocate_groundwater_models();
+		//input the groundwater models per database
+		this->input_groundwater_models(&results, &this->database, false);
+		if (this->global_parameters.GlobNofGW > 0) {
+			this->global_parameters.set_gw_model_applied(true);
+		}
 		Hyd_Multiple_Hydraulic_Systems::check_stop_thread_flag();
 
 		//coast model
@@ -478,6 +524,11 @@ void Hyd_Hydraulic_System::import_basesystem_file2db(const string global_file){
 		this->global_parameters.transfer_globals_file2database_table(&this->database, global_file);
 		//input the material parameters
 		this->material_params.transfer_materialparams_file2database_table(&this->database,this->global_parameters.material_file);
+		//input the conductivity parameters
+		this->conductivity_params.transfer_conductivityparams_file2database_table(&this->database, this->global_parameters.conductivity_file);
+		//input the porosity parameters
+		this->porosity_params.transfer_porosityparams_file2database_table(&this->database, this->global_parameters.porosity_file);
+
 		Hyd_Multiple_Hydraulic_Systems::check_stop_thread_flag();
 
 		//observation points
@@ -545,6 +596,14 @@ void Hyd_Hydraulic_System::import_basesystem_file2db(const string global_file){
 		Hyd_Multiple_Hydraulic_Systems::check_stop_thread_flag();
 
 		//allocate it
+		this->allocate_groundwater_models();
+		//init and set groundwater model models with parser
+		this->input_groundwater_models(global_file);
+		//transfer it to the database
+		this->transfer_groundwatermodel_data2database(&this->database);
+		Hyd_Multiple_Hydraulic_Systems::check_stop_thread_flag();
+
+		//allocate it
 		this->allocate_coast_model();
 		//init and set river model models with parser
 		this->input_coast_model(global_file);
@@ -572,6 +631,14 @@ void Hyd_Hydraulic_System::import_new_hydraulic_boundary_sz2database(void){
 		for(int i=0; i< this->global_parameters.GlobNofFP;i++){
 			this->my_fpmodels[i].transfer_hydraulic_boundary_sz2database(&this->database);
 			Hyd_Multiple_Hydraulic_Systems::check_stop_thread_flag();
+		}
+		//groundwater models REVIEW
+		if (this->global_parameters.gwmodel_applied == true)
+		{
+			for (int i = 0; i < this->global_parameters.GlobNofGW; i++) {
+				this->my_gwmodels[i].transfer_hydraulic_boundary_sz2database(&this->database);
+				Hyd_Multiple_Hydraulic_Systems::check_stop_thread_flag();
+			}
 		}
 		//coast model
 		if(this->global_parameters.coastmodel_applied==true){
@@ -613,6 +680,8 @@ void Hyd_Hydraulic_System::create_hyd_database_tables(void){
 		Hyd_Boundary_Szenario_Management::create_table(&this->database);
 		Hyd_Param_Global::create_table(&this->database);
 		Hyd_Param_Material::create_table(&this->database);
+		Hyd_Param_Conductivity::create_table(&this->database);
+		Hyd_Param_Porosity::create_table(&this->database);
 		Hyd_Observation_Point_Manager::create_table(&this->database);
 
 		//river model
@@ -626,7 +695,7 @@ void Hyd_Hydraulic_System::create_hyd_database_tables(void){
 		_Hyd_River_Profile_Type::create_profile_point_table(&this->database);
 		_Hyd_River_Profile::create_bound2profile_view(&this->database);
 
-		//floodplan model
+		//floodplain model
 		Hyd_Model_Floodplain::create_table(&this->database);
 		//floodplain elements
 		Hyd_Element_Floodplain::create_table(&this->database);
@@ -637,8 +706,20 @@ void Hyd_Hydraulic_System::create_hyd_database_tables(void){
 		Hyd_Floodplain_Polysegment::create_table(&this->database);
 		Hyd_Floodplain_Polygon::create_table(&this->database);
 
+		//groundwater model
+		Hyd_Model_Groundwater::create_table(&this->database);
+		//groundwater elements
+		Hyd_Element_Groundwater::create_table(&this->database);
+		Hyd_Element_Groundwater::create_element_boundary_table(&this->database);
+		Hyd_Element_Groundwater::create_bound2elems_view(&this->database);
+
+		//geometrical structures
+		Hyd_Groundwater_Polysegment::create_table(&this->database);
+		Hyd_Groundwater_Polygon::create_table(&this->database);
+
 		//instationary boundary conditions
 		Hyd_Instationary_Boundary::create_table(&this->database);
+		Hyd_Instationary_Boundary_GW::create_table(&this->database);
 
 		//user defined couplings
 		Hyd_Coupling_RV2RV_Diversion::create_table(&this->database);
@@ -650,6 +731,9 @@ void Hyd_Hydraulic_System::create_hyd_database_tables(void){
 		//floodplain
 		Hyd_Element_Floodplain::create_erg_table(&this->database);
 		Hyd_Element_Floodplain::create_erg_instat_table(&this->database);
+		//groundwater
+		Hyd_Element_Groundwater::create_erg_table(&this->database);
+		Hyd_Element_Groundwater::create_erg_instat_table(&this->database);
 		//river
 		_Hyd_River_Profile::create_erg_table(&this->database);
 		_Hyd_River_Profile::create_erg_instat_table(&this->database);
@@ -657,6 +741,7 @@ void Hyd_Hydraulic_System::create_hyd_database_tables(void){
 
 		//coupling
 		Hyd_Coupling_RV2FP_Merged::create_max_h_table(&this->database);
+		
 
 
 
@@ -684,7 +769,8 @@ void Hyd_Hydraulic_System::check_hyd_database_tables(void){
 			Hyd_Boundary_Szenario_Management::set_table(&this->database);
 			Hyd_Param_Global::set_table(&this->database);
 			Hyd_Param_Material::set_table(&this->database);
-
+			Hyd_Param_Conductivity::set_table(&this->database);
+			Hyd_Param_Porosity::set_table(&this->database);
 			//floodplan model
 			Hyd_Model_Floodplain::set_table(&this->database);
 			//floodplain elements
@@ -708,6 +794,10 @@ void Hyd_Hydraulic_System::check_hyd_database_tables(void){
 			cout << "Check hydraulic material data database table..." << endl ;
 			Sys_Common_Output::output_hyd->output_txt(&cout,false, false);
 			Hyd_Param_Material::set_table(&this->database);
+			Hyd_Multiple_Hydraulic_Systems::check_stop_thread_flag();
+			Hyd_Param_Porosity::set_table(&this->database);
+			Hyd_Multiple_Hydraulic_Systems::check_stop_thread_flag();
+			Hyd_Param_Conductivity::set_table(&this->database);
 			Hyd_Multiple_Hydraulic_Systems::check_stop_thread_flag();
 
 			cout << "Check observation point data database table..." << endl ;
@@ -769,6 +859,30 @@ void Hyd_Hydraulic_System::check_hyd_database_tables(void){
 			Hyd_Multiple_Hydraulic_Systems::check_stop_thread_flag();
 			Hyd_Floodplain_Polygon::set_table(&this->database);
 
+			//groundwater model
+			cout << "Check general groundwater model data database table..." << endl;
+			Sys_Common_Output::output_hyd->output_txt(&cout, false, false);
+			Hyd_Model_Groundwater::set_table(&this->database);
+			//groundwater elements
+			cout << "Check groundwater element boundary database table..." << endl;
+			Sys_Common_Output::output_hyd->output_txt(&cout, false, false);
+			Hyd_Multiple_Hydraulic_Systems::check_stop_thread_flag();
+			Hyd_Element_Groundwater::set_table(&this->database);
+			cout << "Check groundwater element boundary database table..." << endl;
+			Sys_Common_Output::output_hyd->output_txt(&cout, false, false);
+			Hyd_Multiple_Hydraulic_Systems::check_stop_thread_flag();
+			Hyd_Element_Groundwater::set_element_boundary_table(&this->database);
+
+			//geometrical structures
+			cout << "Check polysegment data database table..." << endl;
+			Sys_Common_Output::output_hyd->output_txt(&cout, false, false);
+			Hyd_Multiple_Hydraulic_Systems::check_stop_thread_flag();
+			Hyd_Groundwater_Polysegment::set_table(&this->database);
+			cout << "Check groundwater polygon data database table..." << endl;
+			Sys_Common_Output::output_hyd->output_txt(&cout, false, false);
+			Hyd_Multiple_Hydraulic_Systems::check_stop_thread_flag();
+			Hyd_Groundwater_Polygon::set_table(&this->database);
+
 			//instationary boundary conditions
 			cout << "Check global instationary boundary data database table..." << endl ;
 			Sys_Common_Output::output_hyd->output_txt(&cout,false, false);
@@ -779,6 +893,17 @@ void Hyd_Hydraulic_System::check_hyd_database_tables(void){
 			Sys_Common_Output::output_hyd->output_txt(&cout,false, false);
 			Hyd_Multiple_Hydraulic_Systems::check_stop_thread_flag();
 			Hyd_Instationary_Boundary::set_point_table(&this->database);
+
+			//instationary boundary conditions groundwater
+			cout << "Check groundwater instationary boundary data database table..." << endl;
+			Sys_Common_Output::output_hyd->output_txt(&cout, false, false);
+			Hyd_Instationary_Boundary_GW::set_table(&this->database);
+
+			//instationary boundary conditions groundwater
+			cout << "Check groundwater instationary boundary point data database table..." << endl;
+			Sys_Common_Output::output_hyd->output_txt(&cout, false, false);
+			Hyd_Multiple_Hydraulic_Systems::check_stop_thread_flag();
+			Hyd_Instationary_Boundary_GW::set_point_table(&this->database);
 
 			//user defined couplings
 			cout << "Check diversion channel data database table..." << endl ;
@@ -807,6 +932,17 @@ void Hyd_Hydraulic_System::check_hyd_database_tables(void){
 			Sys_Common_Output::output_hyd->output_txt(&cout, false, false);
 			Hyd_Multiple_Hydraulic_Systems::check_stop_thread_flag();
 			Hyd_Element_Floodplain::set_erg_instat_table(&this->database);
+
+			//result tables
+			cout << "Check max-result database table (groundwater)..." << endl;
+			Sys_Common_Output::output_hyd->output_txt(&cout, false, false);
+			Hyd_Multiple_Hydraulic_Systems::check_stop_thread_flag();
+			Hyd_Element_Groundwater::set_erg_table(&this->database);
+
+			cout << "Check instationary result database table (groundwater)..." << endl;
+			Sys_Common_Output::output_hyd->output_txt(&cout, false, false);
+			Hyd_Multiple_Hydraulic_Systems::check_stop_thread_flag();
+			Hyd_Element_Groundwater::set_erg_instat_table(&this->database);
 
 			//result tables
 			cout << "Check max-result database table (river)..." << endl ;
@@ -869,25 +1005,37 @@ void Hyd_Hydraulic_System::delete_data_hyd_database_tables(void){
 		//global
 		Hyd_Param_Global::delete_data_in_table(&this->database);
 		Hyd_Param_Material::delete_data_in_table(&this->database);
+		//Hyd_Param_Conductivity::delete_data_in_table(&this->database);
+		//Hyd_Param_Porosity::delete_data_in_table(&this->database);
 
 		//delete data of the floodplain tables, also appending tables
 		Hyd_Model_Floodplain::delete_data_in_table(&this->database);
+		//delete data of the groundwater tables, also appending tables
+		Hyd_Model_Groundwater::delete_data_in_table(&this->database);
 	}
 	else{
 		//global
 		Hyd_Param_Global::delete_data_in_table(&this->database);
 		Hyd_Param_Material::delete_data_in_table(&this->database);
+		Hyd_Param_Conductivity::delete_data_in_table(&this->database);
+		Hyd_Param_Porosity::delete_data_in_table(&this->database);
 		Hyd_Observation_Point_Manager::delete_data_in_table(&this->database);
 
 		//delete data of the river tables, also appending tables
 		Hyd_Model_River::delete_data_in_table(&this->database);
 		//delete data of the floodplain tables, also appending tables
 		Hyd_Model_Floodplain::delete_data_in_table(&this->database);
+		//delete data of the groundwater tables, also appending tables
+		Hyd_Model_Groundwater::delete_data_in_table(&this->database);
 
 		//polygons
 		Hyd_Floodplain_Polygon::delete_data_in_table(&this->database);
 		//polysegments
 		Hyd_Floodplain_Polysegment::delete_data_in_table(&this->database);
+		//polygons
+		Hyd_Groundwater_Polygon::delete_data_in_table(&this->database);
+		//polysegments
+		Hyd_Groundwater_Polysegment::delete_data_in_table(&this->database);
 		//instationary boundary curves
 		Hyd_Instationary_Boundary::delete_data_in_table(&this->database);
 		//user defined couplings
@@ -916,24 +1064,36 @@ void Hyd_Hydraulic_System::close_hyd_database_tables(void){
 		Hyd_Boundary_Szenario_Management::close_table();
 		Hyd_Param_Global::close_table();
 		Hyd_Param_Material::close_table();
+		//Hyd_Param_Porosity::close_table();
+		//Hyd_Param_Conductivity::close_table();
 		//floodplain models; here also appending tables are closed
 		Hyd_Model_Floodplain::close_table();
+		//groundwater models; here also appending tables are closed
+		//Hyd_Model_Groundwater::close_table();
 	}
 	else{
 		//global
 		Hyd_Boundary_Szenario_Management::close_table();
 		Hyd_Param_Global::close_table();
 		Hyd_Param_Material::close_table();
+		Hyd_Param_Conductivity::close_table();
+		Hyd_Param_Porosity::close_table();
 		//river models; here also appending tables are closed
 		Hyd_Model_River::close_table();
 		//floodplain models; here also appending tables are closed
 		Hyd_Model_Floodplain::close_table();
+		//groundwater models; here also appending tables are closed
+		Hyd_Model_Groundwater::close_table();
 		Hyd_Observation_Point_Manager::close_table();
 
 		//polygons
 		Hyd_Floodplain_Polygon::close_table();
 		//polysegments
 		Hyd_Floodplain_Polysegment::close_table();
+		//polygons
+		Hyd_Groundwater_Polygon::close_table();
+		//polysegments
+		Hyd_Groundwater_Polysegment::close_table();
 		//instationary boundary curves
 		Hyd_Instationary_Boundary::close_table();
 		//user defined couplings
@@ -952,6 +1112,7 @@ void Hyd_Hydraulic_System::close_hyd_database_tables(void){
 void Hyd_Hydraulic_System::switch_applied_flags_results(QSqlDatabase *ptr_database, const _sys_system_id id, const bool flag){
 	_Hyd_River_Profile::switch_applied_flag_erg_table(ptr_database, id, flag);
 	Hyd_Element_Floodplain::switch_applied_flag_erg_table(ptr_database, id, flag);
+	Hyd_Element_Groundwater::switch_applied_flag_erg_table(ptr_database, id, flag);
 	_Hyd_Coupling_Dikebreak::switch_applied_flag_erg_table(ptr_database, id, flag);
 	Hyd_Coupling_RV2FP_Merged::switch_applied_flag_max_h_table(ptr_database, id, flag);
 }
@@ -959,6 +1120,7 @@ void Hyd_Hydraulic_System::switch_applied_flags_results(QSqlDatabase *ptr_databa
 void Hyd_Hydraulic_System::switch_applied_flags_results(QSqlDatabase *ptr_database, const _sys_system_id id, const bool flag, const int hyd_sc){
 	_Hyd_River_Profile::switch_applied_flag_erg_table(ptr_database, id, hyd_sc, flag);
 	Hyd_Element_Floodplain::switch_applied_flag_erg_table(ptr_database, id, hyd_sc, flag);
+	Hyd_Element_Groundwater::switch_applied_flag_erg_table(ptr_database, id, hyd_sc, flag);
 	_Hyd_Coupling_Dikebreak::switch_applied_flag_erg_table(ptr_database, id, hyd_sc, flag);
 	Hyd_Coupling_RV2FP_Merged::switch_applied_flag_max_h_table(ptr_database, id, hyd_sc, flag);
 }
@@ -968,6 +1130,8 @@ void Hyd_Hydraulic_System::copy_results(QSqlDatabase *ptr_database, const _sys_s
 	_Hyd_River_Profile::copy_instat_results(ptr_database, src, dest);
 	Hyd_Element_Floodplain::copy_results(ptr_database, src, dest);
 	Hyd_Element_Floodplain::copy_instat_results(ptr_database, src, dest);
+	Hyd_Element_Groundwater::copy_results(ptr_database, src, dest);
+	Hyd_Element_Groundwater::copy_instat_results(ptr_database, src, dest);
 	_Hyd_Coupling_Dikebreak::copy_results(ptr_database, src, dest);
 	Hyd_Coupling_RV2FP_Merged::copy_results(ptr_database, src, dest);
 }
@@ -981,6 +1145,11 @@ bool Hyd_Hydraulic_System::check_hyd_results_calculated(QSqlDatabase *ptr_databa
 
     //count relevant elemts
     if(Hyd_Element_Floodplain::check_calc_in_erg_table(&model, ptr_database, id, bound_sz, break_sz ,like_flag)==true){
+		return true;
+	}
+
+	//count relevant elemts
+	if (Hyd_Element_Groundwater::check_calc_in_erg_table(&model, ptr_database, id, bound_sz, like_flag) == true) {
 		return true;
 	}
 
@@ -999,6 +1168,11 @@ bool Hyd_Hydraulic_System::check_hyd_instat_results_calculated(QSqlDatabase *ptr
 		return true;
 	}
 
+	//count relevant elemts
+	if (Hyd_Element_Groundwater::check_calc_in_instat_erg_table(&model, ptr_database, id, bound_sz, like_flag) == true) {
+		return true;
+	}
+
 	return false;
 }
 //Set a new hydraulic boundary scenario id to the hydraulic system and all appendent models
@@ -1011,6 +1185,12 @@ void Hyd_Hydraulic_System::set_new_hyd_bound_sz_id(Hyd_Boundary_Szenario new_sz)
 	//floodplain models
 	for(int i=0; i< this->global_parameters.GlobNofFP; i++){
 		this->my_fpmodels[i].set_new_hyd_bound_sz_id(this->hyd_sz);
+	}
+	//groundwater models
+	if (this->global_parameters.gwmodel_applied == true) {
+		for (int i = 0; i < this->global_parameters.GlobNofGW; i++) {
+			this->my_gwmodels[i].set_new_hyd_bound_sz_id(this->hyd_sz);
+		}
 	}
 	//coast model
 	if(this->global_parameters.coastmodel_applied==true){
@@ -1042,6 +1222,12 @@ void Hyd_Hydraulic_System::output_glob_models(void){
 	//output the material parameter
 	this->material_params.output_members();
 
+	//output the conductivity parameter
+	this->conductivity_params.output_members();
+
+	//output the material parameter
+	this->porosity_params.output_members();
+
 	//river models
 	if(this->global_parameters.GlobNofRV>0){
 		cout << "Rivermodel information..." << endl ;
@@ -1071,6 +1257,16 @@ void Hyd_Hydraulic_System::output_glob_models(void){
 			this->my_fpmodels[j].output_members();
 		}
 	}
+
+	//groundwater models
+	if (this->global_parameters.GlobNofGW > 0) {
+		cout << "Groundwatermodel information ..." << endl;
+		Sys_Common_Output::output_hyd->output_txt(&cout);
+		for (int j = 0; j < this->global_parameters.GlobNofGW; j++) {
+			this->my_gwmodels[j].output_members();
+		}
+	}
+
 	//coast model
 	if(this->global_parameters.coastmodel_applied==true){
 		cout << "Coastmodel information ..." << endl ;
@@ -1110,6 +1306,14 @@ have to be done before this check.
 		ostringstream info;
 		info << "Number floodplain model(s) system "<< this->calc_number<<": "<<this->global_parameters.GlobNofFP<< endl;
 		info << "Number floodplain model(s) system "<< compare_system->calc_number<<": "<<compare_system->global_parameters.GlobNofFP<< endl;
+		msg.make_second_info(info.str());
+		throw msg;
+	}
+	if (this->global_parameters.GlobNofGW != compare_system->global_parameters.GlobNofGW) {
+		Error msg = this->set_error(1);
+		ostringstream info;
+		info << "Number groundwater model(s) system " << this->calc_number << ": " << this->global_parameters.GlobNofGW << endl;
+		info << "Number groundwater model(s) system " << compare_system->calc_number << ": " << compare_system->global_parameters.GlobNofGW << endl;
 		msg.make_second_info(info.str());
 		throw msg;
 	}
@@ -1164,6 +1368,9 @@ have to be done before this check.
 		for(int i=0; i< this->global_parameters.GlobNofFP; i++){
 			this->my_fpmodels[i].compare_models(&compare_system->my_fpmodels[i]);
 		}
+		for (int i = 0; i < this->global_parameters.GlobNofGW; i++) {
+			this->my_gwmodels[i].compare_models(&compare_system->my_gwmodels[i]);
+		}
 	}
 	catch(Error msg){
 		ostringstream info;
@@ -1173,14 +1380,14 @@ have to be done before this check.
 		throw msg;
 	}
 }
-///Compare the equality of two hydraulic systems in terms of model numbers; further the models are compared
+///Compare the equality of two hydraulic systems in terms of model numbers; further the models are compared REVIEW
 void Hyd_Hydraulic_System::transfer_glob_elem_id(Hyd_Hydraulic_System *to_system){
 	for (int i = 0; i < this->global_parameters.GlobNofFP; i++) {
 		this->my_fpmodels[i].transfer_glob_elem_id_fp(&to_system->my_fpmodels[i]);
 	}
 
 }
-//Clone the hydraulic system after initialisation TODO
+//Clone the hydraulic system after initialisation
 void Hyd_Hydraulic_System::clone_system(Hyd_Hydraulic_System *system){
 	ostringstream cout;
 	ostringstream prefix;
@@ -1193,6 +1400,8 @@ void Hyd_Hydraulic_System::clone_system(Hyd_Hydraulic_System *system){
 		this->set_start_warning_number();
 		this->global_parameters=system->global_parameters;
 		this->material_params=system->material_params;
+		this->conductivity_params = system->conductivity_params;
+		this->porosity_params = system->porosity_params;
 		this->hyd_sz=system->hyd_sz;
 		this->system_id=system->system_id;
 		//allocate rv-models
@@ -1236,6 +1445,22 @@ void Hyd_Hydraulic_System::clone_system(Hyd_Hydraulic_System *system){
 		}
 		Sys_Common_Output::output_hyd->rewind_userprefix();
 
+		//allocate gw-models
+		this->allocate_groundwater_models();
+		//copy groundwater
+		cout << "Clone groundwater models..." << endl;
+		Sys_Common_Output::output_hyd->output_txt(&cout);
+		prefix << "GW> ";
+		Sys_Common_Output::output_hyd->set_userprefix(&prefix);
+		for (int i = 0; i < this->global_parameters.get_number_groundwater_model(); i++) {
+			cout << "Clone groundwater model " << i << "..." << endl;
+			Sys_Common_Output::output_hyd->output_txt(&cout);
+			this->my_gwmodels[i].clone_model(&system->my_gwmodels[i], &this->conductivity_params, &this->porosity_params);
+			this->my_gwmodels[i].init_solver(&this->global_parameters);
+			Hyd_Multiple_Hydraulic_Systems::check_stop_thread_flag();
+		}
+		Sys_Common_Output::output_hyd->rewind_userprefix();
+
 		//couplings
 		prefix << "COUP> ";
 		Sys_Common_Output::output_hyd->set_userprefix(&prefix);
@@ -1243,7 +1468,7 @@ void Hyd_Hydraulic_System::clone_system(Hyd_Hydraulic_System *system){
 		Sys_Common_Output::output_hyd->rewind_userprefix();
 
 		//obs points
-		this->obs_point_managment.clone_obs_points(&(system->obs_point_managment),  this->my_rvmodels,  this->my_fpmodels);
+		this->obs_point_managment.clone_obs_points(&(system->obs_point_managment),  this->my_rvmodels,  this->my_fpmodels, this->my_gwmodels);
 	}
 	catch(Error msg){
 		Sys_Common_Output::output_hyd->rewind_userprefix();
@@ -1277,7 +1502,7 @@ void Hyd_Hydraulic_System::init_models(const bool modul_extern_startet){
 		this->set_start_warning_number();
 
 		//connect river
-		this->connect_rivers(&this->material_params);
+		this->connect_rivers(&this->material_params, &this->conductivity_params);
 		Hyd_Multiple_Hydraulic_Systems::check_stop_thread_flag();
 		//make the coupling for the diversion channel
 		this->coupling_managment.set_pointer_rv2rv_diversion(this->my_rvmodels, this->global_parameters.GlobNofRV);
@@ -1287,6 +1512,8 @@ void Hyd_Hydraulic_System::init_models(const bool modul_extern_startet){
 		Hyd_Multiple_Hydraulic_Systems::check_stop_thread_flag();
 		//connect floodplains
 		this->connect_floodplains();
+		//connect groundwaters
+		this->connect_groundwaters();
 
 		Hyd_Multiple_Hydraulic_Systems::check_stop_thread_flag();
 
@@ -1297,7 +1524,7 @@ void Hyd_Hydraulic_System::init_models(const bool modul_extern_startet){
 		this->check_models();
 
 		//init the observation point
-		this->obs_point_managment.init_obs_points(this->global_parameters.GlobNofRV, this->my_rvmodels, this->global_parameters.GlobNofFP, this->my_fpmodels, this->global_parameters.GlobTNof, this->global_parameters.GlobNofITS+1);
+		this->obs_point_managment.init_obs_points(this->global_parameters.GlobNofGW, this->my_gwmodels, this->global_parameters.GlobNofRV, this->my_rvmodels, this->global_parameters.GlobNofFP, this->my_fpmodels, this->global_parameters.GlobTNof, this->global_parameters.GlobNofITS+1);
 
 		this->set_final_warning_number();
 	}
@@ -1323,7 +1550,7 @@ void Hyd_Hydraulic_System::init_temp_models(const bool modul_extern_startet) {
 		this->set_start_warning_number();
 
 		//connect river
-		this->connect_rivers(&this->material_params);
+		this->connect_rivers(&this->material_params,&this->conductivity_params);
 		Hyd_Multiple_Hydraulic_Systems::check_stop_thread_flag();
 		this->connect_temperature_model();
 
@@ -1436,6 +1663,49 @@ void Hyd_Hydraulic_System::output_setted_members(void){
 			
 		}
 	}
+
+	//groundwater models (console)
+	if (this->global_parameters.GlobNofGW > 0) {
+		cout << "Setted members of the Groundwatermodel(s)..." << endl;
+		Sys_Common_Output::output_hyd->output_txt(&cout);
+		for (int j = 0; j < this->global_parameters.GlobNofGW; j++) {
+			this->my_gwmodels[j].output_setted_members();
+		}
+	}
+	//groundwater models file output
+	if (this->file_output_required == true) {
+		if (this->global_parameters.GlobNofGW > 0) {
+			cout << "Setted members of the Groundwatermodel(s) to file..." << endl;
+			Sys_Common_Output::output_hyd->output_txt(&cout);
+			if (this->global_parameters.get_output_flags().tecplot_2d_required == true) {
+				cout << "for Tecplot..." << endl;
+				Sys_Common_Output::output_hyd->output_txt(&cout);
+				for (int j = 0; j < this->global_parameters.GlobNofGW; j++) {
+					this->my_gwmodels[j].output_geometrie2tecplot();
+				}
+			}
+			if (this->global_parameters.get_output_flags().paraview_2d_required == true) {
+				cout << "for ParaView..." << endl;
+				Sys_Common_Output::output_hyd->output_txt(&cout);
+				for (int j = 0; j < this->global_parameters.GlobNofGW; j++) {
+					this->my_gwmodels[j].output_geometrie2paraview();
+				}
+			}
+			if (this->global_parameters.get_output_flags().bluekenue_2d_required == true) {
+				cout << "for BlueKenue..." << endl;
+				Sys_Common_Output::output_hyd->output_txt(&cout);
+				for (int j = 0; j < this->global_parameters.GlobNofGW; j++) {
+					this->my_gwmodels[j].output_geometrie2bluekenue();
+				}
+			}
+			if (this->global_parameters.get_output_flags().tecplot_2d_required == false && this->global_parameters.get_output_flags().paraview_2d_required == false && this->global_parameters.get_output_flags().bluekenue_2d_required == false) {
+				cout << "No output required..." << endl;
+				Sys_Common_Output::output_hyd->output_txt(&cout);
+			}
+
+		}
+	}
+
 	//coast models tecplot output
 	if(this->file_output_required==true){
 		if(this->global_parameters.coastmodel_applied==true){
@@ -1521,7 +1791,6 @@ void Hyd_Hydraulic_System::init_solver(void){
 		throw msg;
 	}
 	//floodplain models
-	//2DGPU
 	try{
 		this->set_start_warning_number();
 		//set the parameters for Hyd_Model_Floodplain
@@ -1531,7 +1800,6 @@ void Hyd_Hydraulic_System::init_solver(void){
 			//init the solver
 			cout<<"Initialize the solver for floodplain model ..."<< endl;
 			Sys_Common_Output::output_hyd->output_txt(&cout);
-			//2DGPU
 			this->my_fpmodels[j].init_solver(&this->global_parameters);
 
 			Sys_Common_Output::output_hyd->rewind_userprefix();
@@ -1540,6 +1808,28 @@ void Hyd_Hydraulic_System::init_solver(void){
 		this->set_final_warning_number();
 	}
 	catch(Error msg){
+		this->set_final_warning_number();
+		Sys_Common_Output::output_hyd->rewind_userprefix();
+		throw msg;
+	}
+	//groundwater models
+	try {
+		this->set_start_warning_number();
+		//set the parameters for Hyd_Model_Groundwater
+		for (int j = 0; j < this->global_parameters.GlobNofGW; j++) {
+			prefix << "GW_" << j << "> ";
+			Sys_Common_Output::output_hyd->set_userprefix(prefix.str());
+			//init the solver
+			cout << "Initialize the solver for groundwater model ..." << endl;
+			Sys_Common_Output::output_hyd->output_txt(&cout);
+			this->my_gwmodels[j].init_solver(&this->global_parameters);
+
+			Sys_Common_Output::output_hyd->rewind_userprefix();
+			prefix.str("");
+		}
+		this->set_final_warning_number();
+	}
+	catch (Error msg) {
 		this->set_final_warning_number();
 		Sys_Common_Output::output_hyd->rewind_userprefix();
 		throw msg;
@@ -1780,16 +2070,16 @@ void Hyd_Hydraulic_System::output_final_model_statistics(const bool all_output){
 		ostringstream cout;
 		this->output_final_system_statistics();
 		//river models
-		if (this->global_parameters.GlobNofRV > 0) {
-			cout << "Statistics of the Rivermodel(s)..." << endl;
+		if(this->global_parameters.GlobNofRV>0){
+			cout << "Statistics of the Rivermodel(s)..." << endl ;
 			Sys_Common_Output::output_hyd->output_txt(&cout);
-			for (int j = 0; j < this->global_parameters.GlobNofRV; j++) {
+			for (int j =0; j < this->global_parameters.GlobNofRV; j++){
 				this->my_rvmodels[j].output_final();
 			}
-			if (this->file_output_required == true && all_output == true) {
-				cout << "Output maximum results of the Rivermodel(s) to file..." << endl;
+			if(this->file_output_required==true && all_output==true){
+				cout << "Output maximum results of the Rivermodel(s) to file..." << endl ;
 				Sys_Common_Output::output_hyd->output_txt(&cout);
-
+				
 				if (this->global_parameters.get_output_flags().tecplot_1d_required == true) {
 					cout << "for Tecplot..." << endl;
 					Sys_Common_Output::output_hyd->output_txt(&cout);
@@ -1817,24 +2107,24 @@ void Hyd_Hydraulic_System::output_final_model_statistics(const bool all_output){
 				}
 
 			}
-			if (this->database_is_set == true && all_output == true) {
-				cout << "Output maximum results of the Rivermodel(s) to database..." << endl;
+			if(this->database_is_set==true && all_output==true){
+				cout << "Output maximum results of the Rivermodel(s) to database..." << endl ;
 				Sys_Common_Output::output_hyd->output_txt(&cout);
-				for (int j = 0; j < this->global_parameters.GlobNofRV; j++) {
+				for (int j =0; j < this->global_parameters.GlobNofRV; j++){
 					this->my_rvmodels[j].output_result_max2database(&this->database, this->break_sz);
 				}
 			}
 		}
 
 		//floodplain models 
-		if (this->global_parameters.GlobNofFP > 0) {
-			cout << "Statistics of the Floodplainmodel(s)..." << endl;
+		if(this->global_parameters.GlobNofFP>0){
+			cout << "Statistics of the Floodplainmodel(s)..." << endl ;
 			Sys_Common_Output::output_hyd->output_txt(&cout);
-			for (int j = 0; j < this->global_parameters.GlobNofFP; j++) {
+			for (int j =0; j < this->global_parameters.GlobNofFP; j++){
 				this->my_fpmodels[j].output_final();
 			}
-			if (this->file_output_required == true && all_output == true) {
-				cout << "Output maximum results of the Floodplainmodel(s) to file..." << endl;
+			if(this->file_output_required==true && all_output==true){
+				cout << "Output maximum results of the Floodplainmodel(s) to file..." << endl ;
 				Sys_Common_Output::output_hyd->output_txt(&cout);
 				if (this->global_parameters.get_output_flags().tecplot_2d_required == true) {
 					cout << "for Tecplot..." << endl;
@@ -1862,47 +2152,106 @@ void Hyd_Hydraulic_System::output_final_model_statistics(const bool all_output){
 					Sys_Common_Output::output_hyd->output_txt(&cout);
 				}
 			}
+			if(this->database_is_set==true && all_output==true){
+				//delete the data
+				Hyd_Element_Floodplain::delete_data_in_erg_table(&this->database,this->system_id, this->hyd_sz.get_id(),this->break_sz);
+				cout << "Output maximum results of the Floodplainmodel(s) to database..." << endl ;
+				Sys_Common_Output::output_hyd->output_txt(&cout);
+				bool was_output=false;
+				bool must_output=false;
+
+				for (int j =0; j < this->global_parameters.GlobNofFP; j++){
+					if(j==this->global_parameters.GlobNofFP-1 && was_output==false){
+						must_output=true;
+					}
+					this->my_fpmodels[j].output_result_max2database(&this->database, this->break_sz,&was_output, must_output);
+				}
+			}
+		}
+
+		//groundwater models 
+		if (this->global_parameters.GlobNofGW > 0) {
+			cout << "Statistics of the Groundwatermodel(s)..." << endl;
+			Sys_Common_Output::output_hyd->output_txt(&cout);
+			for (int j = 0; j < this->global_parameters.GlobNofGW; j++) {
+				this->my_gwmodels[j].output_final();
+			}
+			if (this->file_output_required == true && all_output == true) {
+				cout << "Output maximum results of the Groundwatermodel(s) to file..." << endl;
+				Sys_Common_Output::output_hyd->output_txt(&cout);
+				if (this->global_parameters.get_output_flags().tecplot_2d_required == true) {
+					cout << "for Tecplot..." << endl;
+					Sys_Common_Output::output_hyd->output_txt(&cout);
+					for (int j = 0; j < this->global_parameters.GlobNofGW; j++) {
+						this->my_gwmodels[j].output_result_max2tecplot();
+					}
+				}
+				if (this->global_parameters.get_output_flags().bluekenue_2d_required == true) {
+					cout << "for BlueKenue..." << endl;
+					Sys_Common_Output::output_hyd->output_txt(&cout);
+					for (int j = 0; j < this->global_parameters.GlobNofGW; j++) {
+						this->my_gwmodels[j].output_result_max2bluekenue();
+					}
+				}
+				if (this->global_parameters.get_output_flags().paraview_2d_required == true) {
+					cout << "for ParaView..." << endl;
+					Sys_Common_Output::output_hyd->output_txt(&cout);
+					for (int j = 0; j < this->global_parameters.GlobNofGW; j++) {
+						this->my_gwmodels[j].output_result_max2paraview();
+					}
+				}
+				if (this->global_parameters.get_output_flags().tecplot_2d_required == false && this->global_parameters.get_output_flags().paraview_2d_required == false) {
+					cout << "No output required..." << endl;
+					Sys_Common_Output::output_hyd->output_txt(&cout);
+				}
+			}
 			if (this->database_is_set == true && all_output == true) {
 				//delete the data
-				Hyd_Element_Floodplain::delete_data_in_erg_table(&this->database, this->system_id, this->hyd_sz.get_id(), this->break_sz);
-				cout << "Output maximum results of the Floodplainmodel(s) to database..." << endl;
+				Hyd_Element_Groundwater::delete_data_in_erg_table(&this->database, this->system_id, this->hyd_sz.get_id());
+				cout << "Output maximum results of the Groundwatermodel(s) to database..." << endl;
 				Sys_Common_Output::output_hyd->output_txt(&cout);
 				bool was_output = false;
 				bool must_output = false;
 
-				for (int j = 0; j < this->global_parameters.GlobNofFP; j++) {
-					if (j == this->global_parameters.GlobNofFP - 1 && was_output == false) {
+				for (int j = 0; j < this->global_parameters.GlobNofGW; j++) {
+					if (j == this->global_parameters.GlobNofGW - 1 && was_output == false) {
 						must_output = true;
 					}
-					this->my_fpmodels[j].output_result_max2database(&this->database, this->break_sz, &was_output, must_output);
+					this->my_gwmodels[j].output_result_max2database(&this->database, &was_output, must_output);
 				}
 			}
 		}
+
 		//couplings
 		this->coupling_managment.output_final_results();
 
-		if (this->database_is_set == true && all_output == true) {
-			this->coupling_managment.output_final_results(&this->database, this->hyd_sz.get_id(), this->break_sz);
-			this->coupling_managment.output_final_results_max_waterlevel(&this->database, this->hyd_sz.get_id(), this->break_sz);
+		if(this->database_is_set==true && all_output==true){
+			this->coupling_managment.output_final_results(&this->database, this->hyd_sz.get_id(),this->break_sz);
+			this->coupling_managment.output_final_results_max_waterlevel(&this->database, this->hyd_sz.get_id(),this->break_sz);
 		}
 
 		//observation points
-		if (this->file_output_required == true) {
-			string rv_buff = label::not_set;
-			string fp_buff = label::not_set;
+		if(this->file_output_required==true){
+			string rv_buff=label::not_set;
+			string fp_buff=label::not_set;
+			string gw_buff= label::not_set;
 			//output to tecplot
-			if (this->global_parameters.get_number_river_model() > 0) {
-				rv_buff = this->my_rvmodels[0].Param_RV.get_filename_result2file_1d_obs_point(hyd_label::tecplot);
+			if(this->global_parameters.get_number_river_model()>0){
+				rv_buff=this->my_rvmodels[0].Param_RV.get_filename_result2file_1d_obs_point(hyd_label::tecplot);
 				rv_buff += hyd_label::dat;
 			}
-			if (this->global_parameters.get_number_floodplain_model() > 0) {
-				fp_buff = this->my_fpmodels[0].Param_FP.get_filename_obs_point2file(hyd_label::tecplot);
+			if(this->global_parameters.get_number_floodplain_model()>0){
+				fp_buff=this->my_fpmodels[0].Param_FP.get_filename_obs_point2file(hyd_label::tecplot);
 				fp_buff += hyd_label::dat;
+			}
+			if (this->global_parameters.get_number_groundwater_model() > 0) {
+				gw_buff = this->my_gwmodels[0].Param_GW.get_filename_obs_point2file(hyd_label::tecplot);
+				gw_buff += hyd_label::dat;
 			}
 			cout << "Observation point data to file..." << endl;
 			Sys_Common_Output::output_hyd->output_txt(&cout);
 			if (this->global_parameters.get_output_flags().tecplot_1d_required == true) {
-				this->obs_point_managment.output_obs_points2tecplot_file(rv_buff, fp_buff);
+				this->obs_point_managment.output_obs_points2tecplot_file(rv_buff, fp_buff, gw_buff);
 			}
 			//output to csv
 			if (this->global_parameters.get_number_river_model() > 0) {
@@ -1911,10 +2260,13 @@ void Hyd_Hydraulic_System::output_final_model_statistics(const bool all_output){
 			if (this->global_parameters.get_number_floodplain_model() > 0) {
 				fp_buff = this->my_fpmodels[0].Param_FP.get_filename_obs_point2file(hyd_label::paraview);
 			}
-			if (this->global_parameters.get_output_flags().paraview_1d_required == true) {
-				this->obs_point_managment.output_obs_points2paraview_file(rv_buff, fp_buff);
+			if (this->global_parameters.get_number_groundwater_model() > 0) {
+				gw_buff = this->my_gwmodels[0].Param_GW.get_filename_obs_point2file(hyd_label::paraview);
 			}
-			if (this->global_parameters.get_output_flags().tecplot_1d_required == false && this->global_parameters.get_output_flags().paraview_1d_required == false) {
+			if (this->global_parameters.get_output_flags().paraview_1d_required == true) {
+				this->obs_point_managment.output_obs_points2paraview_file(rv_buff, fp_buff, gw_buff);
+			}
+			if(this->global_parameters.get_output_flags().tecplot_1d_required == false && this->global_parameters.get_output_flags().paraview_1d_required == false){
 				cout << "No observation point output required..." << endl;
 				Sys_Common_Output::output_hyd->output_txt(&cout);
 
@@ -2024,11 +2376,35 @@ string Hyd_Hydraulic_System::convert_model_type2txt(const _hyd_model_type type){
 		case(_hyd_model_type::FLOODPLAIN_MODEL):
 			txt=hyd_label::floodplain_model;
 			break;
+		case(_hyd_model_type::GROUNDWATER_MODEL):
+			txt = hyd_label::groundwater_model;
+			break;
 		case(_hyd_model_type::COAST_MODEL):
 			txt=hyd_label::coast_model;
 			break;
 		default:
 			txt=label::unknown_type;
+	}
+
+	return txt;
+}
+
+//For groundwater
+string Hyd_Hydraulic_System::convert_gwmodel_type2txt(const _hyd_model_type_gw type) {
+	string txt;
+
+	switch (type) {
+	case(_hyd_model_type_gw::GW_RIVER_MODEL):
+		txt = hyd_label::river_model;
+		break;
+	case(_hyd_model_type_gw::GW_FLOODPLAIN_MODEL):
+		txt = hyd_label::floodplain_model;
+		break;
+	case(_hyd_model_type_gw::GW_GROUNDWATER_MODEL):
+		txt = hyd_label::groundwater_model;
+		break;
+	default:
+		txt = label::unknown_type;
 	}
 
 	return txt;
@@ -2042,6 +2418,9 @@ _hyd_model_type Hyd_Hydraulic_System::convert_txt2model_type(const string text){
 	else if(text==hyd_label::floodplain_model){
 		type=_hyd_model_type::FLOODPLAIN_MODEL;
 	}
+	else if (text == hyd_label::groundwater_model) {
+		type = _hyd_model_type::GROUNDWATER_MODEL;
+	}
 	else if(text==hyd_label::coast_model){
 		type=_hyd_model_type::COAST_MODEL;
 	}
@@ -2053,7 +2432,37 @@ _hyd_model_type Hyd_Hydraulic_System::convert_txt2model_type(const string text){
 		info << "Possible types: "<< endl;
 		info << " " << hyd_label::river_model << endl;
 		info << " " << hyd_label::floodplain_model << endl;
+		info << " " << hyd_label::groundwater_model << endl;
 		info << " " << hyd_label::coast_model << endl;
+
+		msg.make_second_info(info.str());
+		throw msg;
+	}
+
+	return type;
+}
+
+//For groundwater
+_hyd_model_type_gw Hyd_Hydraulic_System::convert_txt2gwmodel_type(const string text) {
+	_hyd_model_type_gw type;
+	if (text == hyd_label::river_model) {
+		type = _hyd_model_type_gw::GW_RIVER_MODEL;
+	}
+	else if (text == hyd_label::floodplain_model) {
+		type = _hyd_model_type_gw::GW_FLOODPLAIN_MODEL;
+	}
+	else if (text == hyd_label::groundwater_model) {
+		type = _hyd_model_type_gw::GW_GROUNDWATER_MODEL;
+	}
+	else {
+		Error msg;
+		msg.set_msg("Hyd_Hydraulic_System::convert_gwmodel_type2txt(string text)", "Can not convert this model type", "Check the given type", 1, false);
+		ostringstream info;
+		info << "Try to convert model type: " << text << endl;
+		info << "Possible types: " << endl;
+		info << " " << hyd_label::river_model << endl;
+		info << " " << hyd_label::floodplain_model << endl;
+		info << " " << hyd_label::groundwater_model << endl;
 
 		msg.make_second_info(info.str());
 		throw msg;
@@ -2106,6 +2515,10 @@ void Hyd_Hydraulic_System::reset_system(void){
 	for(int i=0; i< this->global_parameters.GlobNofFP; i++){
 		this->my_fpmodels[i].reset_model(&this->global_parameters);
 	}
+	//groundwater models
+	for (int i = 0; i < this->global_parameters.GlobNofGW; i++) {
+		this->my_gwmodels[i].reset_model(&this->global_parameters);
+	}
 	//couplings
 	this->coupling_managment.reset_couplings();
 	this->obs_point_managment.clear_obs_points();
@@ -2135,6 +2548,10 @@ void Hyd_Hydraulic_System::clear_boundary_conditions(void){
 	//floodplain models
 	for(int i=0; i< this->global_parameters.GlobNofFP; i++){
 		this->my_fpmodels[i].clear_boundary_condition();
+	}
+	//groundwater models
+	for (int i = 0; i < this->global_parameters.GlobNofGW; i++) {
+		this->my_gwmodels[i].clear_boundary_condition();
 	}
 	//coast model
 	if(this->global_parameters.coastmodel_applied==true){
@@ -2168,6 +2585,12 @@ void Hyd_Hydraulic_System::set_new_boundary_condition(void){
 	for(int i=0; i< this->global_parameters.GlobNofFP; i++){
 		this->my_fpmodels[i].set_new_hyd_bound_sz_id(this->hyd_sz);
 		this->my_fpmodels[i].set_new_boundary_condition(true, &this->database, this->my_comodel);
+		Hyd_Multiple_Hydraulic_Systems::check_stop_thread_flag();
+	}
+	//groundwater models
+	for (int i = 0; i < this->global_parameters.GlobNofGW; i++) {
+		this->my_gwmodels[i].set_new_hyd_bound_sz_id(this->hyd_sz);
+		this->my_gwmodels[i].set_new_boundary_condition(true, &this->database); //REVIEW
 		Hyd_Multiple_Hydraulic_Systems::check_stop_thread_flag();
 	}
 	//coast model
@@ -2220,6 +2643,10 @@ void Hyd_Hydraulic_System::total_reset(void){
 		delete []this->my_fpmodels;
 		this->my_fpmodels=NULL;
 	}
+	if (this->my_gwmodels != NULL) {
+		delete[]this->my_gwmodels;
+		this->my_gwmodels = NULL;
+	}
 	if(this->my_rvmodels!=NULL){
 		delete []this->my_rvmodels;
 		this->my_rvmodels=NULL;
@@ -2256,6 +2683,8 @@ void Hyd_Hydraulic_System::total_reset(void){
 
 	this->global_parameters.total_reset();
 	this->material_params.total_reset();
+	this->conductivity_params.total_reset();
+	this->porosity_params.total_reset();
 	this->coupling_managment.total_reset();
 	this->obs_point_managment.total_reset();
 }
@@ -2292,7 +2721,7 @@ void Hyd_Hydraulic_System::set_folder_name(const string sc_name, const bool crea
 			if(my_dir.exists(buffer.str().c_str())==false){
 				my_dir.mkdir(buffer.str().c_str());
 			}
-			else {
+			else{
 				if (this->temp_calc == true) {
 					//delete existing files (old style)
 					QStringList list;
@@ -2310,8 +2739,6 @@ void Hyd_Hydraulic_System::set_folder_name(const string sc_name, const bool crea
 					my_dir.removeRecursively();
 					my_dir.mkdir(buffer.str().c_str());
 				}
-
-
 			}
 			//add additional folders
 			my_dir.cd(buffer.str().c_str());
@@ -2324,6 +2751,7 @@ void Hyd_Hydraulic_System::set_folder_name(const string sc_name, const bool crea
 			if (this->global_parameters.get_output_flags().paraview_1d_required == true || this->global_parameters.get_output_flags().paraview_2d_required == true) {
 				my_dir.mkdir(hyd_label::paraview.c_str());
 			}
+			
 
 
 
@@ -2340,6 +2768,11 @@ void Hyd_Hydraulic_System::set_folder_name(const string sc_name, const bool crea
 		if(this->my_fpmodels!=NULL){
 			for(int i=0; i<this->global_parameters.GlobNofFP; i++){
 				this->my_fpmodels[i].set_output_folder(this->file_output_folder);
+			}
+		}
+		if (this->my_gwmodels != NULL) {
+			for (int i = 0; i < this->global_parameters.GlobNofGW; i++) {
+				this->my_gwmodels[i].set_output_folder(this->file_output_folder);
 			}
 		}
 		if(this->my_comodel!=NULL){
@@ -2392,6 +2825,11 @@ void Hyd_Hydraulic_System::set_folder_name_file(void) {
 				this->my_fpmodels[i].set_output_folder(this->file_output_folder);
 			}
 		}
+		if (this->my_gwmodels != NULL) {
+			for (int i = 0; i < this->global_parameters.GlobNofGW; i++) {
+				this->my_gwmodels[i].set_output_folder(this->file_output_folder);
+			}
+		}
 		if (this->my_comodel != NULL) {
 			this->my_comodel->set_output_folder(this->file_output_folder);
 		}
@@ -2442,6 +2880,24 @@ Hyd_Model_Floodplain* Hyd_Hydraulic_System::get_ptr_floodplain_model_index(const
 	}
 	else{
 		return &this->my_fpmodels[index];
+	}
+}
+//Get the pointer to a groundwater model by a given model number
+Hyd_Model_Groundwater* Hyd_Hydraulic_System::get_ptr_groundwater_model(const int number) {
+	for (int i = 0; i < this->global_parameters.get_number_groundwater_model(); i++) {
+		if (this->my_gwmodels[i].Param_GW.get_groundwater_number() == number) {
+			return &this->my_gwmodels[i];
+		}
+	}
+	return NULL;
+}
+//Get the pointer to a groundwater model by a given index
+Hyd_Model_Groundwater* Hyd_Hydraulic_System::get_ptr_groundwater_model_index(const int index) {
+	if (index<0 || index>this->global_parameters.GlobNofGW) {
+		return NULL;
+	}
+	else {
+		return &this->my_gwmodels[index];
 	}
 }
 //Get the pointer to a river model by a given model number
@@ -2520,7 +2976,7 @@ void Hyd_Hydraulic_System::input_just_river_models(QSqlDatabase *ptr_database, c
 	}
 }
 //Initialize and connect the data of the rivers
-void Hyd_Hydraulic_System::connect_rivers(Hyd_Param_Material *mat_param){
+void Hyd_Hydraulic_System::connect_rivers(Hyd_Param_Material *mat_param, Hyd_Param_Conductivity *con_param){
 	ostringstream cout;
 	ostringstream prefix;
 	try{
@@ -2533,7 +2989,7 @@ void Hyd_Hydraulic_System::connect_rivers(Hyd_Param_Material *mat_param){
 			//connect the elems
 			cout<<"Initialize the data of river model " << j << "..."<<endl;
 			Sys_Common_Output::output_hyd->output_txt(&cout);
-			this->my_rvmodels[j].init_river_model(mat_param);
+			this->my_rvmodels[j].init_river_model(mat_param,con_param);
 			Sys_Common_Output::output_hyd->rewind_userprefix();
 		}
 	}
@@ -2615,6 +3071,14 @@ void Hyd_Hydraulic_System::output_final_system_statistics(void){
 		cout << "  Total floodplain area    : " << buff << label::squaremeter << endl;
 		cout << "  Wetted area              : " << this->calculate_was_wetted_area_fp(&buff) << label::squaremeter << endl;
 		cout << "  Wetted floodplain area   : " << buff << label::squaremeter << endl;
+	}
+	buff = 0.0;
+	if (this->global_parameters.GlobNofGW > 0) {
+		for (int i = 0; i < this->global_parameters.GlobNofGW; i++) {
+			buff = buff + this->my_gwmodels[i].raster.geometrical_bound.calculate_area();
+		}
+		cout << "  Number groundwater models : " << this->global_parameters.GlobNofGW << endl;
+		cout << "  Total groundwater area    : " << buff << label::squaremeter << endl;
 	}
 
 	Sys_Common_Output::output_hyd->output_txt(&cout);
@@ -2745,6 +3209,110 @@ void Hyd_Hydraulic_System::connect_floodplains(void){
 		throw msg;
 	}
 }
+//Allocate the groundwater model
+void Hyd_Hydraulic_System::allocate_groundwater_models(void) {
+	// alloc the gw-models
+	try {
+		this->my_gwmodels = new Hyd_Model_Groundwater [this->global_parameters.GlobNofGW];  
+	}
+	catch (bad_alloc&) {
+		Error msg = this->set_error(0);
+		throw msg;
+	}
+	//set the szenario data
+	for (int i = 0; i < this->global_parameters.GlobNofGW; i++) {
+		this->my_gwmodels[i].set_new_hyd_bound_sz_id(this->hyd_sz);
+		this->my_gwmodels[i].set_systemid(this->system_id);
+		if (this->file_output_required == true) {
+			this->my_gwmodels[i].set_output_folder(this->file_output_folder);
+		}
+	}
+}
+//Read in the groundwater models of the system with Hyd_Parse_GW
+void Hyd_Hydraulic_System::input_groundwater_models(const string global_file) {
+	ostringstream cout;
+
+	if (this->global_parameters.GlobNofGW > 0) {
+		cout << "Read in  " << this->global_parameters.GlobNofGW << " Groundwatermodel(s) per parser..." << endl;
+		Sys_Common_Output::output_hyd->output_txt(&cout);
+	}
+
+	try {
+		//set the parameters for Hyd_Model_Groundwater
+		for (int j = 0; j < this->global_parameters.GlobNofGW; j++) {
+			cout << "Set Groundwatermodel " << j << " with file..." << endl;
+			Sys_Common_Output::output_hyd->output_txt(&cout);
+			this->my_gwmodels[j].input_members(global_file, j, this->global_parameters.get_global_path());
+			Hyd_Multiple_Hydraulic_Systems::check_stop_thread_flag();
+		}
+	}
+	catch (Error msg) {
+		throw msg;
+	}
+}
+//Transfer the data of the groundwater models to the database
+void Hyd_Hydraulic_System::transfer_groundwatermodel_data2database(QSqlDatabase *ptr_database) {
+	ostringstream cout;
+
+	if (this->global_parameters.GlobNofGW > 1) {
+		cout << "Transfer data of " << this->global_parameters.GlobNofGW << " Groundwatermodel(s) to database..." << endl;
+		Sys_Common_Output::output_hyd->output_txt(&cout);
+	}
+
+	try {
+		//transfer the data of Hyd_Model_Groundwater
+		for (int j = 0; j < this->global_parameters.GlobNofGW; j++) {
+			cout << "Transfer data of Groundwatermodel " << j << "..." << endl;
+			Sys_Common_Output::output_hyd->output_txt(&cout);
+			this->my_gwmodels[j].transfer_input_members2database(ptr_database);
+		}
+	}
+	catch (Error msg) {
+		throw msg;
+	}
+}
+//Read in the groundwater models of the system from a database
+void Hyd_Hydraulic_System::input_groundwater_models(const QSqlTableModel *query_result, QSqlDatabase *ptr_database, const bool just_elems) {
+	ostringstream cout;
+	if (this->global_parameters.GlobNofGW > 0) {
+		cout << "Read in " << this->global_parameters.GlobNofGW << " Groundwatermodel(s) from database..." << endl;
+		Sys_Common_Output::output_hyd->output_txt(&cout);
+	}
+
+	try {
+		//set the parameters for Hyd_Model_Groundwater from database
+		for (int j = 0; j < this->global_parameters.GlobNofGW; j++) {
+			this->my_gwmodels[j].set_systemid(this->system_id);
+			this->my_gwmodels[j].input_members(j, query_result, ptr_database, just_elems, false, true);
+		}
+	}
+	catch (Error msg) {
+		throw msg;
+	}
+}
+//Initialize and connect the data of the groundwater models
+void Hyd_Hydraulic_System::connect_groundwaters(void) {
+	ostringstream cout;
+	ostringstream prefix;
+	try {
+		//set the parameters for Hyd_Model_Groundwater
+		for (int j = 0; j < this->global_parameters.GlobNofGW; j++) {
+			Hyd_Multiple_Hydraulic_Systems::check_stop_thread_flag();
+			prefix << "GW_" << j << "> ";
+			Sys_Common_Output::output_hyd->set_userprefix(prefix.str());
+			prefix.str("");
+			//connect the elems
+			cout << "Initialize the data of groundwater model " << j << "..." << endl;
+			Sys_Common_Output::output_hyd->output_txt(&cout);
+			this->my_gwmodels[j].init_groundwater_model(&this->conductivity_params, &this->porosity_params);
+			Sys_Common_Output::output_hyd->rewind_userprefix();
+		}
+	}
+	catch (Error msg) {
+		Sys_Common_Output::output_hyd->rewind_userprefix();
+		throw msg;
+	}
+}
 //Allocate the river model
 void Hyd_Hydraulic_System::allocate_river_models(void){
 	// alloc the rv-models
@@ -2778,7 +3346,7 @@ void Hyd_Hydraulic_System::input_rivers_models(const string global_file){
 		for (int j =0; j < this->global_parameters.GlobNofRV; j++){
 			cout<<"Set Rivermodel " << j << " with file..." <<endl;
 			Sys_Common_Output::output_hyd->output_txt(&cout);
-			this->my_rvmodels[j].input_members(global_file,j,this->global_parameters.get_global_path());
+			this->my_rvmodels[j].input_members(global_file,j,this->global_parameters.get_global_path(),&this->conductivity_params, this->global_parameters.gwmodel_applied);
 			Hyd_Multiple_Hydraulic_Systems::check_stop_thread_flag();
 		}
 	}
@@ -2800,7 +3368,7 @@ void Hyd_Hydraulic_System::input_rivers_models(const Hyd_Param_RV param_rv){
 		for (int j =0; j < this->global_parameters.GlobNofRV; j++){
 			cout<<"Set Rivermodel " << j << " with file..." <<endl;
 			Sys_Common_Output::output_hyd->output_txt(&cout);
-			this->my_rvmodels[j].input_members(param_rv);
+			this->my_rvmodels[j].input_members(param_rv, &this->conductivity_params, this->global_parameters.gwmodel_applied);
 			Hyd_Multiple_Hydraulic_Systems::check_stop_thread_flag();
 		}
 	}
@@ -3004,6 +3572,10 @@ void Hyd_Hydraulic_System::make_geometrical_interception(void){
 		this->make_geometrical_interception_fp2rv();
 		//between the floodplain models
 		this->make_geometrical_interception_fp2fp();
+		//between the groundwater models
+		this->make_geometrical_interception_gw2gw();
+		//between groundwater and river models
+		this->make_geometrical_interception_gw2rv();
 		//between a coast model and the floodplain models
 		this->make_geometrical_interception_co2fp();
 		//between a coast and river models
@@ -3106,6 +3678,90 @@ void Hyd_Hydraulic_System::make_geometrical_interception_fp2fp(void){
 		Sys_Common_Output::output_hyd->rewind_userprefix();
 	}
 }
+
+//Make geometrical interceptions between groundwater and groundwater models
+void Hyd_Hydraulic_System::make_geometrical_interception_gw2gw(void) {
+	Hyd_Multiple_Hydraulic_Systems::check_stop_thread_flag();
+	if (this->global_parameters.GlobNofGW > 1) {
+		ostringstream cout;
+		cout << "Geometrical interception between groundwater-models..." << endl;
+		Sys_Common_Output::output_hyd->output_txt(&cout);
+
+		//set prefix for output
+		ostringstream prefix;
+		prefix << "GW_GW> ";
+		Sys_Common_Output::output_hyd->set_userprefix(prefix.str());
+		//make the interception
+		int count = 1;
+		//list for counting an initializing the couplings
+		Hyd_Coupling_Model_List list;
+		_hyd_model_coupling coup_buff;
+		for (int i = 0; i < this->global_parameters.GlobNofGW - 1; i++) {
+			for (int j = count; j < this->global_parameters.GlobNofGW; j++) {
+				if (this->my_gwmodels[i].intercept_model(&(this->my_gwmodels[j]), &coup_buff) == true) {
+					list.set_new_model_coupling(&coup_buff);
+				}
+			}
+			count++;
+		}
+		if (list.get_number_couplings() > 0) {
+			//count the couplings
+			this->coupling_managment.add_gw2gw(list.get_number_couplings());
+			//allocate coupling classes
+			this->coupling_managment.allocate_coupling_class_gw2gw();
+			for (int i = 0; i < list.get_number_couplings(); i++) {
+				//set it
+				this->coupling_managment.coupling_gw2gw[i].set_ptr_coupling(&(this->my_gwmodels[list.get_model_coupling(i).index_first_model]), &(this->my_gwmodels[list.get_model_coupling(i).index_second_model]));
+			}
+		}
+		//rewind the prefix
+		Sys_Common_Output::output_hyd->rewind_userprefix();
+	}
+}
+
+//Make geometrical interceptions between groundwater and river models
+void Hyd_Hydraulic_System::make_geometrical_interception_gw2rv(void) {
+	Hyd_Multiple_Hydraulic_Systems::check_stop_thread_flag();
+	if (this->global_parameters.GlobNofGW > 0) {
+		ostringstream cout;
+		cout << "Geometrical interception between groundwater- and river-models..." << endl;
+		Sys_Common_Output::output_hyd->output_txt(&cout);
+
+		//set prefix for output
+		ostringstream prefix;
+		prefix << "GW_RV> ";
+		Sys_Common_Output::output_hyd->set_userprefix(prefix.str());
+		//make the interception
+		//list for counting an initializing the couplings
+		Hyd_Coupling_Model_List list;
+		_hyd_model_coupling coup_buff;
+		for (int i = 0; i < this->global_parameters.GlobNofGW; i++) {
+			for (int j = 0; j < this->global_parameters.GlobNofRV; j++) {
+				if (this->my_gwmodels[i].intercept_model(&(this->my_rvmodels[j])) == true) {
+					//first model is river model
+					coup_buff.index_first_model = j;
+					//second model is floodplain model
+					coup_buff.index_second_model = i;
+					list.set_new_model_coupling(&coup_buff);
+				}
+			}
+		}
+
+		if (list.get_number_couplings() > 0) {
+			//set the couplings
+			this->coupling_managment.add_rv2gw(list.get_number_couplings());
+			//allocate coupling classes
+			this->coupling_managment.allocate_coupling_class_rv2gw();
+			for (int i = 0; i < list.get_number_couplings(); i++) {
+				//init it
+				this->coupling_managment.coupling_rv2gw[i].set_ptr_coupling(&(this->my_gwmodels[list.get_model_coupling(i).index_second_model]), &(this->my_rvmodels[list.get_model_coupling(i).index_first_model]));
+			}
+		}
+		//rewind the prefix
+		Sys_Common_Output::output_hyd->rewind_userprefix();
+	}
+}
+
 //Make geometrical interceptions between floodplain and river models
 void Hyd_Hydraulic_System::make_geometrical_interception_fp2rv(void){
 	Hyd_Multiple_Hydraulic_Systems::check_stop_thread_flag();
@@ -3318,13 +3974,9 @@ void Hyd_Hydraulic_System::make_calculation_internal(void){
 
 		Hyd_Multiple_Hydraulic_Systems::check_stop_thread_flag();
 		//sycronisation of the models; set boundary condition
-
-		//out << this->get_identifier_prefix() << " syncron" << endl;
-		//Sys_Common_Output::output_hyd->output_txt(&out);
-
 		this->make_syncron_rivermodel();
-		//2DGPU
 		this->make_syncron_floodplainmodel();
+		this->make_syncron_groundwatermodel();
 		if(this->global_parameters.coastmodel_applied==true){
 			this->my_comodel->make_syncronisation((this->internal_time+this->internal_timestep_current*0.5)-this->global_parameters.get_startime());
 		}
@@ -3341,19 +3993,14 @@ void Hyd_Hydraulic_System::make_calculation_internal(void){
 		//this->get_max_changes_floodplainmodel(&buff1, false);
 		Hyd_Multiple_Hydraulic_Systems::check_stop_thread_flag();
 
-		//out << this->get_identifier_prefix() << " RV" << endl;
-		//Sys_Common_Output::output_hyd->output_txt(&out);
-
 		//calculation river models
 		this->make_calculation_rivermodel();
 		Hyd_Multiple_Hydraulic_Systems::check_stop_thread_flag();
-
-		//out << this->get_identifier_prefix() << " FP" << endl;
-		//Sys_Common_Output::output_hyd->output_txt(&out);
-
 		//calculation floodplain models
-		//2DGPU
 		this->make_calculation_floodplainmodel();
+		Hyd_Multiple_Hydraulic_Systems::check_stop_thread_flag();
+		//REVIEW
+		this->make_calculation_groundwatermodel();
 		Hyd_Multiple_Hydraulic_Systems::check_stop_thread_flag();
 
 		Hyd_Multiple_Hydraulic_Systems::check_stop_thread_flag();
@@ -3363,6 +4010,7 @@ void Hyd_Hydraulic_System::make_calculation_internal(void){
 		//max values and hydrological balance of the models
 		this->make_hyd_balance_max_rivermodel();
 		this->make_hyd_balance_max_floodplainmodel();
+		this->make_hyd_balance_max_groundwatermodel();
 
 		//syncronisation of observation points
 		this->obs_point_managment.syncron_obs_points(this->next_internal_time - this->global_parameters.get_startime());
@@ -3378,10 +4026,6 @@ void Hyd_Hydraulic_System::make_calculation_internal(void){
 	while(abs(this->internal_time-this->output_time)>constant::sec_epsilon);
 	//reset time difference
 	this->diff_real_time=0.0;
-
-
-	//out << this->get_identifier_prefix() << " loop out" << endl;
-	//Sys_Common_Output::output_hyd->output_txt(&out);
 
 	//time calculations
 	//transform the seconds of the output time step into hours, day etc
@@ -3400,14 +4044,24 @@ void Hyd_Hydraulic_System::make_calculation_internal(void){
 
 	time=functions::convert_time2time_str(this->internal_time);
 
-	//out << this->get_identifier_prefix() << " output" << endl;
-	//Sys_Common_Output::output_hyd->output_txt(&out);
+
+	//set flag for the time unit as s or h or d
+	string unit = "s";
+	if (this->global_parameters.GlobTStep >= 3600) {
+		unit = "h";
+			if (this->global_parameters.GlobTStep >= 86400) {
+				unit = "d";
+		}
+	}
 
 	//output the results of the river models to file
-	this->output_calculation_steps_rivermodel2file(this->internal_time);
+	this->output_calculation_steps_rivermodel2file(this->internal_time,unit);
 	
 	//output the results of the floodplain models to file
 	this->output_calculation_steps_floodplainmodel2file(this->internal_time);
+
+	//output the results of the groundwater models to file
+	this->output_calculation_steps_groundwatermodel2file(this->internal_time,unit);
 	
 
 	//output the break results per step to file
@@ -3425,6 +4079,8 @@ void Hyd_Hydraulic_System::make_calculation_internal(void){
 	this->output_calculation_steps_rivermodel2database(this->internal_time, time);
 	this->output_calculation_steps_floodplainmodel2display(this->internal_time);
 	this->output_calculation_steps_floodplainmodel2database(this->internal_time, time);
+	this->output_calculation_steps_groundwatermodel2display(this->internal_time);
+	this->output_calculation_steps_groundwatermodel2database(this->internal_time, time);
 	if(Hyd_Hydraulic_System::qt_thread_applied==true){
 		Sys_Common_Output::output_hyd->insert_separator(0);
 	}
@@ -3541,6 +4197,10 @@ void Hyd_Hydraulic_System::reset_solver_tolerances(void){
         this->warning_number=this->warning_number+this->my_fpmodels[i].get_warn_counter();
         this->my_fpmodels[i].reset_solver_tolerances();
     }
+	for (int i = 0; i < this->global_parameters.GlobNofGW; i++) {
+		this->warning_number = this->warning_number + this->my_gwmodels[i].get_warn_counter();
+		this->my_gwmodels[i].reset_solver_tolerances();
+	}
 }
 //Reset all coupling discharges of the river models
 void Hyd_Hydraulic_System::reset_coupling_discharge_river_models(void){
@@ -3621,7 +4281,6 @@ void Hyd_Hydraulic_System::make_calculation_tempmodel(void) {
 //Make the syncronisation of the floodplain models for each internal step
 void Hyd_Hydraulic_System::make_syncron_floodplainmodel(void){
 	//make syncronisation(boundary conditions)
-	//2DGPU
 	for(int i=0; i< this->global_parameters.GlobNofFP;i++){
 		Hyd_Multiple_Hydraulic_Systems::check_stop_thread_flag();
 		this->my_fpmodels[i].make_syncronisation((this->internal_time+this->internal_timestep_current*0.5)-this->global_parameters.get_startime());
@@ -3654,14 +4313,54 @@ void Hyd_Hydraulic_System::reset_solver_fp_models(void){
 //make the calculation of the floodplain models
 void Hyd_Hydraulic_System::make_calculation_floodplainmodel(void){
 	//solve it
-	//2DGPU
 	for(int i=0; i< this->global_parameters.GlobNofFP;i++){
 		Hyd_Multiple_Hydraulic_Systems::check_stop_thread_flag();
 		this->my_fpmodels[i].solve_model(this->next_internal_time-this->global_parameters.get_startime(), this->get_identifier_prefix(false));
 	}
 }
+//Make the syncronisation of the groundwater models for each internal step
+void Hyd_Hydraulic_System::make_syncron_groundwatermodel(void) {
+	//make syncronisation(boundary conditions)
+	for (int i = 0; i < this->global_parameters.GlobNofGW; i++) {
+		Hyd_Multiple_Hydraulic_Systems::check_stop_thread_flag();
+		this->my_gwmodels[i].make_syncronisation((this->internal_time + this->internal_timestep_current*0.5) - this->global_parameters.get_startime());
+	}
+}
+//Get the maximum change in a element of a groundwater model
+void Hyd_Hydraulic_System::get_max_changes_groundwatermodel(double *max_change_h, const bool timecheck) {
+	double buff_h = 0.0;
+	for (int i = 0; i < this->global_parameters.GlobNofGW; i++) {
+		Hyd_Multiple_Hydraulic_Systems::check_stop_thread_flag();
+		this->my_gwmodels[i].get_max_changes_elements(&buff_h, timecheck);
+		if (buff_h > *max_change_h) {
+			*max_change_h = buff_h;
+		}
+	}
+}
+//Calculate the hydrological balance and the maximum values of the groundwater models for each internal step
+void Hyd_Hydraulic_System::make_hyd_balance_max_groundwatermodel(void) {
+	for (int i = 0; i < this->global_parameters.GlobNofGW; i++) {
+		Hyd_Multiple_Hydraulic_Systems::check_stop_thread_flag();
+		this->my_gwmodels[i].make_hyd_balance_max(this->next_internal_time - this->global_parameters.get_startime());
+	}
+}
+//Reset the solver of the groundwater models
+void Hyd_Hydraulic_System::reset_solver_gw_models(void) {
+	for (int i = 0; i < this->global_parameters.GlobNofGW; i++) {
+		this->my_gwmodels[i].reset_solver();
+	}
+}
+//make the calculation of the groundwater models
+void Hyd_Hydraulic_System::make_calculation_groundwatermodel(void) {
+	//solve it
+	for (int i = 0; i < this->global_parameters.GlobNofGW; i++) {
+		Hyd_Multiple_Hydraulic_Systems::check_stop_thread_flag();
+		this->my_gwmodels[i].solve_model(this->next_internal_time - this->global_parameters.get_startime(), this->get_identifier_prefix(false));
+	}
+}
+
 //Output the results of the calculation steps of the river models to file
-void Hyd_Hydraulic_System::output_calculation_steps_rivermodel2file(const double timestep){
+void Hyd_Hydraulic_System::output_calculation_steps_rivermodel2file(const double timestep,string unit){
 	if(this->file_output_required==true){
 		if (this->global_parameters.get_output_flags().tecplot_1d_required == true || this->global_parameters.get_output_flags().tecplot_2d_required == true) {
 			for (int i = 0; i < this->global_parameters.GlobNofRV; i++) {
@@ -3681,7 +4380,7 @@ void Hyd_Hydraulic_System::output_calculation_steps_rivermodel2file(const double
 					this->my_rvmodels[i].output_result2csv_1d(timestep, this->timestep_counter);
 				}
 				if (this->global_parameters.get_output_flags().paraview_2d_required == true) {
-					this->my_rvmodels[i].output_result2paraview_2d(timestep, this->timestep_counter);
+					this->my_rvmodels[i].output_result2paraview_2d(timestep, this->timestep_counter,unit);
 				}
 			}
 
@@ -3847,7 +4546,69 @@ void Hyd_Hydraulic_System::output_calculation_steps_floodplainmodel2database(con
 		
 	}
 }
-//Clear all not needed data of the models before the solver is initialized
+//Output the results of the calculation steps of the groundwater models to file
+void Hyd_Hydraulic_System::output_calculation_steps_groundwatermodel2file(const double timestep,string unit) {
+	if (this->file_output_required == true) {
+		//loop over the groundwater models
+		if (this->global_parameters.get_output_flags().tecplot_2d_required == true) {
+			for (int i = 0; i < this->global_parameters.GlobNofGW; i++) {
+				//to the tecplot file
+				this->my_gwmodels[i].output_result2tecplot(timestep, this->timestep_counter,unit);
+			}
+		}
+		if (this->global_parameters.get_output_flags().bluekenue_2d_required == true) {
+			for (int i = 0; i < this->global_parameters.GlobNofGW; i++) {
+				//to the bluekenue file
+				this->my_gwmodels[i].output_result2bluekenue(timestep, this->timestep_counter, this->global_parameters.get_startime());
+			}
+		}
+		if (this->global_parameters.get_output_flags().paraview_2d_required == true) {
+			for (int i = 0; i < this->global_parameters.GlobNofGW; i++) {
+				//to the paraview file 
+				this->my_gwmodels[i].output_result2paraview(timestep, this->timestep_counter,unit);
+			}
+		}
+	}
+}
+//Output the results of the calculation steps of the groundwater models to display/console
+void Hyd_Hydraulic_System::output_calculation_steps_groundwatermodel2display(const double timestep) {
+	//loop over the groundwater models
+	for (int i = 0; i < this->global_parameters.GlobNofGW; i++) {
+		//set prefix for output
+		ostringstream prefix;
+		prefix << this->get_identifier_prefix();
+		prefix << "CALC> ";
+		Sys_Common_Output::output_hyd->set_userprefix(prefix.str());
+		//to console/display (for development)
+		//this->my_gwmodels[i].output_result_members_per_timestep();
+
+		this->my_gwmodels[i].output_solver_errors(timestep, this->timestep_counter, this->model_time_str, this->real_time_str, this->diff_real_time, this->total_internal_timestep, this->timestep_internal_counter);
+		//rewind two times the prefix
+		Sys_Common_Output::output_hyd->rewind_userprefix();
+		Sys_Common_Output::output_hyd->rewind_userprefix();
+	}
+}
+//Output the results of the calculation steps of the groundwater models to database
+void Hyd_Hydraulic_System::output_calculation_steps_groundwatermodel2database(const double timestep, const string time) {
+	if (this->database_is_set == false) {
+		return;
+	}
+	//delete results
+	if (this->timestep_counter == 0) {
+		Hyd_Element_Groundwater::delete_data_in_instat_erg_table(&this->database, this->system_id, this->hyd_sz.get_id());
+	}
+
+	//loop over the groundwater models
+	for (int i = 0; i < this->global_parameters.GlobNofGW; i++) {
+		//to database 
+		if (global_parameters.get_output_flags().database_instat_required == true) {
+
+			this->my_gwmodels[i].output_result2database(&this->database, timestep, this->timestep_counter, time);
+		}
+
+	}
+}
+//Clear all not needed data of the (floodplain and groundwater) models before the solver is initialized
 void Hyd_Hydraulic_System::clear_models(void){
 	ostringstream cout;
 	ostringstream prefix;
@@ -3860,6 +4621,18 @@ void Hyd_Hydraulic_System::clear_models(void){
 		//floodplain models
 		for(int i=0; i< this->global_parameters.GlobNofFP;i++){
 			this->my_fpmodels[i].clear_model();
+		}
+		Sys_Common_Output::output_hyd->rewind_userprefix();
+	}
+	if (this->global_parameters.GlobNofGW > 0) {
+		prefix << "GW" << "> ";
+		Sys_Common_Output::output_hyd->set_userprefix(prefix.str());
+		cout << "Clear groundwater models..." << endl;
+
+		Sys_Common_Output::output_hyd->output_txt(&cout);
+		//groundwater models
+		for (int i = 0; i < this->global_parameters.GlobNofGW; i++) {
+			this->my_gwmodels[i].clear_model();
 		}
 		Sys_Common_Output::output_hyd->rewind_userprefix();
 	}
@@ -3889,6 +4662,23 @@ string Hyd_Hydraulic_System::calculate_approx_memory_fpmodels(void){
 	}
 	return mem_str;
 }
+//Calculate the approximate memory requirement for the groundwater models
+string Hyd_Hydraulic_System::calculate_approx_memory_gwmodels(void) {
+	long long int mem = 0;
+	string mem_str;
+	for (int i = 0; i < this->global_parameters.GlobNofGW; i++) {
+		mem = mem + this->my_gwmodels[i].Param_GW.calculate_approx_workspace();
+	}
+	mem_str = functions::convert_byte2string(mem);
+	if (mem > constant::gbyte_size*8.0) {
+		ostringstream info;
+		Warning msg = this->set_warning(0);
+		info << "Estimated workspace  : " << mem_str << endl;
+		msg.make_second_info(info.str());
+		msg.output_msg(2);
+	}
+	return mem_str;
+}
 //Calculate the total was-wetted area for the floodplain models
 double Hyd_Hydraulic_System::calculate_was_wetted_area_fp(double *area_without_coast){
 	double area=0.0;
@@ -3913,11 +4703,15 @@ void Hyd_Hydraulic_System::waitloop_output_calculation2display(void){
 	this->output_is_running=true;
 }
 //Check the internal time steps
+
 double Hyd_Hydraulic_System::check_internal_timestep(void){
 	double new_timestep=this->internal_timestep_current;
 
 	double change_fp=0.0;
 	double time_fp=0.0;
+
+	double change_gw = 0.0;
+	double time_gw = 0.0;
 
 	double change_rv=0.0;
 	double time_rv=0.0;
@@ -3928,9 +4722,12 @@ double Hyd_Hydraulic_System::check_internal_timestep(void){
 	//sycronisation of the models; set boundary condition
 	this->make_syncron_rivermodel();
 	this->make_syncron_floodplainmodel();
+	this->make_syncron_groundwatermodel();
+	
 	if(this->global_parameters.coastmodel_applied==true){
 		this->my_comodel->make_syncronisation((this->internal_time+new_timestep*0.5)-this->global_parameters.get_startime());
 	}
+	
 	//syncronisation between the models via couplings
 	this->coupling_managment.synchronise_couplings((this->internal_time+new_timestep*0.5)-this->global_parameters.get_startime(),new_timestep, true, this->total_internal_timestep);
 
@@ -3944,12 +4741,21 @@ double Hyd_Hydraulic_System::check_internal_timestep(void){
 
 	//calculate the new internal time step
 	//floodplain changes
+	
 	if(change_fp>0.0){
 		time_fp=this->global_parameters.max_h_change_fp/change_fp;
 	}
 	else{
 		time_fp=this->internal_timestep_base;
 	}
+	//groundwater changes
+	if (change_gw > 0.0) {
+		time_gw = this->global_parameters.max_h_change_gw / change_gw;
+	}
+	else {
+		time_gw = this->internal_timestep_base;
+	}
+	
 	//river changes
 	if(change_rv>0.0){
 		time_rv=this->global_parameters.max_h_change_rv/change_rv;
@@ -3965,11 +4771,12 @@ double Hyd_Hydraulic_System::check_internal_timestep(void){
 	else{
 		time_v_rv=this->internal_timestep_base;
 	}
-
+	
 	//take the min step
 	new_timestep=min(time_fp,time_rv);
+	new_timestep = min(new_timestep, time_gw);
 	new_timestep=min(time_v_rv,new_timestep);
-
+	
 	//set boundaries to the new timestep
 	if(new_timestep<=this->internal_timestep_min){
 		new_timestep=this->internal_timestep_min;
@@ -3994,6 +4801,7 @@ double Hyd_Hydraulic_System::check_internal_timestep(void){
 
 	return new_timestep;
 }
+
 //set the error
 Error Hyd_Hydraulic_System::set_error(const int err_type){
 	string place="Hyd_Hydraulic_System::";
@@ -4067,3 +4875,4 @@ Warning Hyd_Hydraulic_System::set_warning(const int warn_type){
 	msg.make_second_info(info.str());
 	return msg;
 }
+

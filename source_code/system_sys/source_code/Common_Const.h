@@ -218,12 +218,16 @@ namespace constant{
 	const double double_dry_hyd_epsilon=2.0e-4;
 	///Sill height for the FP2FP coupling of models
 	const double sill_heightcoupling_fp= 5.0e-8;
+	///Sill height for the GW2GW coupling of models
+	const double sill_heightcoupling_gw = 5.0e-8;
 	///Factor for the smoothing of the coupling discharge with the coupling discharge calculated one internal timestep before (0.0 no smoothing; 1.0 no new calculated discharge is taken)
 	const double smoothing_coupling_factor=0.0;
 	///Standard value for the Poleni factor for the broad weir
 	const double poleni_const=0.577;
 	///Standard value for the side weir reduction for the Poleni formula used by the coupling via a weir in direction river to floodplain
 	const double side_weir_reduction=0.95;
+	///Standard value for the kf factor REVIEW
+	const double kf_const = 0.0003;
 	///Standard value for the 1d stabilization discharge
 	const double stabilization_q=50.0;
 	///The value for the minimal bridge height; it is 1.0 m
@@ -564,6 +568,10 @@ namespace label{
 	const string kst_unit (" [m^(1/3)/s] ");
 	///String for units: unit for the Manning-value
 	const string n_unit (" [s/m^(1/3)] ");
+	///String for units: unit for the Kf-value
+	const string kf_unit(" [m/s] ");
+	///String for units: unit for the Effective-Porosity-value
+	const string p_unit(" [-] ");
 	///String for units: time unit output
 	const string time_unit_output(" [dd:hh:mm:ss] " );
 	///String for units: stress unit for a wall break
@@ -1634,6 +1642,13 @@ namespace fpl_label{
 namespace hyd_label{
 
 
+	//observation point types
+	//string for the observation point which is used in floodplain model 
+	const string floodplain_obs("floodplian");
+	//string for the observation point which is used in river model 
+	const string rv_obs("river");
+	//string for the observation point which is used in groundwater model 
+	const string gw_obs("groundwater");
 
 
 	//model types (hydraulic models)
@@ -1641,6 +1656,8 @@ namespace hyd_label{
 	const string river_model("river_model");
 	///String for the hydraulic model type: floodplain model (_Hyd_Model_Type)
 	const string floodplain_model("floodplain_model");
+	///String for the hydraulic model type: groundwater model (_Hyd_Model_Type)
+	const string groundwater_model("groundwater_model");
 	///String for the hydraulic model type: coast model (_Hyd_Model_Type)
 	const string coast_model("coast_model");
 
@@ -1704,6 +1721,11 @@ namespace hyd_label{
 	///Keyword for the file input of the river profile: Poleni factor for the overflow over the right bank (_Hyd_River_Profile, _Hyd_River_Profile_Type)
 	const string PoleniFacRight("PoleniFacRight");
 
+	///Keyword for the calculation methond Darcy for gw2rv coupling
+	const string Darcy("darcy");
+	///Keyword for the calculation methond Rushton for gw2rv coupling
+	const string Rushton("rushton");
+
 	///Keyword for the file input of the river profile: Discretisation of the tables for the profile [m] (_Hyd_River_Profile, _Hyd_River_Profile_Type)
 	const string DeltaXtable("DeltaXtable");
 
@@ -1724,6 +1746,17 @@ namespace hyd_label{
 	const string AbruptBreachOpenLeft("AbruptBreachOpenLeft");
 	///Keyword for the file input of the river profile: Abrupt breach opening at the right bank [m] (_Hyd_River_Profile, _Hyd_River_Profile_Type)
 	const string AbruptBreachOpenRight("AbruptBreachOpenRight");
+
+	///Keyword for the file input of the river profile: Conductivity Index referencing kf-value k1 [-] (_Hyd_River_Profile, _Hyd_River_Profile_Type)
+	const string ConductivityIndex_K1("ConductivityIndex_K1");
+	///Keyword for the file input of the river profile: Conductivity Index referencing kf-value k2 [-] (_Hyd_River_Profile, _Hyd_River_Profile_Type)
+	const string ConductivityIndex_K2("ConductivityIndex_K2");
+	///Keyword for the file input of the river profile: Conductivity Index referencing kf-value k3 [-] (_Hyd_River_Profile, _Hyd_River_Profile_Type)
+	const string ConductivityIndex_K3("ConductivityIndex_K3");
+	///Keyword for the file input of the river profile: Conductivity Index referencing kf-value [-] (_Hyd_River_Profile, _Hyd_River_Profile_Type)
+	const string ConductivityIndex("ConductivityIndex");
+	///Keyword for the file input of the river profile: Thickness of the riverbed [m] (_Hyd_River_Profile, _Hyd_River_Profile_Type)
+	const string Thickness("Thickness");
 
 	//for bridge profiles
 	///Keyword for the file input of the river profile: Vertical size of the bridge body [m] (_Hyd_River_Profile, Hyd_River_Profile_Type_Bridge)
@@ -1772,13 +1805,34 @@ namespace hyd_label{
 	///Boundary condition: speed in m/s
 	const string Speed_Boundary("speed");
 
+	///Discharge boundary condition type
+	const string Discharge_Boundary("discharge");
+	///Head/Waterlevel boundary condition type
+	const string Head_Boundary("head");
 
+	///X-direction boundary condition type
+	const string x_direction("x_dir");
+	///Y-direction boundary condition type
+	const string y_direction("y_dir");
+	///Top-direction boundary condition type
+	const string top_direction("top_dir");
 
 	//material coefficient types
 	///Poleni coefficient [-]
 	const string POL("POL");
 	///Manning coefficcient n [s/m^(1/3)] 
 	const string MAN("MAN");
+
+	//conductivity coefficient types
+	///Kf coefficient [m/s]
+	const string KF("KF");
+
+	///Transmissvity coefficient [m/s]
+	const string T("T");
+
+	//porosity coefficient types
+	///effective porosity[-]
+	const string EP("EP");
 
 	//point names
 	///String for hyd-point name for an identification of the point: profile x-coordinate, z-coordinate (geodetic height) of the point (_Hyd_River_Profile_Type)
@@ -1793,6 +1847,10 @@ namespace hyd_label{
 	const string coupling_point_FP2CO("cp_p_FP2CO");
 	///String for hyd-point name for an identification of the point: coupling point between floodplain- and floodplain-model (Hyd_Coupling_Point_FP2FP)
 	const string coupling_point_FP2FP("cp_p_FP2FP");
+	///String for hyd-point name for an identification of the point: coupling point between groundwater- and groundwater-model (Hyd_Coupling_Point_GW2GW)
+	const string coupling_point_GW2GW("cp_p_GW2GW");
+	///String for hyd-point name for an identification of the point: coupling point between river- and groundwater-model (Hyd_Coupling_Point_RV2GW)
+	const string coupling_point_RV2GW("cp_p_RV2GW");
 	///String for hyd-point name for an identification of the point: coupling point between river- and floodplain-model (Hyd_Coupling_Point_RV2FP)
 	const string coupling_point_RV2FP("cp_p_RV2FP");
 	///String for hyd-point name for an identification of the point: coupling point between river- and floodplain-model via an hydraulic structure (Hyd_Coupling_RV2FP_Structure)
@@ -1801,6 +1859,8 @@ namespace hyd_label{
 	const string river_section_point("r_sec_p");
 	///String for hyd-point name for an identification of the point: dikeline points (Hyd_Floodplain_Dikeline_Point)
 	const string dikeline_point("di_p");
+	///String for hyd-point name for an identification of the point: line points (Hyd_Groundwater_Line_Point)
+	const string line_point("li_p");
 
 	//preconditioner types
 	///Left preconditioning of the matrix (see for documentation of solver cvode: https://computation.llnl.gov/casc/sundials/documentation/cv_guide.pdf)
@@ -1818,16 +1878,21 @@ namespace hyd_label{
 	const string standard_elem("normal");
 	///Floodplain element type coast
 	const string coast_elem("coast");
-	///Floodplain element type noflow
+	///Floodplain/Groundwater element type noflow
 	const string noflow_elem("no_flow");
-	///Floodplain element type noinfo
+	///Floodplain/Groundwater element type noinfo
 	const string noinfo_elem("no_info");
-	///Floodplain element type intercepted by a river
+	///Floodplain/Groundwater element type intercepted by a river
 	const string river_elem("river");
 	///Floodplain element type inside another floodplain model
 	const string other_fp_elem("other_fp");
 	///Floodplain element type intercepted by a dikeline
 	const string dikeline_elem("dikeline");
+
+	///Groundwater element inside another groundwater model
+	const string other_gw_elem("other gw");
+	///Groundwater element type intercepted by a line
+	const string line_elem("line");
 
 	///Floodplain raster segment type flow in x-direction
 	const string rast_seg_flow_x("flow_x");
@@ -1846,6 +1911,10 @@ namespace hyd_label{
 	const string river_bankline("riverbankline");
 	///Hyd_Floodplain_Polysegment type part of a floodplain boundary
 	const string fp_boundaryline("fp_boundaryline");
+	///Hyd_Groundwater_Polysegment type part of a groundwater boundary
+	const string gw_boundaryline("gw_boundaryline");
+	///Hyd_Groundwater_Polysegment type part of a groundwater barrier line
+	const string gw_barrierline("gw_barrier_line");
 
 	///_1d_outflow_types types weir
 	const string weir_coupling("weir");
@@ -1916,6 +1985,8 @@ namespace hyd_label{
 
 	///Keyword for the database table column of the global parameters: maximum of waterlevel change per syncronisation timestep [m] per floodplain element (Hyd_Param_Global)
 	const string syn_maxchange_h_fp("SYN_MAXCHANGE_H_FP");
+	///Keyword for the database table column of the global parameters: maximum of groundwaterlevel change per syncronisation timestep [m] per groundwater element (Hyd_Param_Global)
+	const string syn_maxchange_h_gw("SYN_MAXCHANGE_H_GW");
 	///Keyword for the database table column of the global parameters: maximum of waterlevel change per syncronisation timestep [m] per river element (Hyd_Param_Global)
 	const string syn_maxchange_h_rv("SYN_MAXCHANGE_H_rv");
 	///Keyword for the database table column of the global parameters: maximum change of explicitly taken energy head of the flow velocity in the river model per syncronisation timestep [m] (Hyd_Param_Global)
@@ -1946,6 +2017,24 @@ namespace hyd_label{
 	const string matparam_val("VALUE");
 	///Keyword for the database table column of the material parameters: type (manning, poleni parameter) [-] (Hyd_Param_Material)
 	const string matparam_typ("TYPE");
+
+	///Keyword for the database table of conductivity parameters (Hyd_Param_Conductivity)
+	const string tab_con_param("HYD_CONDUCTIVITY_PARAM");
+	///Keyword for the database table column of the conductivity parameters: number as identifier [-] (Hyd_Param_Conductivity)
+	const string conparam_id("CONDUCTIVITY_ID");
+	///Keyword for the database table column of the conductivity parameters: value (Hyd_Param_Conductivity) 
+	const string conparam_val("VALUE");
+	///Keyword for the database table column of the conductivity parameters: type (Kf, ...) [-] (Hyd_Param_Conductivity)
+	const string conparam_typ("TYPE");
+
+	///Keyword for the database table of conductivity parameters (Hyd_Param_Porosity)
+	const string tab_por_param("HYD_POROSITY_PARAM");
+	///Keyword for the database table column of the conductivity parameters: number as identifier [-] (Hyd_Param_Porosity)
+	const string porparam_id("POROSITY_ID");
+	///Keyword for the database table column of the conductivity parameters: value (Hyd_Param_Porosity) 
+	const string porparam_val("VALUE");
+	///Keyword for the database table column of the conductivity parameters: type (effec, ...) [-] (Hyd_Param_Porosity)
+	const string porparam_typ("TYPE");
 
 	///Keyword for the database table name of the general parameters of a river model (Hyd_Model_River)
 	const string tab_rv_gen("HYD_RIVER_GENERAL");
@@ -2023,36 +2112,39 @@ namespace hyd_label{
 
 	///Keyword for the database table name of the general parameters of a floodplain model (Hyd_Model_Floodplain)
 	const string tab_fp_gen("HYD_FLOODPLAIN_GENERAL");
-	///Keyword for the database table column of the general model floodplain parameters: number of elements in x-direction [-] (Hyd_Model_Floodplain)
+	///Keyword for the database table column of the general model floodplain/groundwater parameters: number of elements in x-direction [-] (Hyd_Model_Floodplain, Hyd_Model_Groundwater)
 	const string nx("NX");
-	///Keyword for the database table column of the general model floodplain parameters: number of elements in y-direction [-] (Hyd_Model_Floodplain)
+	///Keyword for the database table column of the general model floodplain/groundwater parameters: number of elements in y-direction [-] (Hyd_Model_Floodplain, Hyd_Model_Groundwater)
 	const string ny("NY");
-	///Keyword for the database table column of the general model floodplain parameters: width of the element in x-direction [m] (Hyd_Model_Floodplain)
+	///Keyword for the database table column of the general model floodplain/groundwater parameters: width of the element in x-direction [m] (Hyd_Model_Floodplain, Hyd_Model_Groundwater)
 	const string elemwidth_x("ELEMWIDTH_X");
-	///Keyword for the database table column of the general model floodplain parameters: width of the element in y-direction [m] (Hyd_Model_Floodplain)
+	///Keyword for the database table column of the general model floodplain/groundwater parameters: width of the element in y-direction [m] (Hyd_Model_Floodplain, Hyd_Model_Groundwater)
 	const string elemwidth_y("ELEMWIDTH_Y");
-	///Keyword for the database table column of the general model floodplain parameters: angle of the coordinate system [°] (Hyd_Model_Floodplain)
+	///Keyword for the database table column of the general model floodplain/groundwater parameters: angle of the coordinate system [°] (Hyd_Model_Floodplain, Hyd_Model_Groundwater)
 	const string angle("ANGLE");
-	///Keyword for the database table column of the general model floodplain parameters: low left x coordinate [m] (Hyd_Model_Floodplain)
+	///Keyword for the database table column of the general model floodplain/groundwater parameters: low left x coordinate [m] (Hyd_Model_Floodplain, Hyd_Model_Groundwater)
 	const string lowleftx("LOW_LEFT_X");
-	///Keyword for the database table column of the general model floodplain parameters: low left y coordinate [m] (Hyd_Model_Floodplain)
+	///Keyword for the database table column of the general model floodplain/groundwater parameters: low left y coordinate [m] (Hyd_Model_Floodplain, Hyd_Model_Groundwater)
 	const string lowlefty("LOW_LEFT_Y");
-	///Keyword for the database table column of the general model floodplain parameters: value for a elemnet with no informations; it is compared with the element height [m] (Hyd_Model_Floodplain)
+	///Keyword for the database table column of the general model floodplain/groundwater parameters: value for a elemnet with no informations; it is compared with the element height [m] (Hyd_Model_Floodplain, Hyd_Model_Groundwater)
 	const string noinfovalue("NOINFO_VALUE");
-	///Keyword for the database table column of the general model floodplain parameters: value for a elemnet with no informations; boundary-value if a element/profile is wet or dry [m] (Hyd_Model_Floodplain)
+	///Keyword for the database table column of the general model floodplain parameters: value for a element with no informations; boundary-value if a element/profile is wet or dry [m] (Hyd_Model_Floodplain)
 	const string wet("WET_HEIGHT");
 
-	///Keyword for the database table column of the general model (river/floodplain) parameters: absolute solver tolerance [-] (Hyd_Model_Floodplain, Hyd_Model_River)
+	///Keyword for the database table name of the general parameters of a groundwater model (Hyd_Model_Groundwater)
+	const string tab_gw_gen("HYD_GROUNDWATER_GENERAL");
+
+	///Keyword for the database table column of the general model (river/floodplain/groundwater) parameters: absolute solver tolerance [-] (Hyd_Model_Floodplain, Hyd_Model_River, Hyd_Model_Groundwater)
 	const string atol("ABSOULTE_TOLERANCE");
-	///Keyword for the database table column of the general model (river/floodplain) parameters: relative solver tolerance [-] (Hyd_Model_Floodplain, Hyd_Model_River)
+	///Keyword for the database table column of the general model (river/floodplain/groundwater) parameters: relative solver tolerance [-] (Hyd_Model_Floodplain, Hyd_Model_River, Hyd_Model_Groundwater)
 	const string rtol("RELATIV_TOLERANCE");
-	///Keyword for the database table column of the general model (river/floodplain) parameters: pre-name and local path for the 2d output [-] (Hyd_Model_Floodplain, Hyd_Model_River)
+	///Keyword for the database table column of the general model (river/floodplain/groundwater) parameters: pre-name and local path for the 2d output [-] (Hyd_Model_Floodplain, Hyd_Model_River, Hyd_Model_Groundwater)
 	const string d2output("OUTPUT_2D");
-	///Keyword for the database table column of the general model (river/floodplain) parameters: number as identifier of the model [-] (Hyd_Model_Floodplain, Hyd_Model_River)
+	///Keyword for the database table column of the general model (river/floodplain/groundwater) parameters: number as identifier of the model [-] (Hyd_Model_Floodplain, Hyd_Model_River, Hyd_Model_Groundwater)
 	const string genmod_id("MODEL_ID");
-	///Keyword for the database table column of the general model (river/floodplain) parameters: type for specifying the type of model [-] (Hyd_Model_Floodplain, Hyd_Model_River)
+	///Keyword for the database table column of the general model (river/floodplain/groundwater) parameters: type for specifying the type of model [-] (Hyd_Model_Floodplain, Hyd_Model_River, Hyd_Model_Groundwater)
 	const string genmod_type("MODEL_TYPE");
-	///Keyword for the database table column of the general model (river/floodplain) parameters: model name [-] (Hyd_Model_Floodplain, Hyd_Model_River)
+	///Keyword for the database table column of the general model (river/floodplain/groundwater) parameters: model name [-] (Hyd_Model_Floodplain, Hyd_Model_River, Hyd_Model_Groundwater)
 	const string genmod_name("NAME");
 
 	///Keyword for the database table name of the element data of a floodplain model (Hyd_Element_Floodplain)
@@ -2069,6 +2161,8 @@ namespace hyd_label{
 	const string elemdata_matid("MATERIAL_ID");
 	///Keyword for the database table column of the element data of a floodplain model: initial-condition of the floodplain element [m] (Hyd_Element_Floodplain)
 	const string elemdata_init("INIT_CONDITION");
+	///Keyword for the database table column of the element data of a groundwater model: thickness of the groundwater element [m] (Hyd_Element_Floodplain)
+	const string elemdata_m("THICKNESS");
 	///Keyword for the database table column of the element data of a floodplain model: x-coordinate of the element midpoint [m] (Hyd_Element_Floodplain)
 	const string elemdata_mid_x("MID_X");
 	///Keyword for the database table column of the element data of a floodplain model: y-coordinate of the element midpoint [m] (Hyd_Element_Floodplain)
@@ -2076,8 +2170,21 @@ namespace hyd_label{
 	///Keyword for the database table column of the element data of a floodplain model: element as polygon [-] (Hyd_Element_Floodplain)
 	const string elemdata_polygon("GEO_POLYGON");
 
+	///Keyword for the database table name of the element data of a groundwater model (Hyd_Element_Groundwater)
+	const string tab_gwelem("HYD_GROUNDWATER_ELEMENT");
+	///Keyword for the database table column of the element data of a groundwater model: number of the groundwater [-] (Hyd_Element_Groundwater)
+	const string elemdata_gwno("GROUNDWATER_ID");
+	///Keyword for the database table column of the element data of a groundwater model: conductivity type id of the groundwater element [-] (Hyd_Element_Groundwater)
+	const string elemdata_conid("CONDUCTIVITY_ID");
+	///Keyword for the database table column of the element data of a groundwater model: porosity type id of the groundwater element [-] (Hyd_Element_Groundwater)
+	const string elemdata_porid("POROSITY_ID");
+	///Keyword for the database table column of the element data of a groundwater model: thickness of the groundwater element [m] (Hyd_Element_Groundwater)
+	const string elemdata_thickness("THICKNESS");
+
 	///Keyword for the database table name of the element boundary data of a floodplain model (Hyd_Element_Floodplain)
 	const string tab_fpelem_bound("HYD_FLOODPLAIN_ELEM_BOUND_COND");
+	///Keyword for the database table name of the element boundary data of a groundwater model (Hyd_Element_Groundwater)
+	const string tab_gwelem_bound("HYD_GROUNDWATER_ELEM_BOUND_COND");
 
 	///Keyword for the database table name of the element result data of a floodplain model (Hyd_Element_Floodplain)
 	const string tab_fpelem_erg_max("HYD_FLOODPLAIN_ELEM_MAX_RESULT");
@@ -2095,7 +2202,7 @@ namespace hyd_label{
 	const string elemerg_h_max("WATERLEVEL");
 	///Keyword for the database table column of the element result data of a floodplain model: global maximal waterlevel in an element [m] (Hyd_Element_Floodplain, _Hyd_Element_Floodplain_Type)
 	const string elemerg_s_max("GLOB_WATERLEVEL");
-	///Keyword for the database table column of the element result data of a floodplain model: maximal change in waterlevel per time  [m/min] (Hyd_Element_Floodplain, _Hyd_Element_Floodplain_Type)
+	///Keyword for the database table column of the element result data of a floodplain/groundwater model: maximal change in waterlevel per time  [m/min] (Hyd_Element_Floodplain, _Hyd_Element_Floodplain_Type, Hyd_Element_Groundwater)
 	const string elemerg_dsdt_max("DSDT");
 	///Keyword for the database table column of the element result data of a floodplain model: maximal flow velocity in x-direction [m/s] (Hyd_Element_Floodplain, _Hyd_Element_Floodplain_Type)
 	const string elemerg_vx_max("X_VELOCITY");
@@ -2111,18 +2218,22 @@ namespace hyd_label{
 	const string elemerg_dur_wet("DURATION_WET");
 	///Keyword for the database table column of the element result data of a floodplain model: watervolume in the element at the end of the calculation [m³] (Hyd_Element_Floodplain, _Hyd_Element_Floodplain_Type)
 	const string elemerg_end_vol("END_VOLUME");
-	///Keyword for the database table column of the element result data of a floodplain model: total inflow boundary volume to the element [m³] (Hyd_Element_Floodplain, _Hyd_Element_Floodplain_Type)
+	///Keyword for the database table column of the element result data of a floodplain/groundwater model: total inflow boundary volume to the element [m³] (Hyd_Element_Floodplain, _Hyd_Element_Floodplain_Type, Hyd_Element_Groundwater)
 	const string elemerg_cv_bound_in("IN_BOUNDARY");
-	///Keyword for the database table column of the element result data of a floodplain model: total outflow boundary volume out of an element [m³] (Hyd_Element_Floodplain, _Hyd_Element_Floodplain_Type)
+	///Keyword for the database table column of the element result data of a floodplain/groundwater model: total outflow boundary volume out of an element [m³] (Hyd_Element_Floodplain, _Hyd_Element_Floodplain_Type, Hyd_Element_Groundwater)
 	const string elemerg_cv_bound_out("OUT_BOUNDARY");
-	///Keyword for the database table column of the element result data of a floodplain model: total inflow volume due to a structure coupling of a river model to an element [m³] (Hyd_Element_Floodplain, _Hyd_Element_Floodplain_Type)
+	///Keyword for the database table column of the element result data of a floodplain/groundwater model: total inflow volume due to a structure coupling of a river model to an element [m³] (Hyd_Element_Floodplain, _Hyd_Element_Floodplain_Type, Hyd_Element_Groundwater)
 	const string elemerg_cv_struc_in("IN_STRUCTURE");
-	///Keyword for the database table column of the element result data of a floodplain model: total outflow volume due to a structure coupling of a river model out of an element [m³] (Hyd_Element_Floodplain, _Hyd_Element_Floodplain_Type)
+	///Keyword for the database table column of the element result data of a floodplain/groundwater model: total outflow volume due to a structure coupling of a river model out of an element [m³] (Hyd_Element_Floodplain, _Hyd_Element_Floodplain_Type, Hyd_Element_Groundwater)
 	const string elemerg_cv_struc_out("OUT_STRUCTURE");
-	///Keyword for the database table column of the element result data of a floodplain model: total inflow volume due to a direct coupling with a river model to an element [m³] (Hyd_Element_Floodplain, _Hyd_Element_Floodplain_Type)
+	///Keyword for the database table column of the element result data of a floodplain/groundwater model: total inflow volume due to a direct coupling with a river model to an element [m³] (Hyd_Element_Floodplain, _Hyd_Element_Floodplain_Type, Hyd_Element_Groundwater)
 	const string elemerg_cv_dir_in("IN_DIRECT");
-	///Keyword for the database table column of the element result data of a floodplain model: total outflow volume due to a direct coupling with a river model out of an element [m³] (Hyd_Element_Floodplain, _Hyd_Element_Floodplain_Type)
+	///Keyword for the database table column of the element result data of a floodplain/groundwater model: total outflow volume due to a direct coupling with a river model out of an element [m³] (Hyd_Element_Floodplain, _Hyd_Element_Floodplain_Type, Hyd_Element_Groundwater)
 	const string elemerg_cv_dir_out("OUT_DIRECT");
+	///Keyword for the database table column of the element result data of a floodplain/groundwater model: total inflow volume due to a direct coupling with a river model to an element [m³] (Hyd_Element_Floodplain, _Hyd_Element_Floodplain_Type, Hyd_Element_Groundwater)
+	const string elemerg_cv_rv_in("IN_RV_COUPLING");
+	///Keyword for the database table column of the element result data of a floodplain/groundwater model: total outflow volume due to a direct coupling with a river model out of an element [m³] (Hyd_Element_Floodplain, _Hyd_Element_Floodplain_Type, Hyd_Element_Groundwater)
+	const string elemerg_cv_rv_out("OUT_RV_COUPLING");
 	///Keyword for the database table column of the element result data of a floodplain model: total inflow volume due to an overflow coupling of a river model to an element [m³] (Hyd_Element_Floodplain, _Hyd_Element_Floodplain_Type)
 	const string elemerg_cv_rv_ov_in("IN_RV_OVERFLOW");
 	///Keyword for the database table column of the element result data of a floodplain model: total outflow volume due to an overflow coupling of a river model out of an element [m³] (Hyd_Element_Floodplain, _Hyd_Element_Floodplain_Type)
@@ -2143,6 +2254,24 @@ namespace hyd_label{
 	const string elemerg_cv_fp_in("IN_OTHER_FP");
 	///Keyword for the database table column of the element result data of a floodplain model: total outflow volume due to a floodplain coupling to another floodplain element [m³] (Hyd_Element_Floodplain, _Hyd_Element_Floodplain_Type)
 	const string elemerg_cv_fp_out("OUT_OTHER_FP");
+
+
+	///Keyword for the database table name of the element result data of a groundwater model (Hyd_Element_Groundwater)
+	const string tab_gwelem_erg_max("HYD_GROUNDWATER_ELEM_MAX_RESULT");
+	///Keyword for the database table name of the element instationary result data of a groundwater model (Hyd_Element_Groundwater)
+	const string tab_gwelem_erg_instat("HYD_GROUNDWATER_ELEM_INSTAT_RESULT");
+	///Keyword for the database view name of the element instationary result data of a groundwater model (Hyd_Element_Groundwater)
+	const string view_gwelem_erg_instat("HYD_GROUNDWATER_ELEM_INSTAT_RES_VIEW");
+	///Keyword for the database view name of the connection of elements to boundary conditions (Hyd_Element_Groundwater)
+	const string view_gwelem2bound("HYD_GROUNDWATER_ELEM_BOUND_VIEW");
+	///Keyword for the database table column of the element result data of a groundwater model: total inflow volume due to a groundwater coupling to a floodplain element [m³] (Hyd_Element_Groundwater)
+	const string elemerg_cv_gw_fp_in("IN_FP");
+	///Keyword for the database table column of the element result data of a groundwater model: total outflow volume due to a groundwater coupling to a floodplain element [m³] (Hyd_Element_Groundwater)
+	const string elemerg_cv_gw_fp_out("OUT_FP");
+	///Keyword for the database table column of the element result data of a groundwater model: total inflow volume due to a groundwater coupling to another groundwater element [m³] (Hyd_Element_Groundwater)
+	const string elemerg_cv_gw_in("IN_OTHER_GW");
+	///Keyword for the database table column of the element result data of a groundwater model: total outflow volume due to a groundwater coupling to another groundwater element [m³] (Hyd_Element_Groundwater)
+	const string elemerg_cv_gw_out("OUT_OTHER_GW");
 
 	///Keyword for the database table column of the instationary result data (Hyd_Element_Floodplain, _Hyd_River_Profile)
 	const string data_time("DATE_TIME");
@@ -2182,17 +2311,23 @@ namespace hyd_label{
 	const string profdata_base_left("LEFT_BASE");
 	///Keyword for the database table column of the river profile break data : number of the right-bank base point, to which height the break will developed [-] (_Hyd_River_Profile)
 	const string profdata_base_right("RIGHT_BASE_POINT");
+	///Keyword for the database table column of the profile data of a river model: conductivity id [-] (_Hyd_River_Profile)
+	const string profdata_con_id("CONDUCTIVITY_ID");
+	///Keyword for the database table column of the profile data of a river model: river bed thickness [m] (_Hyd_River_Profile)
+	const string profdata_rvbed_m("RIVERBED_THICKNESS");
 
 	///Keyword for the database table name of the profile boundary data of a river model (_Hyd_River_Profile)
 	const string tab_rvprof_bound("HYD_RIVER_PROF_BOUND_CONDITION");
 
 	/////Keyword for the database table column of the boundary data of the models: identifier for the szenario [-] (Hyd_Model_Floodplain, Hyd_Model_River, Hyd_Instatonary_Boundary)
 	//const string bounddata_sz_id("BOUNDDATA_SZ_ID");
-	///Keyword for the database table column of the boundary data of the models: flag fo a statinary boundary condition (true:= stationary, flase:=instationary) [-] (Hyd_Model_Floodplain, Hyd_Model_River, HydTemp_Profile)
+	///Keyword for the database table column of the boundary data of the models: flag fo a statinary boundary condition (true:= stationary, flase:=instationary) [-] (Hyd_Model_Floodplain, Hyd_Model_River)
 	const string bounddata_stat("STATIONARY");
-	///Keyword for the database table column of the boundary data of the models: stationary => discharge or waterlevel value; instationary => curve number [-] (Hyd_Model_Floodplain, Hyd_Model_River, Hyd_Instatonary_Boundary, HydTemp_Profile)
+	///Keyword for the database table column of the boundary data of the models: stationary => discharge or waterlevel value; instationary => curve number [-] (Hyd_Model_Floodplain, Hyd_Model_River, Hyd_Instatonary_Boundary, Hyd_Instationary_Boundary_GW)
 	const string bounddata_value("VALUE");
-	///Keyword for the database table column of the boundary data of the models: enumarator for the boundary type (_bound_type) [-] (Hyd_Model_Floodplain, Hyd_Model_River, Hyd_Instatonary_Boundary, Hyd_Instatonary_Boundary, HydTemp_Profile)
+	///Keyword for the database table column of the geometry of boundary data of the models: enumarator for the geometry boundary type (_bound_geom_type) [-] (Hyd_Instatonary_Boundary_GW) Currently only applied in groundwater models
+	const string bounddata_geom_type("GEOM_TYPE");
+	///Keyword for the database table column of the boundary data of the models: enumarator for the boundary type (_bound_type) [-] (Hyd_Model_Floodplain, Hyd_Model_River, Hyd_Instationary_Boundary, Hyd_Instationary_Boundary_GW)
 	const string bounddata_type("BOUNDARY_TYPE");
 
 	///Keyword for the database table column of the boundary data of the models: enumarator for the boundary type (_bound_type) [-] (HydTemp_Profile)
@@ -2314,6 +2449,8 @@ namespace hyd_label{
 
 	///Keyword for the database table name of the instationary boundary curves (Hyd_Instationary_Boundary)
 	const string tab_instat_bound("HYD_INSTAT_BOUND_CURVE");
+	///Keyword for the database table name of the instationary boundary curves of groundwater (Hyd_Instationary_Boundary_GW)
+	const string tab_instat_bound_gw("HYD_INSTAT_BOUND_CURVE_GW");
 	///Keyword for the database table column of the instationary boundary curves: the identifier for the boundary curve  [-] (Hyd_Instationary_Boundary)
 	const string instatbound_curve_id("CURVE_ID");
 	///Keyword for the database table column of the instationary boundary curves: global identifier of the data records [-] (Hyd_Instationary_Boundary)
@@ -2321,6 +2458,8 @@ namespace hyd_label{
 
 	///Keyword for the database table name of the points of the instationary boundary curves (Hyd_Instationary_Boundary)
 	const string tab_instatbound_point("HYD_INSTAT_BOUND_CURVE_POINT");
+	///Keyword for the database table name of the points of the instationary boundary curves of groundwater (Hyd_Instationary_Boundary_GW)
+	const string tab_instatbound_point_gw("HYD_INSTAT_BOUND_CURVE_POINT_GW");
 	///Keyword for the database table column of the points of the instationary boundary curves: the point in time of an instationary boundary point [h] (Hyd_Instationary_Boundary)
 	const string instatbound_time("TIME");
 	///Keyword for the database table column of the points of the instationary boundary curves: the identifier of the points of boundary curve [-] (Hyd_Instationary_Boundary)
@@ -2346,8 +2485,12 @@ namespace hyd_label{
 	const string polyseg_point_base("BASE_HEIGHT");
 	///Keyword for the database table column of the floodplain polysegments: poleni value of the segment point [-] (Hyd_Floodplain_Polysegment)
 	const string polyseg_point_pol("POLENI");
+	///Keyword for the database table column of the groundwater polysegments: kf value of the segment point [-] (Hyd_Groundwater_Polysegment)
+	const string polyseg_point_kf("KF");
 	///Keyword for the database table column of the floodplain polysegments: overflow flag of the segment point [-] (Hyd_Floodplain_Polysegment)
 	const string polyseg_point_overflow("OVERFLOW");
+	///Keyword for the database table column of the groundwater polysegments: flow-through flag of the segment point [-] (Hyd_Groundwater_Polysegment)
+	const string polyseg_point_flow_through("FLOWTHROUGH");
 	///Keyword for the database table column of the floodplain polysegments: break flag of the segment point [-] (Hyd_Floodplain_Polysegment)
 	const string polyseg_point_break("BREAK");
 	///Keyword for the database table column of the floodplain polysegments: abrupt break flag of the segment point [-] (Hyd_Floodplain_Polysegment)
@@ -2367,6 +2510,10 @@ namespace hyd_label{
 	const string obs_point_y("POINT_Y");
 	///Keyword for the database table column of the observation points: name of the observation point [-] (Hyd_Observation_Point_Management)
 	const string obs_point_name("NAME");
+	///Keyword for the database table column of the observation points: related model of the observation point [-] (Hyd_Observation_Point_Management)
+	const string obs_point_model("MODEL");
+	///Keyword for the database table column of the observation points: related element/profile id of the observation point [-] (Hyd_Observation_Point_Management)
+	const string obs_join_element_id("ELEMENT_PROFILE_ID");
 	///Keyword for the database table column of the observation points: geometrical data type of the segment point [m] (Hyd_Observation_Point_Management)
 	const string obs_point("GEO_POINT");
 
@@ -2386,6 +2533,8 @@ namespace hyd_label{
 	
 	///Keyword for the database table name of the floodplain polysegment points (Hyd_Floodplain_Polysegment) like dikelines or coastline
 	const string tab_fp_polyseg_point("HYD_FLOODPLAIN_POLYSEG_POINT");
+	///Keyword for the database table name of the groundwater polysegment points (Hyd_Groundwater_Polysegment) like riverlines
+	const string tab_gw_polyseg_point("HYD_Groundwater_POLYSEG_POINT");
 
 	///Keyword for the database table name of the floodplain polygons (Hyd_Floodplain_Polygon) like noflow-polygons
 	const string tab_fp_polygon("HYD_FLOODPLAIN_POLYGON");
@@ -3271,26 +3420,26 @@ namespace risk_label{
 	const string risk_sc_cult_build_with_hyd("SC_CULTURAL_HERITAGE_HYD_PROB");
 	///String for the simple counting categories: buildings with highly vulnerable person  \see Dam_Sc_Point
 	const string risk_sc_person_build_with_hyd("SC_HIGH_VUL_PERS_SITES_HYD_PROB");
-	///Keyword for the database table column of the detailed risk results per dpoint: risk factor [-] \see Risk_System
+	///Keyword for the database table column of the detailed risk results per dpoint: risk factor [-] (Risk_System)
 	const string risk_sc_fac("RISK_FACTOR");
 
-	///Keyword for the database table column of the detailed predicted risk results:  total economical risk [€/a] \see Risk_System
+	///Keyword for the database table column of the detailed predicted risk results:  total economical risk [€/a] (Risk_System)
 	const string risk_total_ecn_predict("TOTAL_ECN");
-	///Keyword for the database table column of the detailed predicted risk results:  percentage concerning the total economical risk [%] \see Risk_System
+	///Keyword for the database table column of the detailed predicted risk results:  percentage concerning the total economical risk [%] (Risk_System)
 	const string risk_total_ecn_predict_perc("TOTAL_ECN_PERC");
-	///Keyword for the database table column of the detailed predicted risk results:  total ecological risk [€/a] \see Risk_System
+	///Keyword for the database table column of the detailed predicted risk results:  total ecological risk [€/a] (Risk_System)
 	const string risk_total_eco_predict("TOTAL_ECO");
-	///Keyword for the database table column of the detailed predicted risk results:  percentage concerning the total ecological risk [%] \see Risk_System
+	///Keyword for the database table column of the detailed predicted risk results:  percentage concerning the total ecological risk [%] (Risk_System)
 	const string risk_total_eco_predict_perc("TOTAL_ECO_PERC");
 
-	///Keyword for the database table column of the detailed predicted risk results:  percentage concerning the total affected people risk [%] \see Risk_System
+	///Keyword for the database table column of the detailed predicted risk results:  percentage concerning the total affected people risk [%] (Risk_System)
 	const string risk_pop_affected_perc("POP_AFFECTED_PERC");
-	///Keyword for the database table column of the detailed predicted risk results:  percentage concerning the total endangered people risk [%] \see Risk_System
+	///Keyword for the database table column of the detailed predicted risk results:  percentage concerning the total endangered people risk [%] (Risk_System)
 	const string risk_pop_endangered_perc("POP_ENDANGERED_PERC");
 
-	///Keyword for the database table column of the detailed predicted risk results:  percentage concerning the total psycho-social score risk [%] \see Risk_System
+	///Keyword for the database table column of the detailed predicted risk results:  percentage concerning the total psycho-social score risk [%] (Risk_System)
 	const string risk_total_score_perc("TOTAL_SCORE_PERC");
-	///Keyword for the database table column of the detailed predicted risk results:  percentage concerning the total psycho-social score (with density) risk [%] \see Risk_System
+	///Keyword for the database table column of the detailed predicted risk results:  percentage concerning the total psycho-social score (with density) risk [%] (Risk_System)
 	const string risk_total_dens_score_perc("TOTAL_DENS_SCORE_PERC");
 
 }
@@ -3298,75 +3447,75 @@ namespace risk_label{
 namespace madm_label{
 
 
-	///String for defining the name of a weight set: standard \see Madm_System
+	///String for defining the name of a weight set: standard (Madm_System)
 	const string weight_standard("standard");
-	///String for defining the name of a weight set: economic standard \see Madm_System
+	///String for defining the name of a weight set: economic standard (Madm_System)
 	const string weight_ecn_standard("ecn_standard");
-	///String for defining the name of a weight set: ecologic standard \see Madm_System
+	///String for defining the name of a weight set: ecologic standard (Madm_System)
 	const string weight_eco_standard("eco_standard");
-	///String for defining the name of a weight set: population standard \see Madm_System
+	///String for defining the name of a weight set: population standard (Madm_System)
 	const string weight_pop_standard("pop_standard");
 
 
 
-	///Keyword for the file input of the madm analysis: begin of the general analysis informations [-] \see Madm_Decision_Matrix
+	///Keyword for the file input of the madm analysis: begin of the general analysis informations [-] (Madm_Decision_Matrix)
 	const string begin_general("!$BEGIN_GENERAL");
-	///Keyword for the file input of the madm analysis: end of the general analysis informations [-] \see Madm_Decision_Matrix
+	///Keyword for the file input of the madm analysis: end of the general analysis informations [-] (Madm_Decision_Matrix)
 	const string end_general("!$END_GENERAL");
 
-	///Keyword for the file input of the madm analysis: name of the analysis \see Madm_Decision_Matrix
+	///Keyword for the file input of the madm analysis: name of the analysis (Madm_Decision_Matrix)
 	const string analysis_name("!name");
-	///Keyword for the file input of the madm analysis: number of applied criteria \see Madm_Decision_Matrix
+	///Keyword for the file input of the madm analysis: number of applied criteria (Madm_Decision_Matrix)
 	const string no_crit("!no_criteria");
-	///Keyword for the file input of the madm analysis: number of applied alternatives \see Madm_Decision_Matrix
+	///Keyword for the file input of the madm analysis: number of applied alternatives (Madm_Decision_Matrix)
 	const string no_alt("!no_alternative");
 
-	///Keyword for the file input of the madm analysis: begin of the criteria informations [-] \see Madm_Decision_Matrix
+	///Keyword for the file input of the madm analysis: begin of the criteria informations [-] (Madm_Decision_Matrix)
 	const string begin_criteria("!$BEGIN_CRITERIA");
-	///Keyword for the file input of the madm analysis: end of the criteria informations [-] \see Madm_Decision_Matrix
+	///Keyword for the file input of the madm analysis: end of the criteria informations [-] (Madm_Decision_Matrix)
 	const string end_criteria("!$END_CRITERIA");
 
-	///Keyword for the file input of the madm analysis: criteria names \see Madm_Decision_Matrix
+	///Keyword for the file input of the madm analysis: criteria names (Madm_Decision_Matrix)
 	const string crit_name("!crit_name");
-	///Keyword for the file input of the madm analysis: specifies the optimum (maximal:=true, minimal:=false) \see Madm_Decision_Matrix
+	///Keyword for the file input of the madm analysis: specifies the optimum (maximal:=true, minimal:=false) (Madm_Decision_Matrix)
 	const string crit_max_min("!max_min_opt");
-	///Keyword for the file input of the madm analysis: weight of the criteria \see Madm_Decision_Matrix
+	///Keyword for the file input of the madm analysis: weight of the criteria (Madm_Decision_Matrix)
 	const string crit_weight("!weight");
 
-	///Keyword for the file input of the madm analysis: begin of the matrix informations [-] \see Madm_Decision_Matrix
+	///Keyword for the file input of the madm analysis: begin of the matrix informations [-] (Madm_Decision_Matrix)
 	const string begin_matrix("!$BEGIN_MATRIX");
-	///Keyword for the file input of the madm analysis: end of the matrix informations [-] \see Madm_Decision_Matrix
+	///Keyword for the file input of the madm analysis: end of the matrix informations [-] (Madm_Decision_Matrix)
 	const string end_matrix("!$END_MATRIX");
 
 
-	///Keyword for the file input of the madm weight sets: number of weight sets in file \see Madm_Decision_Matrix
+	///Keyword for the file input of the madm weight sets: number of weight sets in file (Madm_Analysis)
 	const string no_weight_set("!$no_weight_set");
 
-	///Keyword for the file input of the madm weight sets: begin of the weight set [-] \see Madm_Analysis
+	///Keyword for the file input of the madm weight sets: begin of the weight set [-] (Madm_Analysis)
 	const string begin_weight_set("!$BEGIN_SET");
-	///Keyword for the file input of the madm weight sets: end of the weight set [-] \see Madm_Analysis
+	///Keyword for the file input of the madm weight sets: end of the weight set [-] (Madm_Analysis)
 	const string end_weight_set("!$END_SET");
 
-	///Keyword for the file input of the madm weight sets: name of the set \see Madm_Analysis
+	///Keyword for the file input of the madm weight sets: name of the set (Madm_Analysis)
 	const string weight_set_name("!name");
-	///Keyword for the file input of the madm weight sets: weight for the economical risk criteria \see Madm_Analysis
+	///Keyword for the file input of the madm weight sets: weight for the economical risk criteria (Madm_Analysis)
 	const string weight_risk_ecn("!crit_risk_ecn");
-	///Keyword for the file input of the madm weight sets: weight for the ecological risk criteria \see Madm_Analysis
+	///Keyword for the file input of the madm weight sets: weight for the ecological risk criteria (Madm_Analysis)
 	const string weight_risk_eco("!crit_risk_eco");
-	///Keyword for the file input of the madm weight sets: weight for the psycho-social risk criteria \see Madm_Analysis
+	///Keyword for the file input of the madm weight sets: weight for the psycho-social risk criteria (Madm_Analysis)
 	const string weight_risk_pys("!crit_risk_pys");
-	///Keyword for the file input of the madm weight sets: weight for the people2risk (affected people) risk criteria \see Madm_Analysis
+	///Keyword for the file input of the madm weight sets: weight for the people2risk (affected people) risk criteria (Madm_Analysis)
 	const string weight_risk_pop_aff("!crit_risk_pop_aff");
-	///Keyword for the file input of the madm weight sets: weight for the people2risk (endangered people) risk criteria \see Madm_Analysis
+	///Keyword for the file input of the madm weight sets: weight for the people2risk (endangered people) risk criteria (Madm_Analysis)
 	const string weight_risk_pop_dan("!crit_risk_pop_dan");
 
-	///Keyword for the file input of the madm weight sets: weight for the simple counting (public buildings) risk criteria \see Madm_Analysis
+	///Keyword for the file input of the madm weight sets: weight for the simple counting (public buildings) risk criteria (Madm_Analysis)
 	const string weight_risk_sc_pub("!crit_risk_sc_pub");
-	///Keyword for the file input of the madm weight sets: weight for the simple counting (ecologic perilous sites or buildings) risk criteria \see Madm_Analysis
+	///Keyword for the file input of the madm weight sets: weight for the simple counting (ecologic perilous sites or buildings) risk criteria (Madm_Analysis)
 	const string weight_risk_sc_eco("!crit_risk_sc_eco");
-	///Keyword for the file input of the madm weight sets: weight for the simple counting (cultural heritage) risk criteria \see Madm_Analysis
+	///Keyword for the file input of the madm weight sets: weight for the simple counting (cultural heritage) risk criteria (Madm_Analysis)
 	const string weight_risk_sc_cult("!crit_risk_sc_cult");
-	///Keyword for the file input of the madm weight sets: weight for the simple counting (buildings with highly vulnerable person) risk criteria \see Madm_Analysis
+	///Keyword for the file input of the madm weight sets: weight for the simple counting (buildings with highly vulnerable person) risk criteria (Madm_Analysis)
 	const string weight_risk_sc_person("!crit_risk_sc_person");
 
 
@@ -3393,59 +3542,60 @@ namespace madm_label{
 
 	///Keyword for the file input of the madm weight sets: weight for the maximum outflow discharge risk criteria \see Madm_Analysis
 	const string weight_risk_outflow("!crit_risk_outflow");
-	///Keyword for the file input of the madm weight sets: weight for the economical cost criteria \see Madm_Analysis
+	///Keyword for the file input of the madm weight sets: weight for the economical cost criteria (Madm_Analysis)
 	const string weight_cost_ecn("!crit_cost_ecn");
 
-	///Keyword of the madm calculation approach: Simple Additive Weighting (standard normalisation)  [-] \see Madm_Analysis
+
+	///Keyword of the madm calculation approach: Simple Additive Weighting (standard normalisation)  [-] (Madm_Analysis)
 	const string analysis_saw_standard("SAW_STANDARD");
-	///Keyword of the madm calculation approach: Simple Additive Weighting (range normalisation)  [-] \see Madm_Analysis
+	///Keyword of the madm calculation approach: Simple Additive Weighting (range normalisation)  [-] (Madm_Analysis)
 	const string analysis_saw_range("SAW_RANGE");
-	///Keyword of the madm calculation approach: Technique for Order Preference by Similarity to Ideal Solution  [-] \see Madm_Analysis
+	///Keyword of the madm calculation approach: Technique for Order Preference by Similarity to Ideal Solution  [-] (Madm_Analysis)
 	const string analysis_topsis("TOPSIS");
-	///Keyword of the madm calculation approach: ELimination Et Choix Traduisant la REalité [-] \see Madm_Analysis
+	///Keyword of the madm calculation approach: ELimination Et Choix Traduisant la REalité [-] (Madm_Analysis)
 	const string analysis_electre("ELECTRE");
-	///Keyword of the madm calculation approach: all scores are taken into account [-] \see Madm_Analysis
+	///Keyword of the madm calculation approach: all scores are taken into account [-] (Madm_Analysis)
 	const string analysis_total("TOTAL");
 
-	///Keyword of the madm normalisation scheme: standard [-] \see Madm_Decision_Matrix
+	///Keyword of the madm normalisation scheme: standard [-] (Madm_Decision_Matrix)
 	const string norm_standard("standard");
-	///Keyword of the madm normalisation scheme: range [-] \see Madm_Decision_Matrix
+	///Keyword of the madm normalisation scheme: range [-] (Madm_Decision_Matrix)
 	const string norm_range("range");
-	///Keyword of the madm normalisation scheme: vectoriel [-] \see Madm_Decision_Matrix
+	///Keyword of the madm normalisation scheme: vectoriel [-] (Madm_Decision_Matrix)
 	const string norm_vector("vector");
-	///Keyword of the madm normalisation scheme: no normalisation applied [-] \see Madm_Decision_Matrix
+	///Keyword of the madm normalisation scheme: no normalisation applied [-] (Madm_Decision_Matrix)
 	const string norm_no("no_norm");
 
 
-	///Keyword for the database table name of the set of weights \see Madm_System
+	///Keyword for the database table name of the set of weights (Madm_System)
 	const string tab_set("MADM_SET");
-	///Keyword for the database table column of the set of weights: Set id [-] \see Madm_System 
+	///Keyword for the database table column of the set of weights: Set id [-] (Madm_System) 
 	const string set_id("SET_ID");
-	///Keyword for the database table column of the set of weights: Name of set [-] \see Madm_System
+	///Keyword for the database table column of the set of weights: Name of set [-] (Madm_System) 
 	const string set_name("NAME");
 
-	///Keyword for the database table column of divers madm tables: Criteria variation of risk economic [monetary/a] \see Madm_System 
+	///Keyword for the database table column of divers madm tables: Criteria variation of risk economic [monetary/a] (Madm_System) 
 	const string crit_risk_ecn("CRIT_RISK_ECN");
-	///Keyword for the database table column of divers madm tables: Criteria variation of risk ecologic [monetary/a] \see Madm_System 
+	///Keyword for the database table column of divers madm tables: Criteria variation of risk ecologic [monetary/a] (Madm_System) 
 	const string crit_risk_eco("CRIT_RISK_ECO");
-	///Keyword for the database table column of divers madm tables: Criteria variation of risk psycho-social [score/a] \see Madm_System 
+	///Keyword for the database table column of divers madm tables: Criteria variation of risk psycho-social [score/a] (Madm_System) 
 	const string crit_risk_pys("CRIT_RISK_PYS");
-	///Keyword for the database table column of divers madm tables: Criteria variation of risk people2risk (affected persons) [person/a] \see Madm_System
+	///Keyword for the database table column of divers madm tables: Criteria variation of risk people2risk (affected persons) [person/a] (Madm_System) 
 	const string crit_risk_pop_aff("CRIT_RISK_POP_AFF");
-	///Keyword for the database table column of divers madm tables: Criteria variation of risk people2risk (endangered persons) [person/a] \see Madm_System
+	///Keyword for the database table column of divers madm tables: Criteria variation of risk people2risk (endangered persons) [person/a] (Madm_System) 
 	const string crit_risk_pop_dan("CRIT_RISK_POP_DAN");
-	///Keyword for the database table column of divers madm tables: Criteria variation of risk outflow [(m³/s)/a] \see Madm_System 
+	///Keyword for the database table column of divers madm tables: Criteria variation of risk outflow [(m³/s)/a] (Madm_System) 
 	const string crit_risk_outflow("CRIT_RISK_OUTFLOW");
-	///Keyword for the database table column of divers madm tables: Criteria variation of risk for simple counting public buildings [score/a] \see Madm_System
+	///Keyword for the database table column of divers madm tables: Criteria variation of risk for simple counting public buildings [score/a] (Madm_System) 
 	const string crit_risk_sc_pub("CRIT_RISK_SC_PUB");
-	///Keyword for the database table column of divers madm tables: Criteria variation of risk for simple counting ecologic perilous sites or buildings [score/a] \see Madm_System 
+	///Keyword for the database table column of divers madm tables: Criteria variation of risk for simple counting ecologic perilous sites or buildings [score/a] (Madm_System) 
 	const string crit_risk_sc_eco("CRIT_RISK_SC_ECO");
-	///Keyword for the database table column of divers madm tables: Criteria variation of risk for simple counting cultural heritage [score/a] \see Madm_System 
+	///Keyword for the database table column of divers madm tables: Criteria variation of risk for simple counting cultural heritage [score/a] (Madm_System) 
 	const string crit_risk_sc_cult("CRIT_RISK_SC_CULT");
-	///Keyword for the database table column of divers madm tables: Criteria variation of risk for simple counting buildings with highly vulnerable person [score/a] \see Madm_System 
+	///Keyword for the database table column of divers madm tables: Criteria variation of risk for simple counting buildings with highly vulnerable person [score/a] (Madm_System) 
 	const string crit_risk_sc_person("CRIT_RISK_SC_PERSON");
 
-	///Keyword for the database table column of divers madm tables: Criteria cost economic [monetary] \see Madm_System
+	///Keyword for the database table column of divers madm tables: Criteria cost economic [monetary] (Madm_System) 
 	const string crit_cost_ecn("CRIT_COST_ECN");
 
 	///Keyword for the database table column of divers madm tables: Population time Sector electricity [(person x sec)/a] \see Madm_System

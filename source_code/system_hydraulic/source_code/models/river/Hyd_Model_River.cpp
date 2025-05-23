@@ -43,6 +43,9 @@ Hyd_Model_River::Hyd_Model_River(void){
 	this->total_right_dikebreak_coupling_volume.volume_in=0.0;
 	this->total_right_dikebreak_coupling_volume.volume_out=0.0;
 	this->total_right_dikebreak_coupling_volume.volume_total=0.0;
+	this->total_leakage_coupling_volume.volume_in = 0.0;
+	this->total_leakage_coupling_volume.volume_out = 0.0;
+	this->total_leakage_coupling_volume.volume_total = 0.0;
 	this->total_volume_error_zero_outflow=0.0;
     this->ilu_number=-2;
 
@@ -78,8 +81,11 @@ Hyd_Model_River::~Hyd_Model_River(void){
 }
 //_________________
 //public
+void Hyd_Model_River::input_members(const string global_file, const int index, const string global_path) {
+
+}
 //input the river model per file
-void Hyd_Model_River::input_members(const string global_file, const int index, const string global_path){
+void Hyd_Model_River::input_members(const string global_file, const int index, const string global_path, Hyd_Param_Conductivity *con_param, bool gwmodel_applied){
 		
 
 	try{
@@ -103,7 +109,7 @@ void Hyd_Model_River::input_members(const string global_file, const int index, c
 		//read in the profile members
 		cout <<"Read in " << this->Param_RV.RVNofProf<< " profiles of the Rivermodel from file "<< this->Param_RV.RVGeomtryFile << " ..." <<endl;
 		Sys_Common_Output::output_hyd->output_txt(&cout);
-		this->input_river_profiles_perfile();
+		this->input_river_profiles_perfile(con_param, gwmodel_applied);
 
 		//read them in
 		this->read_instat_boundarycurves();
@@ -123,7 +129,7 @@ void Hyd_Model_River::input_members(const string global_file, const int index, c
 	Sys_Common_Output::output_hyd->rewind_userprefix();
 }
 //Input the river model with the index per file with parser; the general settings as well as the profile data
-void Hyd_Model_River::input_members(const Hyd_Param_RV param_rv){
+void Hyd_Model_River::input_members(const Hyd_Param_RV param_rv, Hyd_Param_Conductivity *con_param, bool gwmodel_applied){
 	try{
 		//read in global model parameters
 		this->Param_RV=param_rv;
@@ -145,7 +151,7 @@ void Hyd_Model_River::input_members(const Hyd_Param_RV param_rv){
 		//read in the profile members
 		cout <<"Read in " << this->Param_RV.RVNofProf<< " profiles of the Rivermodel from file "<< this->Param_RV.RVGeomtryFile << " ..." <<endl;
 		Sys_Common_Output::output_hyd->output_txt(&cout);
-		this->input_river_profiles_perfile();
+		this->input_river_profiles_perfile(con_param, gwmodel_applied);
 
 		//read them in
 		this->read_instat_boundarycurves();
@@ -673,7 +679,7 @@ void Hyd_Model_River::clone_model(Hyd_Model_River *river){
 
 }
 //initialize the river profiles
-void Hyd_Model_River::init_river_model(Hyd_Param_Material *material_table){
+void Hyd_Model_River::init_river_model(Hyd_Param_Material *material_table, Hyd_Param_Conductivity* con_param){
 
 	try{
 		ostringstream cout;
@@ -684,7 +690,7 @@ void Hyd_Model_River::init_river_model(Hyd_Param_Material *material_table){
 		this->init_river_model_geometry();
 		Hyd_Multiple_Hydraulic_Systems::check_stop_thread_flag();
 		//init the first profile
-		this->inflow_river_profile.init_profile(material_table, this->Param_RV.user_setting);
+		this->inflow_river_profile.init_profile(material_table, this->Param_RV.user_setting,con_param);
 		//this->inflow_river_profile.typ_of_profile->output_tables();
 		//init the profiles
 		for(int i=0; i< this->Param_RV.RVNofProf-2; i++){
@@ -696,11 +702,11 @@ void Hyd_Model_River::init_river_model(Hyd_Param_Material *material_table){
 
 			Hyd_Multiple_Hydraulic_Systems::check_stop_thread_flag();
 			
-			this->river_profiles[i].init_profile(material_table, this->Param_RV.user_setting);
+			this->river_profiles[i].init_profile(material_table, this->Param_RV.user_setting,con_param);
 			//this->river_profiles[i].typ_of_profile->output_tables();
 		}
 		//init the last profile
-		this->outflow_river_profile.init_profile(material_table, this->Param_RV.user_setting);
+		this->outflow_river_profile.init_profile(material_table, this->Param_RV.user_setting,con_param);
 
 		//calcuculate width
 		this->calculate_river_width();
@@ -1601,14 +1607,25 @@ void Hyd_Model_River::output_result2csv_1d(const double timepoint, const int tim
 	}
 }
 //Output the result members per timestep to paraview as 2d
-void Hyd_Model_River::output_result2paraview_2d(const double timepoint, const int timestep_number) {
+void Hyd_Model_River::output_result2paraview_2d(const double timepoint, const int timestep_number,string unit) {
+	int time=0;
+	if (unit == "s") {
+		time = int(timepoint);
+	}
+	else if (unit == "h") {
+		time = int(timepoint / 3600);
+	}
+	else if (unit == "d") {
+		time = int(timepoint / 86400);
+	}
 
 	//get the file name
 	string filename = this->Param_RV.get_filename_result2file_2d(hyd_label::paraview);
 	//Add file type
-	int time = (int)timepoint;
+	//int time = (int)timepoint;
 	filename += "_";
 	filename += std::to_string(time);
+	filename += unit;
 	filename += hyd_label::vtk;
 
 	if (filename == label::not_set) {
@@ -2989,7 +3006,7 @@ void Hyd_Model_River::set_part_profile_list(_Hyd_River_Profile *up, _Hyd_River_P
 	}
 }
 //input the river profile per file
-void Hyd_Model_River::input_river_profiles_perfile(void){
+void Hyd_Model_River::input_river_profiles_perfile(Hyd_Param_Conductivity *con_param, bool gwmodel_applied){
 	//a profile is found
 	bool found_flag=false;
 	//file
@@ -3046,17 +3063,25 @@ void Hyd_Model_River::input_river_profiles_perfile(void){
 				throw msg;
 			}
 			//read in the profile specific data 
+			_hyd_gw2rv_calculation_type coupling_type = this->Param_RV.get_gw2rv_coupling_calculation_type();
+			int coupling_id=0 ;
+			if (coupling_type == _hyd_gw2rv_calculation_type::Darcy) {
+				coupling_id = 0;
+			}
+			else if (coupling_type == _hyd_gw2rv_calculation_type::Rushton) {
+				coupling_id = 1;
+			}
 			//first profile
 			if(i==0){
-				this->inflow_river_profile.input_members(&profile_file, i, myline, &line_counter);
+				this->inflow_river_profile.input_members(&profile_file, i, myline, &line_counter, con_param, gwmodel_applied,coupling_id);
 			}
 			//last profile
 			else if(i==this->Param_RV.RVNofProf-1){
-				this->outflow_river_profile.input_members(&profile_file, i, myline, &line_counter);
+				this->outflow_river_profile.input_members(&profile_file, i, myline, &line_counter, con_param, gwmodel_applied,coupling_id);
 			}
 			//profiles in between
 			else{
-				this->river_profiles[i-1].input_members(&profile_file, i, myline, &line_counter);
+				this->river_profiles[i-1].input_members(&profile_file, i, myline, &line_counter, con_param, gwmodel_applied, coupling_id);
 			}
 
 		}//end loop over profiles
@@ -3883,7 +3908,7 @@ void Hyd_Model_River::count_profile_types(void){
 		}
 	}
 }
-//Output the hydrological balance of the river model
+//Output the hydrological balance of the floodplain model
 void Hyd_Model_River::output_hydrological_balance(void){
 	ostringstream cout;
 
@@ -3945,12 +3970,17 @@ void Hyd_Model_River::output_hydrological_balance(void){
 		cout << "  Couplingvolume in   (right bank)        :"<<W(15)<< P(1) << FORMAT_FIXED_REAL<< this->total_right_dikebreak_coupling_volume.volume_in<< endl;
 		cout << "  Couplingvolume out  (right bank)        :"<<W(15)<< P(1) << FORMAT_FIXED_REAL<< this->total_right_dikebreak_coupling_volume.volume_out<< endl;
 	}
+	cout << " Total leakage couplingvolume   :" << W(15) << P(1) << FORMAT_FIXED_REAL << this->total_leakage_coupling_volume.volume_total << endl;
+	if (abs(this->total_leakage_coupling_volume.volume_out) > constant::zero_epsilon || abs(this->total_leakage_coupling_volume.volume_in) > constant::zero_epsilon) {
+		cout << "  Couplingvolume in       :" << W(15) << P(1) << FORMAT_FIXED_REAL << this->total_leakage_coupling_volume.volume_in << endl;
+		cout << "  Couplingvolume out        :" << W(15) << P(1) << FORMAT_FIXED_REAL << this->total_leakage_coupling_volume.volume_out << endl;
+	}
 	Sys_Common_Output::output_hyd->output_txt(&cout,true);
 	cout << " Sum of volumes                           :"<<W(15)<< P(1) << FORMAT_FIXED_REAL << this->sum_volumes << endl;
 	cout << " Error [%]                                :"<<W(15)<< P(1) << FORMAT_FIXED_REAL << this->error_hydrological_balance << endl;
 	Sys_Common_Output::output_hyd->output_txt(&cout);
 }
-//Calculate the hydrological balance of the river model
+//Calculate the hydrological balance of the floodplain model
 void Hyd_Model_River::calculate_total_hydrological_balance(void){
 	//reset the values
 	this->reset_total_hydrological_balance();
@@ -3973,6 +4003,7 @@ void Hyd_Model_River::calculate_total_hydrological_balance(void){
 		this->river_profiles[i].add_hydro_balance_structure_coupling(&this->total_structure_coupling_volume);
 		this->river_profiles[i].add_hydro_balance_dikebreak_left_coupling(&this->total_left_dikebreak_coupling_volume);
 		this->river_profiles[i].add_hydro_balance_dikebreak_right_coupling(&this->total_right_dikebreak_coupling_volume);
+		this->river_profiles[i].add_hydro_balance_leakage_coupling(&this->total_leakage_coupling_volume);
 		this->total_volume_error_zero_outflow=this->total_volume_error_zero_outflow+this->river_profiles[i].get_outflow_zero_error_volume();
 
 	}
@@ -3994,7 +4025,7 @@ void Hyd_Model_River::calculate_total_hydrological_balance(void){
 	this->outflow_river_profile.add_hydro_balance_structure_coupling(&this->total_structure_coupling_volume);
 	this->outflow_river_profile.add_hydro_balance_dikebreak_left_coupling(&this->total_left_dikebreak_coupling_volume);
 	this->outflow_river_profile.add_hydro_balance_dikebreak_right_coupling(&this->total_right_dikebreak_coupling_volume);
-
+	this->outflow_river_profile.add_hydro_balance_leakage_coupling(&this->total_leakage_coupling_volume);
 
 
 
@@ -4004,7 +4035,7 @@ void Hyd_Model_River::calculate_total_hydrological_balance(void){
 		this->total_coupling_left_bank_volume.volume_total+this->total_coupling_right_bank_volume.volume_total-
 		this->outflow_river_profile.get_outflow_volume()+this->inflow_river_profile.get_inflow_volume()+this->inflow_river_profile.get_watervolume_difference_direct_coupling()+
 		this->total_coupling_1d_volume.volume_total+this->total_structure_coupling_volume.volume_total+
-		this->total_left_dikebreak_coupling_volume.volume_total+this->total_right_dikebreak_coupling_volume.volume_total+
+		this->total_left_dikebreak_coupling_volume.volume_total+this->total_right_dikebreak_coupling_volume.volume_total+ this->total_leakage_coupling_volume.volume_total+
 		this->total_volume_error_zero_outflow);
 
 	//calculate the error
@@ -4016,14 +4047,14 @@ void Hyd_Model_River::calculate_total_hydrological_balance(void){
 			abs(this->total_coupling_1d_volume.volume_in)+abs(this->total_coupling_1d_volume.volume_out)+
 			abs(this->total_left_dikebreak_coupling_volume.volume_in)+abs(this->total_left_dikebreak_coupling_volume.volume_out)+
 			abs(this->total_right_dikebreak_coupling_volume.volume_in)+abs(this->total_right_dikebreak_coupling_volume.volume_out)+
-			abs(this->total_structure_coupling_volume.volume_in)+abs(this->total_structure_coupling_volume.volume_out);
+			abs(this->total_structure_coupling_volume.volume_in)+abs(this->total_structure_coupling_volume.volume_out) + abs(this->total_leakage_coupling_volume.volume_in)+abs(this->total_leakage_coupling_volume.volume_out);
 
 	if(abs_sum>1e-3){
 				this->error_hydrological_balance=(this->sum_volumes/abs_sum)*100.0;
 	}
 
 }
-//Reset the total hydrological balance values
+//Reset the total hydraological balance values
 void Hyd_Model_River::reset_total_hydrological_balance(void){
 	//reset the values
 	this->total_watervolume=0.0;
@@ -4052,6 +4083,9 @@ void Hyd_Model_River::reset_total_hydrological_balance(void){
 	this->total_right_dikebreak_coupling_volume.volume_in=0.0;
 	this->total_right_dikebreak_coupling_volume.volume_out=0.0;
 	this->total_right_dikebreak_coupling_volume.volume_total=0.0;
+	this->total_leakage_coupling_volume.volume_in = 0.0;
+	this->total_leakage_coupling_volume.volume_out = 0.0;
+	this->total_leakage_coupling_volume.volume_total = 0.0;
 	this->error_hydrological_balance=0.0;
 	this->total_volume_error_zero_outflow=0.0;
 }
@@ -4336,10 +4370,6 @@ int __cdecl f1D_equation2solve( realtype time, N_Vector results, N_Vector da_dt,
 
 	realtype *dh_da_data=NULL;
 	dh_da_data=NV_DATA_S(da_dt);
-
-	//ostringstream out;
-	//out << "   RV solver 1 "  << time<< endl;
-	//Sys_Common_Output::output_hyd->output_txt(&out);
 	// Initialize da_dt with zero; not required
 	//N_VConst(0.0, da_dt);
 
@@ -4394,8 +4424,7 @@ int __cdecl f1D_equation2solve( realtype time, N_Vector results, N_Vector da_dt,
 		throw msg;
 	}
 
-	//out << "   RV solver 2 " << time << endl;
-	//Sys_Common_Output::output_hyd->output_txt(&out);
+
 	
 	//set the flow specific values for the inbetween profiles (the calculated area is given to the first profile of a segment)
 	for(int i=0; i < rv_data->number_inbetween_profiles; i++){
@@ -4467,9 +4496,6 @@ int __cdecl f1D_equation2solve( realtype time, N_Vector results, N_Vector da_dt,
 		throw msg;
 	}
 
-	//out << "   RV solver 3 " << time << endl;
-	//Sys_Common_Output::output_hyd->output_txt(&out);
-
 	try{
 		//set the actual river discharges
 		//for the profile after the inflow profile
@@ -4516,89 +4542,85 @@ int __cdecl f1D_equation2solve( realtype time, N_Vector results, N_Vector da_dt,
 	}
 
 	//boundary discharges are setted by syncronisation
-	try{
-		//set the da_dt values for each river segment
-		//set the inflow discharge
-		if(rv_data->inflow_river_profile.get_h_inflow_is_given()==false){
-			dh_da_data[0]=rv_data->inflow_river_profile.get_q_inflow();	
-			//outprofile is next profile
-			if(rv_data->number_inbetween_profiles==0){
-				dh_da_data[0]=dh_da_data[0]+(-1.0)*rv_data->outflow_river_profile.get_calculated_river_discharge();
-			}
-			else{
-				//discharge through profile for first segment
-				dh_da_data[0]=dh_da_data[0]+(-1.0)*rv_data->river_profiles[0].get_actual_river_discharge();
-			}
-			dh_da_data[0]=rv_data->inflow_river_profile.get_total_boundary_coupling_discharge(time,dh_da_data[0]);
 
-		}
-		if(rv_data->number_inbetween_profiles!=0){
-		
-			//discharge through profile for last segment (!!!get actutal river discharge!!!!?)
-			dh_da_data[rv_data->number_inbetween_profiles]=rv_data->river_profiles[rv_data->number_inbetween_profiles-1].get_actual_river_discharge()+(-1.0)*rv_data->outflow_river_profile.get_calculated_river_discharge();
-			//dh_da_data[rv_data->number_inbetween_profiles] = rv_data->river_profiles[rv_data->number_inbetween_profiles - 1].get_actual_river_discharge() + (-1.0)*rv_data->outflow_river_profile.get_actual_river_discharge();
-			dh_da_data[rv_data->number_inbetween_profiles]=rv_data->river_profiles[rv_data->number_inbetween_profiles-1].get_total_boundary_coupling_discharge(time,dh_da_data[rv_data->number_inbetween_profiles]);
-
-
-			//for the inbetween profiles
-			for(int i=1; i< rv_data->number_inbetween_profiles; i++){
-				//discharge through profile for corresponding segment
-				dh_da_data[i]=rv_data->river_profiles[i-1].get_actual_river_discharge()+(-1.0)*rv_data->river_profiles[i].get_actual_river_discharge();
-				dh_da_data[i]=rv_data->river_profiles[i-1].get_total_boundary_coupling_discharge(time,dh_da_data[i]);
-			}
-		
-		}
-
-		//if a h-value is given as inflow boundary set the discharge out of the next downstream profile as inflow discharge
-		if(rv_data->inflow_river_profile.get_h_inflow_is_given()==true ){
-			rv_data->inflow_river_profile.set_q_inflow_interim(-1.0*dh_da_data[0], time);
-			dh_da_data[0]=0.0;
-		}
-
-	
-		//transform discharge [m³/s] into areas per second [m²/s] by dividing through the half segment length upstream/downstream
-		dh_da_data[0]=dh_da_data[0]/(rv_data->inflow_river_profile.get_distance2downstream()*0.5);
-		for(int i=0; i<rv_data->number_inbetween_profiles; i++){
-			dh_da_data[i+1]=dh_da_data[i+1]/((rv_data->river_profiles[i].get_distance2upstream()+rv_data->river_profiles[i].get_distance2downstream())*0.5);
-		}
-
-
-
-
-		//calculate the hydrological balance for the outflow profile
-		rv_data->outflow_river_profile.calculate_hydrological_balance_outflow(time);
-
-
-
-		//calculate the stabilization discharge (numerical reasons)
-		for(int i=0; i< rv_data->number_inbetween_profiles; i++){			
-			rv_data->river_profiles[i].calculate_stabilization_discharge();			
-		}
-		rv_data->outflow_river_profile.calculate_stabilization_discharge();
-		//add the stabilization discharge for wet dry flow (numerical reasons)
-		dh_da_data[0]=dh_da_data[0]+rv_data->inflow_river_profile.get_stabilization_discharge(); 
-		if(rv_data->number_inbetween_profiles==0){//outprofile is next profile
-			dh_da_data[0]=dh_da_data[0]+rv_data->outflow_river_profile.get_stabilization_discharge();
+	//set the da_dt values for each river segment
+	//set the inflow discharge
+	if(rv_data->inflow_river_profile.get_h_inflow_is_given()==false){
+		dh_da_data[0]=rv_data->inflow_river_profile.get_q_inflow();	
+		//outprofile is next profile
+		if(rv_data->number_inbetween_profiles==0){
+			dh_da_data[0]=dh_da_data[0]+(-1.0)*rv_data->outflow_river_profile.get_calculated_river_discharge();
 		}
 		else{
-			for(int i=0; i< rv_data->number_inbetween_profiles; i++){
-				if(i==0){
-					dh_da_data[i]=dh_da_data[i]+rv_data->river_profiles[i].get_stabilization_discharge();
-				}
-				else{
-				
-					dh_da_data[i]=dh_da_data[i]+(-1.0)*rv_data->river_profiles[i-1].get_stabilization_discharge();
-					dh_da_data[i]=dh_da_data[i]+rv_data->river_profiles[i].get_stabilization_discharge();
-				}
-			}
-
-			//discharge through profile for last segment
-			dh_da_data[rv_data->number_inbetween_profiles]=dh_da_data[rv_data->number_inbetween_profiles]+(-1.0)*rv_data->river_profiles[rv_data->number_inbetween_profiles-1].get_stabilization_discharge();
-			dh_da_data[rv_data->number_inbetween_profiles]=dh_da_data[rv_data->number_inbetween_profiles]+rv_data->outflow_river_profile.get_stabilization_discharge();
+			//discharge through profile for first segment
+			dh_da_data[0]=dh_da_data[0]+(-1.0)*rv_data->river_profiles[0].get_actual_river_discharge();
 		}
+		dh_da_data[0]=rv_data->inflow_river_profile.get_total_boundary_coupling_discharge(time,dh_da_data[0]);
+
 	}
-	catch (Error msg) {
-		throw msg;
+	if(rv_data->number_inbetween_profiles!=0){
+		
+		//discharge through profile for last segment (!!!get actutal river discharge!!!!?)
+		dh_da_data[rv_data->number_inbetween_profiles]=rv_data->river_profiles[rv_data->number_inbetween_profiles-1].get_actual_river_discharge()+(-1.0)*rv_data->outflow_river_profile.get_calculated_river_discharge();
+		//dh_da_data[rv_data->number_inbetween_profiles] = rv_data->river_profiles[rv_data->number_inbetween_profiles - 1].get_actual_river_discharge() + (-1.0)*rv_data->outflow_river_profile.get_actual_river_discharge();
+		dh_da_data[rv_data->number_inbetween_profiles]=rv_data->river_profiles[rv_data->number_inbetween_profiles-1].get_total_boundary_coupling_discharge(time,dh_da_data[rv_data->number_inbetween_profiles]);
+
+
+		//for the inbetween profiles
+		for(int i=1; i< rv_data->number_inbetween_profiles; i++){
+			//discharge through profile for corresponding segment
+			dh_da_data[i]=rv_data->river_profiles[i-1].get_actual_river_discharge()+(-1.0)*rv_data->river_profiles[i].get_actual_river_discharge();
+			dh_da_data[i]=rv_data->river_profiles[i-1].get_total_boundary_coupling_discharge(time,dh_da_data[i]);
+		}
+		
+	}
+
+	//if a h-value is given as inflow boundary set the discharge out of the next downstream profile as inflow discharge
+	if(rv_data->inflow_river_profile.get_h_inflow_is_given()==true ){
+		rv_data->inflow_river_profile.set_q_inflow_interim(-1.0*dh_da_data[0], time);
+		dh_da_data[0]=0.0;
+	}
+
+	
+	//transform discharge [m³/s] into areas per second [m²/s] by dividing through the half segment length upstream/downstream
+	dh_da_data[0]=dh_da_data[0]/(rv_data->inflow_river_profile.get_distance2downstream()*0.5);
+	for(int i=0; i<rv_data->number_inbetween_profiles; i++){
+		dh_da_data[i+1]=dh_da_data[i+1]/((rv_data->river_profiles[i].get_distance2upstream()+rv_data->river_profiles[i].get_distance2downstream())*0.5);
+	}
+
+
+
+
+	//calculate the hydrological balance for the outflow profile
+	rv_data->outflow_river_profile.calculate_hydrological_balance_outflow(time);
+
+
+
+	//calculate the stabilization discharge (numerical reasons)
+	for(int i=0; i< rv_data->number_inbetween_profiles; i++){			
+		rv_data->river_profiles[i].calculate_stabilization_discharge();			
+	}
+	rv_data->outflow_river_profile.calculate_stabilization_discharge();
+	//add the stabilization discharge for wet dry flow (numerical reasons)
+	dh_da_data[0]=dh_da_data[0]+rv_data->inflow_river_profile.get_stabilization_discharge(); 
+	if(rv_data->number_inbetween_profiles==0){//outprofile is next profile
+		dh_da_data[0]=dh_da_data[0]+rv_data->outflow_river_profile.get_stabilization_discharge();
+	}
+	else{
+		for(int i=0; i< rv_data->number_inbetween_profiles; i++){
+			if(i==0){
+				dh_da_data[i]=dh_da_data[i]+rv_data->river_profiles[i].get_stabilization_discharge();
+			}
+			else{
+				
+				dh_da_data[i]=dh_da_data[i]+(-1.0)*rv_data->river_profiles[i-1].get_stabilization_discharge();
+				dh_da_data[i]=dh_da_data[i]+rv_data->river_profiles[i].get_stabilization_discharge();
+			}
+		}
+
+		//discharge through profile for last segment
+		dh_da_data[rv_data->number_inbetween_profiles]=dh_da_data[rv_data->number_inbetween_profiles]+(-1.0)*rv_data->river_profiles[rv_data->number_inbetween_profiles-1].get_stabilization_discharge();
+		dh_da_data[rv_data->number_inbetween_profiles]=dh_da_data[rv_data->number_inbetween_profiles]+rv_data->outflow_river_profile.get_stabilization_discharge();
 	}
 	return 0;
 }

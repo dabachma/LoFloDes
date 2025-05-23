@@ -26,6 +26,8 @@
 #include "Hyd_Floodplain_Polysegment.h"
 //info class about the hydraulic boundary szenario data
 #include "Hyd_Boundary_Szenario.h"
+//conductivity parameters
+#include "Hyd_Param_Conductivity.h"
 
 //forward declaration
 struct _hyd_breach_start_parameters;
@@ -34,6 +36,7 @@ struct _hyd_breach_start_parameters;
 
 
 ///Model class for a river model, where the one dimensional diffusive wave approach is applied \ingroup hyd
+//Some of the methods have been altered to allow for coupling of river and groundwater models. Therefore this is no longer compatible with older Promaides versions
 /**
 
 */
@@ -79,15 +82,20 @@ public:
 
 	//method
 
-	///Input the river model with the index per file with parser; the general settings as well as the profile data
+	///Input the river model with the index per file with parser; the general settings as well as the profile data, placeholder REVIEW
 	void input_members(const string global_file, const int index, const string global_path);
+	///Input the river model with the index per file with parser; the general settings as well as the profile data, placeholder REVIEW
+	void input_members(const string global_file, const int index, const string global_path, Hyd_Param_Conductivity* con_param, bool gwmodel_applied);
 	///Input the river model with the index per file with parser; the general settings as well as the profile data
 	void input_members(const Hyd_Param_RV param_rv);
+	///Input the river model with the index per file with parser; the general settings as well as the profile data
+	void input_members(const Hyd_Param_RV param_rv, Hyd_Param_Conductivity *con_param, bool gwmodel_applied);
 	///Transfer the river model data to a database; the general settings as well as the profile data
 	void transfer_input_members2database(QSqlDatabase *ptr_database);
 	///Transfer a hydraulic boundary szenario from file to a database
 	void transfer_hydraulic_boundary_sz2database(QSqlDatabase *ptr_database);
 	///Input the river model with the index from a database selection of the relevant river models; the general settings as well as the profile data
+	//This is for database input. Needs to be updated with conductivity data later
 	void input_members(const int index, const QSqlTableModel *query_result, QSqlDatabase *ptr_database, const bool just_profiles, const bool relevant, const bool output_flag=true);
 
 	///Create the database table for the general parameters of the river model
@@ -110,7 +118,8 @@ public:
 	void clone_model(Hyd_Model_River *river);
 
 	///Initialize the river profiles
-	void init_river_model(Hyd_Param_Material *material_table);
+	//The material table is only necessary for database entries. When database storage of groundwater models is implemented, this needs to be changed to include conductivity tables
+	void init_river_model(Hyd_Param_Material *material_table, Hyd_Param_Conductivity* con_param);
 	///Initialize the river geometry
 	void init_river_model_geometry(void);
 	///Check the river model
@@ -164,7 +173,7 @@ public:
 	///Output the result members per timestep to csv as 1d
 	void output_result2csv_1d(const double timepoint, const int timestep_number);
 	///Output the result members per timestep to paraview as 2d
-	void output_result2paraview_2d(const double timepoint, const int timestep_number);
+	void output_result2paraview_2d(const double timepoint, const int timestep_number,string unit);
 	///Output the result members per timestep to database as 2d
 	void output_result2database_2d(QSqlDatabase *ptr_database, const string break_sz, const double timepoint, const int timestep_number, const string time);
 
@@ -285,6 +294,8 @@ private:
 	_hyd_hydrological_balance total_left_dikebreak_coupling_volume;
 	///Total hydrological balance of the coupling discharges due to coupling to floodplain models via a dikebreak at the right bank (RV2FP)
 	_hyd_hydrological_balance total_right_dikebreak_coupling_volume;
+	///Total hydrological balance of the coupling discharges due to leakage coupling with a groundwater model
+	_hyd_hydrological_balance total_leakage_coupling_volume;
 	///Total volume error due to outflow of a profile, if there is no more watervolume left in the element
 	double total_volume_error_zero_outflow;
 
@@ -329,7 +340,7 @@ private:
 	void set_part_profile_list(_Hyd_River_Profile *up, _Hyd_River_Profile *down);
 
 	///Input the river profile data per file
-	void input_river_profiles_perfile(void);
+	void input_river_profiles_perfile(Hyd_Param_Conductivity *con_param, bool gwmodel_applied);
 	///Transfer the river profile data to a database
 	void transfer_profile_members2database(QSqlDatabase *ptr_database, const bool with_output=true);
 	///Input the river profile data per database

@@ -52,6 +52,9 @@ public:
 	///Get the convenyance factor total
 	virtual double get_c_value(void);
 
+	///Get the wetted perimeter
+	double get_wetted_perimeter(void);
+
 	///Set the actuel flow specific values with a given area from tables
 	virtual void set_actuel_profilevalues_by_table(const double area);
 	///Get the waterlevel by a given area from table 

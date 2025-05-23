@@ -251,6 +251,9 @@ _hyd_keyword_file _Hyd_Parse_IO::ParseNextKeyword(char *CommandList){
 	//marker for the floodplain model settings
 	else if (FIND1("!$BEGINFPMODEL")			)	Keyword = eBEGINFPMODEL;
 	else if (FIND1("!$ENDFPMODEL")				)  Keyword = eENDFPMODEL;
+	//marker for the groundwater model settings
+	else if (FIND1("!$BEGINGWMODEL")			)	Keyword = eBEGINGWMODEL;
+	else if (FIND1("!$ENDGWMODEL")				)  Keyword = eENDGWMODEL;
 	//marker for the river model settings
 	else if (FIND1("!$BEGINRVMODEL")			)	Keyword = eBEGINRVMODEL;
 	else if (FIND1("!$ENDRVMODEL")				)  Keyword = eENDRVMODEL;
@@ -289,6 +292,7 @@ _hyd_keyword_file _Hyd_Parse_IO::ParseNextKeyword(char *CommandList){
 	//models
 	else if (FIND1("!NOFFP")		)	Keyword = eNOFFP;
 	else if (FIND1("!NOFRV")		)	Keyword = eNOFRV;
+	else if (FIND1("!NOFGW")		)	Keyword = eNOFGW;
 	else if (FIND1("!COASTMODEL")	)	Keyword = eCOASTMODEL;
 	else if (FIND1("!TEMPMODEL")	)	Keyword = eTEMPMODEL;
 	//setted couplings
@@ -335,6 +339,10 @@ _hyd_keyword_file _Hyd_Parse_IO::ParseNextKeyword(char *CommandList){
 	else if (FIND1("$MIN_INTSTEP")		)	Keyword = eSYNMINTSTEP;
 	//global material file
 	else if (FIND1("!MATERIALFILE")	)	Keyword = eMATERIALFILE;
+	//global porosity file
+	else if (FIND1("!POROSITYFILE"))	Keyword = ePOROSITYFILE;
+	//global conductivity file
+	else if (FIND1("!CONDUCTIVITYFILE"))	Keyword = eCONDUCTIVITYFILE;
 	//observation point file
 	else if (FIND1("!OBSPOINTFILE")	)	Keyword = eOBSPOINTFILE;
 
@@ -360,6 +368,11 @@ _hyd_keyword_file _Hyd_Parse_IO::ParseNextKeyword(char *CommandList){
 	else if (FIND1("$NOINFOVALUE")	)	Keyword = eNOINFOVALUE; 
 	//file with the floodplain elements
 	else if (FIND1("!FLOODPLAINFILE"))	Keyword = eFLOODPLAINFILE;
+	//file with groundwater elements
+	else if (FIND1("!GROUNDWATERFILE"))	Keyword = eGROUNDWATERFILE;
+	//file with the barrier line in the groundwater model
+	else if (FIND1("!LINEFILE"))		Keyword = eLINEFILE;
+	//else if (FIND1("$NO_POLYLINES"))	Keyword = eNO_POLYLINES;
 	//Limits for the 2d/1d calculation
 	else if (FIND1("!LIMITS")		)	Keyword = eLIMITS; 
 	else if (FIND1("$ATOL")			)	Keyword = eATOL; 
@@ -376,6 +389,10 @@ _hyd_keyword_file _Hyd_Parse_IO::ParseNextKeyword(char *CommandList){
 	else if (FIND1("!GEOMETRYFILE")		)	Keyword = eGEOMETRYFILE;
 	//number of profiles
 	else if (FIND1("!NOFPROF")			)	Keyword = eNOFPROF;
+	//coupling approach 
+	else if (FIND1("$C_APPROACH"))			Keyword = eC_APPROACH;
+	///Marker for output all couplingspoinNts
+	else if (FIND1("$OUTPUT_COUPLING"))		Keyword = eOutput_Coupling;
 	//output file
 	else if (FIND1("!1DOUTPUT")			)	Keyword = e1DOUTPUT;
 

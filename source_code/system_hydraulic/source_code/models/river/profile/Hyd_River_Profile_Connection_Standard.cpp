@@ -99,6 +99,8 @@ void Hyd_River_Profile_Connection_Standard::transfer_profile_members2database(co
 	query_string << _Hyd_River_Profile::profile_table->get_column_name(hyd_label::profdata_init) <<" , ";
 	query_string << _Hyd_River_Profile::profile_table->get_column_name(hyd_label::profdata_prof_id) <<" , ";
 	query_string << _Hyd_River_Profile::profile_table->get_column_name(hyd_label::profdata_glob_id) <<" , ";
+	query_string << _Hyd_River_Profile::profile_table->get_column_name(hyd_label::profdata_con_id) << " , ";
+	query_string << _Hyd_River_Profile::profile_table->get_column_name(hyd_label::profdata_rvbed_m) << " , ";
 	
 	query_string << _Hyd_River_Profile::profile_table->get_column_name(hyd_label::profdata_over_r) <<" , ";
 	query_string << _Hyd_River_Profile::profile_table->get_column_name(hyd_label::profdata_over_l) <<" , ";
@@ -124,6 +126,8 @@ void Hyd_River_Profile_Connection_Standard::transfer_profile_members2database(co
 	query_string <<  this->init_condition<< " , " ;
 	query_string << this->profile_number<< " , " ;
 	query_string << glob_prof_id<< " , " ;
+	query_string << this->conductivity_index<<" , ";
+	query_string << this->thickness << " , ";
 
 	query_string << functions::convert_boolean2string(this->overflow_right_flag)<< " , " ;
 	query_string << functions::convert_boolean2string(this->overflow_left_flag)<< " , " ;
@@ -207,6 +211,12 @@ void Hyd_River_Profile_Connection_Standard::input_members_per_database(const int
 		//base points
 		this->index_basepoint_right=query_result->record(index).value((_Hyd_River_Profile::profile_table->get_column_name(hyd_label::profdata_base_right)).c_str()).toInt();
 		this->index_basepoint_left=query_result->record(index).value((_Hyd_River_Profile::profile_table->get_column_name(hyd_label::profdata_base_left)).c_str()).toInt();
+
+		//Conductivity
+		this->conductivity_index=query_result->record(index).value((_Hyd_River_Profile::profile_table->get_column_name(hyd_label::profdata_con_id)).c_str()).toInt();
+
+		//Riverbed
+		this->thickness= query_result->record(index).value((_Hyd_River_Profile::profile_table->get_column_name(hyd_label::profdata_rvbed_m)).c_str()).toDouble();
 
 		if(this->index_basepoint_right>=0){
 			this->break_flag_right=true;
@@ -706,7 +716,7 @@ void Hyd_River_Profile_Connection_Standard::get_max_changes_section(double *max_
 		
 		this->ds_dt_coup=this->q_lateral+this->q_point+this->q_1d_coupling+
 			this->q_dikebreak_coupling_left+this->q_dikebreak_coupling_right+
-			this->q_left_bank+this->q_right_bank+this->q_structure_coupling;
+			this->q_left_bank+this->q_right_bank+this->q_structure_coupling+this->q_leakage_coupling;
 
 		this->ds_dt_coup=this->ds_dt_coup/((this->get_distance2downstream()+this->get_distance2upstream())*0.5*this->typ_of_profile->get_area2calc()/this->typ_of_profile->get_actual_local_waterlevel_h());
 
@@ -780,7 +790,7 @@ double Hyd_River_Profile_Connection_Standard::get_total_boundary_coupling_discha
 	if(this->typ_of_profile->get_outflow_reduction_flag()==false){
 		q_buff=this->q_lateral+this->q_point+this->q_1d_coupling+
 			this->q_dikebreak_coupling_left+this->q_dikebreak_coupling_right+
-			this->q_left_bank+this->q_right_bank+this->q_structure_coupling+q_river_in_out;
+			this->q_left_bank+this->q_right_bank+this->q_structure_coupling+this->q_leakage_coupling+q_river_in_out;
 	}
 	else{
 		if(this->q_lateral>=0.0){
@@ -832,6 +842,12 @@ double Hyd_River_Profile_Connection_Standard::get_total_boundary_coupling_discha
 		else{
 			this->q_zero_outflow_error=this->q_zero_outflow_error+this->q_structure_coupling;
 		}
+		if (this->q_leakage_coupling >= 0.0) {
+			q_buff = q_buff + this->q_leakage_coupling;
+		}
+		else {
+			this->q_zero_outflow_error = this->q_zero_outflow_error + this->q_leakage_coupling;
+		}
 
 		q_buff=q_river_in_out+q_buff;
 
@@ -849,7 +865,9 @@ double Hyd_River_Profile_Connection_Standard::get_total_boundary_coupling_discha
 		else{
 			this->q_zero_outflow_error=this->q_zero_outflow_error;
 		}
-		
+		ostringstream cout;
+		cout << q_buff << "   "<< this->name << "   " << this->q_leakage_coupling << endl;
+		Sys_Common_Output::output_hyd->output_txt(&cout, true, true);
 
 	}
 	this->calculate_hydrolocigal_balance_error_zero_outflow(time_point);
@@ -904,6 +922,8 @@ void Hyd_River_Profile_Connection_Standard::transfer_coupling_boundary2profile(H
 			this->q_lateral=0.0;
 			profile2transfer->add_point_discharge(this->q_point);
 			this->q_point=0.0;
+			profile2transfer->add_leakage_coupling_discharge(this->q_leakage_coupling);
+			this->q_leakage_coupling = 0.0;
 		}
 	}
 }
@@ -915,6 +935,7 @@ double Hyd_River_Profile_Connection_Standard::get_outflow_zero_error_volume(void
 void Hyd_River_Profile_Connection_Standard::output_result_members_per_timestep(void){
 	ostringstream cout;
 	_Hyd_River_Profile::output_result_members_per_timestep(&cout);
+	cout << W(10) << this->q_leakage_coupling;
 	cout << W(10) <<  this->q_river;
 	cout << endl;
 	Sys_Common_Output::output_hyd->output_txt(&cout,true);
@@ -1041,9 +1062,9 @@ double Hyd_River_Profile_Connection_Standard::get_Q(void) {
 //___________________
 //protected
 //decide in the different keyvalues in the profile file
-void Hyd_River_Profile_Connection_Standard::decide_keyvalues_file(const string key, string buffer, int *found_counter){
+void Hyd_River_Profile_Connection_Standard::decide_keyvalues_file(const string key, string buffer, Hyd_Param_Conductivity *con_param, bool gwmodel_applied, int *found_counter){
 	try{
-		_Hyd_River_Profile::decide_keyvalues_file(key, buffer, found_counter); 
+		_Hyd_River_Profile::decide_keyvalues_file(key, buffer, con_param, gwmodel_applied, found_counter); 
 
 	}catch(Error msg){
 		throw msg;

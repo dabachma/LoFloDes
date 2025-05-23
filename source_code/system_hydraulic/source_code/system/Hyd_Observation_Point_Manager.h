@@ -54,7 +54,7 @@ public:
 	void transfer_obs_points2database(QSqlDatabase *ptr_database, const string file);
 
 	///Initialize the observation points
-	void init_obs_points(const int num_rv, Hyd_Model_River *river, const int num_fp, Hyd_Model_Floodplain *floodplain, const int no_output, const int no_internal);
+	void init_obs_points(const int num_gw, Hyd_Model_Groundwater* gw, const int num_rv, Hyd_Model_River *river, const int num_fp, Hyd_Model_Floodplain *floodplain, const int no_output, const int no_internal);
 	///Initialize the observation points of temperature models
 	void init_temp_obs_points(const int num_rv, HydTemp_Model *temp_model, const int no_output, const int no_internal);
 
@@ -70,17 +70,19 @@ public:
 	void syncron_temp_obs_points(const double time_point);
 
 	///Output the data of the observation points to tecplot file
-	void output_obs_points2tecplot_file(const string filename_rv, const string filename_fp);
+	void output_obs_points2tecplot_file(const string filename_rv, const string filename_fp, const string filename_gw);
 	///Output the data of the observation points to ParaView / cvs file
-	void output_obs_points2paraview_file(const string filename_rv, const string filename_fp);
+	void output_obs_points2paraview_file(const string filename_rv, const string filename_fp, const string filename_gw);
 	///Output the data of the temperature observation points to ParaView / cvs file
 	void output_temp_obs_points2paraview_file(const string filename_rv);
+	///Output the information of observation points to ParaView / cvs file
+	void output_obs_information_points2paraview_file(const string filename);
 
 	///Clear the observation points
 	void clear_obs_points(void);
 
 	///Clone the observation points
-	void clone_obs_points(Hyd_Observation_Point_Manager *src, Hyd_Model_River *river,  Hyd_Model_Floodplain *floodplain);
+	void clone_obs_points(Hyd_Observation_Point_Manager *src, Hyd_Model_River *river,  Hyd_Model_Floodplain *floodplain, Hyd_Model_Groundwater *gw);
 
 	///Total reset of the manager
 	void total_reset(void);
@@ -98,6 +100,8 @@ private:
 	int number_obs_rv;
 	///Number of observation points in a floodplain model
 	int number_obs_fp;
+	///Number of observation points in a groundwater model
+	int number_obs_gw;
 
 	///Counter of used observation points
 	int counter_used;
@@ -114,20 +118,27 @@ private:
 	static int select_relevant_points_database(QSqlQueryModel *results, QSqlDatabase *ptr_database);
 
 	///Count number river- and floodplain obeservation points
-	void count_number_rv_fp_obs_point(void);
+	void count_number_rv_fp_gw_obs_point(void);
 
 	///Output the observation points of river models to tecplot file
 	void output_obs_point_rv2file(const string file);
 	///Output the observation points of floodplain models to tecplot file
 	void output_obs_point_fp2file(const string file);
+	///Output the observation points of floodplain models to tecplot file
+	void output_obs_point_gw2file(const string file);
 
 	///Output the observation points of river models to csv file
 	void output_obs_point_rv2csvfile(const string file);
 	///Output the observation points of floodplain models to csvfile
 	void output_obs_point_fp2csvfile(const string file);
+	///Output the observation points of groundwater models to csvfile
+	void output_obs_point_gw2csvfile(const string file);
 
 	///Output the temperature observation points of river models to csv file
 	void output_temp_obs_point_rv2csvfile(const string file);
+
+
+
 
 
 	///Set error(s)

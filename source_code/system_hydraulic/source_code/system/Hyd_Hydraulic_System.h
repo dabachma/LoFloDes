@@ -4,6 +4,7 @@
 	\author produced by the Institute of Hydraulic Engineering (IWW), RWTH Aachen University
 	\version 0.0.1                                                              
 	\date 2009 
+	\modified by Bastian Winkels 2022
 */
 #ifndef HYD_HYDRAULIC_SYSTEM_H
 #define HYD_HYDRAULIC_SYSTEM_H
@@ -16,6 +17,8 @@
 #include "Hyd_Model_River.h" 
 //Class of a floodplain model
 #include "Hyd_Model_Floodplain.h"
+//Class of a groundwater model
+#include "groundwater/Hyd_Model_Groundwater.h"
 //Class of the coast model
 #include "Hyd_Coast_Model.h"
 //Class of the temperature model
@@ -24,6 +27,10 @@
 #include "Hyd_Param_Global.h"
 //cointainer class for the material parameters
 #include "Hyd_Param_Material.h"
+//container class for the conductivity parameters
+#include "Hyd_Param_Conductivity.h"
+//container class for the porosity parameters
+#include "Hyd_Param_Porosity.h"
 //class for coupling
 #include "Hyd_Coupling_Management.h"
 //class for counting the couplings
@@ -42,9 +49,7 @@
 
 
 ///Main class of the hydraulic module; the hydraulic system consists of the hydraulic models (e.g. river, floodplain etc.) and the couplings between the models \ingroup hyd
-/**
 
-*/
 class Hyd_Hydraulic_System: public QThread , public _Sys_Common_System
 {
 //Macro for using signals and slots (Qt)in this class
@@ -65,6 +70,8 @@ public:
 	Hyd_Model_River *my_rvmodels;
 	///Pointer to the floodplainmodels
 	Hyd_Model_Floodplain *my_fpmodels;
+	///Pointer to the groundwater models
+	Hyd_Model_Groundwater *my_gwmodels;
 	///Pointer to the coast model 
 	Hyd_Coast_Model *my_comodel;
 	///Pointer to the temp model
@@ -75,6 +82,10 @@ public:
 
 	///Container of material parameters 
 	Hyd_Param_Material material_params;
+	///Container of conductivity params
+	Hyd_Param_Conductivity conductivity_params;
+	///Container of porosity params
+	Hyd_Param_Porosity porosity_params;
 	///Member for storing the hydraulic boundary szenario information
 	Hyd_Boundary_Szenario hyd_sz;
 
@@ -203,8 +214,12 @@ public:
 
 	///Convert the model type (_hyd_model_type) into a text string
 	static string convert_model_type2txt(const _hyd_model_type type);
+	///variation for groundwater
+	static string convert_gwmodel_type2txt(const _hyd_model_type_gw type);
 	///Convert a string into a model type (_hyd_model_type)
 	static _hyd_model_type convert_txt2model_type(const string text);
+	///variation for groundwater
+	static _hyd_model_type_gw convert_txt2gwmodel_type(const string text);
 
 	///Set the system-id (_sys_system_id) of the object
 	void set_systemid(const _sys_system_id actuel_id);
@@ -252,6 +267,11 @@ public:
 	///Get the pointer to a floodplain model by a given index
 	Hyd_Model_Floodplain* get_ptr_floodplain_model_index(const int index);
 
+	///Get the pointer to a groundwater model by a given model number
+	Hyd_Model_Groundwater* get_ptr_groundwater_model(const int number);
+	///Get the pointer to a groundwater model by a given index
+	Hyd_Model_Groundwater* get_ptr_groundwater_model_index(const int index);
+
 	///Get the pointer to a river model by a given model number
 	Hyd_Model_River* get_ptr_river_model(const int number);
 	///Get the pointer to a river model by a given index
@@ -275,7 +295,7 @@ public:
 
 
 	///Initialize and connect the data of the river models
-	void connect_rivers(Hyd_Param_Material *mat_param);
+	void connect_rivers(Hyd_Param_Material *mat_param, Hyd_Param_Conductivity *con_param);
 
 	///Initialize and connect the data of the temperature models
 	void connect_temperature_model(void);
@@ -389,6 +409,17 @@ private:
 	///Initialize and connect the data of the floodplain models
 	void connect_floodplains(void);
 
+	///Allocate the groundwater models
+	void allocate_groundwater_models(void);
+	///Read in the groundwater models of the system with Hyd_Parse_GW
+	void input_groundwater_models(const string global_file);
+	///Transfer the data of the groundwater models to the database
+	void transfer_groundwatermodel_data2database(QSqlDatabase *ptr_database);
+	///Read in the groundwater models of the system from a database
+	void input_groundwater_models(const QSqlTableModel *query_result, QSqlDatabase *ptr_database, const bool just_elems);
+	///Initialize and connect the data of the groundwater models
+	void connect_groundwaters(void);
+
 	///Allocate the river models
 	void allocate_river_models(void);
 	///Read in the river models of the system with Hyd_Parse_RV
@@ -425,6 +456,10 @@ private:
 	void make_geometrical_interception_co2fp(void);
 	///Make the geometrical interceptions between floodplain and floodplain models
 	void make_geometrical_interception_fp2fp(void);
+	///Make the geometrical interceptions between groundwater and groundwater models
+	void make_geometrical_interception_gw2gw(void);
+	///Make the geometrical interceptions between groundwater and river models
+	void make_geometrical_interception_gw2rv(void);
 	///Make the geometrical interceptions between floodplain and river models
 	void make_geometrical_interception_fp2rv(void);
 	///Make the geometrical interceptions between coast model and river models
@@ -474,8 +509,19 @@ private:
 	///Make the calculation of the floodplain models for each internal step
 	void make_calculation_floodplainmodel(void);
 
+	///Make the syncronisation of the groundwater models for each internal step
+	void make_syncron_groundwatermodel(void);
+	///Get the maximum change in a element of a groundwater model
+	void get_max_changes_groundwatermodel(double *max_change_h, const bool timecheck);
+	///Calculate the hydrological balance and the maximum values of the groundwater models for each internal step
+	void make_hyd_balance_max_groundwatermodel(void);
+	///Reset the solver of the groundwater models
+	void reset_solver_gw_models(void);
+	///Make the calculation of the floodplain models for each internal step
+	void make_calculation_groundwatermodel(void);
+
 	///Output the results of the calculation steps of the river models to file
-	void output_calculation_steps_rivermodel2file(const double timestep);
+	void output_calculation_steps_rivermodel2file(const double timestep,string unit);
 	///Output the calculation steps (time, solversteps etc) of the river models to display/console
 	void output_calculation_steps_rivermodel2display(const double timestep);
 	///Output the calculation steps (time, solversteps etc) of the river models to databse
@@ -496,6 +542,13 @@ private:
 	///Output the results of the calculation steps of the floodplain models to database
 	void output_calculation_steps_floodplainmodel2database(const double timestep, const string time);
 
+	///Output the results of the calculation steps of the groundwater models to file
+	void output_calculation_steps_groundwatermodel2file(const double timestep,string unit);
+	///Output the results of the calculation steps of the groundwater models to display/console
+	void output_calculation_steps_groundwatermodel2display(const double timestep);
+	///Output the results of the calculation steps of the groundwater models to database
+	void output_calculation_steps_groundwatermodel2database(const double timestep, const string time);
+
 	///Clear all not needed data of the models before the solver is initialized
 	void clear_models(void);
 
@@ -509,6 +562,9 @@ private:
 	string calculate_approx_memory_fpmodels(void);
 	///Calculate the total was-wetted area for the floodplain models
 	double calculate_was_wetted_area_fp(double *area_without_coast);
+
+	///Calculate the approximate memory requirement for the groundwater models
+	string calculate_approx_memory_gwmodels(void);
 
 	///Wait loop for the output of the calculation to display/console (for multi threading)
 	void waitloop_output_calculation2display(void);	
