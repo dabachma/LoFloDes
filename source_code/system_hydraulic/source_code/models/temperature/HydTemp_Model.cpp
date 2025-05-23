@@ -2376,10 +2376,54 @@ int __cdecl ftemp_equation2solve(realtype time, N_Vector results, N_Vector da_dt
 		dh_da_data[0] = 0.0;
 		//inbetween
 		for (int i = 1; i < rv_data->Param_Temp.Param_RV->get_number_profiles()-1; i++) {
-			if (rv_data->profiles[i].get_water_temperature_applied() == false && rv_data->profiles[i].get_inlet_temperature_applied()==false) {
-				dh_da_data[i] = ((rv_data->profiles[i - 1].get_actual_temperature() - rv_data->profiles[i].get_actual_temperature()) / rv_data->profiles[i].get_distance2up())*0.5*(rv_data->profiles[i - 1].get_flow_velocity_current() + rv_data->profiles[i].get_flow_velocity_current()) -
-					((rv_data->profiles[i].get_actual_temperature() - rv_data->profiles[i + 1].get_actual_temperature()) / rv_data->profiles[i + 1].get_distance2up())*0.5*(rv_data->profiles[i].get_flow_velocity_current() + rv_data->profiles[i + 1].get_flow_velocity_current());
-				dh_da_data[i] = dh_da_data[i] + rv_data->profiles[i].get_delta_temp();
+			// alte version mit oben und und unten
+			//if (rv_data->profiles[i].get_water_temperature_applied() == false && rv_data->profiles[i].get_inlet_temperature_applied()==false) {
+			//	dh_da_data[i] = ((rv_data->profiles[i - 1].get_actual_temperature() - rv_data->profiles[i].get_actual_temperature()) / rv_data->profiles[i].get_distance2up())*0.5*(rv_data->profiles[i - 1].get_flow_velocity_current() + rv_data->profiles[i].get_flow_velocity_current()) -
+			//		((rv_data->profiles[i].get_actual_temperature() - rv_data->profiles[i + 1].get_actual_temperature()) / rv_data->profiles[i + 1].get_distance2up())*0.5*(rv_data->profiles[i].get_flow_velocity_current() + rv_data->profiles[i + 1].get_flow_velocity_current());
+			//	//dh_da_data[i] = dh_da_data[i] + rv_data->profiles[i].get_delta_temp();
+			//}
+			//else {
+			//	dh_da_data[i] = 0.0;
+
+			//}
+
+
+			//lax-wendroff scheme
+
+
+
+			//upwind schema
+			if (rv_data->profiles[i].get_water_temperature_applied() == false && rv_data->profiles[i].get_inlet_temperature_applied() == false) {
+				if (i == 1) {
+					dh_da_data[i] = ((rv_data->profiles[i - 1].get_actual_temperature() - rv_data->profiles[i].get_actual_temperature()) / rv_data->profiles[i].get_distance2up()) * 0.5 * (rv_data->profiles[i - 1].get_flow_velocity_current() + rv_data->profiles[i].get_flow_velocity_current()) -
+						((rv_data->profiles[i].get_actual_temperature() - rv_data->profiles[i + 1].get_actual_temperature()) / rv_data->profiles[i + 1].get_distance2up()) * 0.5 * (rv_data->profiles[i].get_flow_velocity_current() + rv_data->profiles[i + 1].get_flow_velocity_current());
+					dh_da_data[i] = dh_da_data[i] + rv_data->profiles[i].get_delta_temp();
+				}
+				else {
+					double v_up = 0.0;
+					double v_down = 0.0;
+					v_up = 0.5 * (rv_data->profiles[i - 1].get_flow_velocity_current() + rv_data->profiles[i].get_flow_velocity_current());
+					v_down = 0.5 * (rv_data->profiles[i].get_flow_velocity_current() + rv_data->profiles[i + 1].get_flow_velocity_current());
+					if (v_up >= 0.0 && v_down >= 0.0) {
+						//dh_da_data[i] = ((rv_data->profiles[i].get_actual_temperature() - rv_data->profiles[i + 1].get_actual_temperature()) / rv_data->profiles[i + 1].get_distance2up()) * v_down;
+						dh_da_data[i] = ((rv_data->profiles[i - 1].get_actual_temperature() - rv_data->profiles[i].get_actual_temperature()) / rv_data->profiles[i].get_distance2up()) * v_up;
+
+					}
+					else if (v_up < 0.0 && v_down < 0.0) {
+						//dh_da_data[i] = ((rv_data->profiles[i - 1].get_actual_temperature() - rv_data->profiles[i].get_actual_temperature()) / rv_data->profiles[i].get_distance2up()) * v_up;
+						dh_da_data[i] = ((rv_data->profiles[i].get_actual_temperature() - rv_data->profiles[i + 1].get_actual_temperature()) / rv_data->profiles[i + 1].get_distance2up()) * v_down;
+
+					}
+					else {
+						dh_da_data[i] = ((rv_data->profiles[i - 1].get_actual_temperature() - rv_data->profiles[i].get_actual_temperature()) / rv_data->profiles[i].get_distance2up()) * 0.5 * (rv_data->profiles[i - 1].get_flow_velocity_current() + rv_data->profiles[i].get_flow_velocity_current()) -
+							((rv_data->profiles[i].get_actual_temperature() - rv_data->profiles[i + 1].get_actual_temperature()) / rv_data->profiles[i + 1].get_distance2up()) * 0.5 * (rv_data->profiles[i].get_flow_velocity_current() + rv_data->profiles[i + 1].get_flow_velocity_current());
+
+					}
+
+
+
+					dh_da_data[i] = dh_da_data[i] + rv_data->profiles[i].get_delta_temp();
+				}
 			}
 			else {
 				dh_da_data[i] = 0.0;
@@ -2392,8 +2436,13 @@ int __cdecl ftemp_equation2solve(realtype time, N_Vector results, N_Vector da_dt
 		//last profile
 		int i = rv_data->Param_Temp.Param_RV->get_number_profiles() - 1;
 		if (rv_data->profiles[i].get_water_temperature_applied() == false && rv_data->profiles[i].get_inlet_temperature_applied() == false) {
-			dh_da_data[i] = ((rv_data->profiles[i - 2].get_actual_temperature() - rv_data->profiles[i - 1].get_actual_temperature()) / rv_data->profiles[i - 1].get_distance2up())*0.5*(rv_data->profiles[i - 2].get_flow_velocity_current() + rv_data->profiles[i - 1].get_flow_velocity_current()) -
+			/*dh_da_data[i] = ((rv_data->profiles[i - 2].get_actual_temperature() - rv_data->profiles[i - 1].get_actual_temperature()) / rv_data->profiles[i - 1].get_distance2up())*0.5*(rv_data->profiles[i - 2].get_flow_velocity_current() + rv_data->profiles[i - 1].get_flow_velocity_current()) -
 				((rv_data->profiles[i].get_actual_temperature() - rv_data->profiles[i].get_actual_temperature()) / rv_data->profiles[i].get_distance2up())*0.5*(rv_data->profiles[i - 1].get_flow_velocity_current() + rv_data->profiles[i].get_flow_velocity_current());
+	*/		
+			dh_da_data[i] = ((rv_data->profiles[i - 1].get_actual_temperature() - rv_data->profiles[i ].get_actual_temperature()) / rv_data->profiles[i].get_distance2up()) * 0.5 * (rv_data->profiles[i - 1].get_flow_velocity_current() + rv_data->profiles[i].get_flow_velocity_current());
+
+			
+			
 			dh_da_data[i] = dh_da_data[i] + rv_data->profiles[i].get_delta_temp();
 		}
 		else {
