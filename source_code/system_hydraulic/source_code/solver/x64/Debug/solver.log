@@ -1,4 +1,2 @@
-﻿   Qt/MSBuild: 3.3.1.1
-  Reading Qt configuration (C:/Qt/5.12.11/msvc2017_64/bin/qmake)
-   Qt: 5.12.11
-  solver.vcxproj -> D:\LoFloDes\LoFloDes\x64\Debug\solver.lib
+﻿C:\Users\Daniel Bachmann\AppData\Local\QtMsBuild\qt_vars.targets(68,5): error : There's no Qt version assigned to project solver.vcxproj for configuration Debug/x64.
+C:\Users\Daniel Bachmann\AppData\Local\QtMsBuild\qt_vars.targets(68,5): error : Please set a Qt installation in 'Project|Properties|Configuration Properties|Qt Project Settings|Qt Installation'.
